@@ -1,5 +1,6 @@
 local wezterm = require 'wezterm'
 local mux = wezterm.mux
+local act = wezterm.action
 
 wezterm.on("gui-startup", function(cmd)
   local tab, pane, window = mux.spawn_window(cmd or {})
@@ -10,7 +11,7 @@ wezterm.on('open-uri', function(window, pane, uri)
   if start == 1 then
     local recipient = uri:sub(match_end + 1)
     window:perform_action(
-      wezterm.action.SpawnCommandInNewWindow {
+      act.SpawnCommandInNewWindow {
         args = { 'mutt', recipient },
       },
       pane
@@ -39,7 +40,7 @@ return {
   leader = { key = 'a', mods = 'SUPER', timeout_milliseconds = 1000 },
   disable_default_key_bindings = true,
   keys = {
-    { key = 'V', mods = 'CTRL', action = wezterm.action.PasteFrom 'Clipboard' },
+    { key = 'V', mods = 'CTRL', action = act.PasteFrom 'Clipboard' },
   },
 
   -- MOUSE ==================================================================
@@ -57,7 +58,7 @@ return {
     -- and make CTRL-Click open hyperlinks
     {
       event = { Up = { streak = 1, button = 'Left' } },
-      mods = 'CTRL',
+      mods = 'CTRL|SHIFT',
       action = act.OpenLinkAtMouseCursor,
     },
     -- NOTE that binding only the 'Up' event can give unexpected behaviors.
@@ -79,8 +80,7 @@ return {
   -- LINK ===================================================================
   hyperlink_rules = {
     {
-      regex = "(ipfs:|ipns:|magnet:|mailto:|gemini:|gopher:|https:|http:|news:|file:|git:|ssh:|ftp:)\
-             [^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩`]+",
+      regex = [[\b(ipfs:|ipns:|magnet:|mailto:|gemini:|gopher:|https:|http:|news:|file:|git:|ssh:|ftp:)//[^\u0000-\u001F\u007F-\u009F<>\\s{-}\\^⟨⟩`]+\b]],
       format = '$0'
     },
 
@@ -100,7 +100,6 @@ return {
     fade_in_duration_ms = 150,
     fade_out_function = 'EaseOut',
     fade_out_duration_ms = 150,
-    -- target = 'CursorColor',
   },
   -- ========================================================================
   use_ime = true,
