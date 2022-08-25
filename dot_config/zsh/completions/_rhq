@@ -1,0 +1,297 @@
+#compdef rhq
+
+autoload -U is-at-least
+
+_rhq() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+":: :_rhq_commands" \
+"*::: :->rhq" \
+&& ret=0
+    case $state in
+    (rhq)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:rhq-command-$line[1]:"
+        case $line[1] in
+            (add)
+_arguments "${_arguments_options[@]}" \
+'-v[Use verbose output]' \
+'--verbose[Use verbose output]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+'::paths -- Location of local repositories:_files' \
+&& ret=0
+;;
+(cl)
+_arguments "${_arguments_options[@]}" \
+'--root=[Path to determine the destination directory of cloned repository]' \
+'--vcs=[Used Version Control System]: :(git hg darcs pijul)' \
+'-s[Use SSH protocol instead of HTTP(s)]' \
+'--ssh[Use SSH protocol instead of HTTP(s)]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+':query -- an URL or a string to determine the URL of remote repository:_files' \
+'::dest -- Destination directory of cloned repository:_files' \
+&& ret=0
+;;
+(clone)
+_arguments "${_arguments_options[@]}" \
+'--root=[Path to determine the destination directory of cloned repository]' \
+'--vcs=[Used Version Control System]: :(git hg darcs pijul)' \
+'-s[Use SSH protocol instead of HTTP(s)]' \
+'--ssh[Use SSH protocol instead of HTTP(s)]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+':query -- an URL or a string to determine the URL of remote repository:_files' \
+'::dest -- Destination directory of cloned repository:_files' \
+&& ret=0
+;;
+(cmpl)
+_arguments "${_arguments_options[@]}" \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+':shell -- Target shell:(bash zsh fish powershell)' \
+'::out-file -- Destination path to generated script:_files' \
+&& ret=0
+;;
+(completion)
+_arguments "${_arguments_options[@]}" \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+':shell -- Target shell:(bash zsh fish powershell)' \
+'::out-file -- Destination path to generated script:_files' \
+&& ret=0
+;;
+(imp)
+_arguments "${_arguments_options[@]}" \
+'--depth=[Maximal depth of entries for each base directory]' \
+'-v[Use verbose output]' \
+'--verbose[Use verbose output]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+'::roots -- Root directories contains for scanning:_files' \
+&& ret=0
+;;
+(import)
+_arguments "${_arguments_options[@]}" \
+'--depth=[Maximal depth of entries for each base directory]' \
+'-v[Use verbose output]' \
+'--verbose[Use verbose output]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+'::roots -- Root directories contains for scanning:_files' \
+&& ret=0
+;;
+(ls)
+_arguments "${_arguments_options[@]}" \
+'--format=[List format]: :(name fullpath)' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+&& ret=0
+;;
+(list)
+_arguments "${_arguments_options[@]}" \
+'--format=[List format]: :(name fullpath)' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+&& ret=0
+;;
+(new)
+_arguments "${_arguments_options[@]}" \
+'--root=[Path to determine the destination of new repository]' \
+'--vcs=[Used Version Control System]: :(git hg darcs pijul)' \
+'-s[Use SSH protocol instead of HTTP(s)]' \
+'--ssh[Use SSH protocol instead of HTTP(s)]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+':query -- Path of target repository, or URL-like pattern:_files' \
+&& ret=0
+;;
+(refresh)
+_arguments "${_arguments_options[@]}" \
+'-v[Use verbose output]' \
+'--verbose[Use verbose output]' \
+'-s[Sort by path string]' \
+'--sort[Sort by path string]' \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" \
+'-h[Prints help information]' \
+'--help[Prints help information]' \
+'-V[Prints version information]' \
+'--version[Prints version information]' \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_rhq_commands] )) ||
+_rhq_commands() {
+    local commands; commands=(
+        "add:Add existed repositories into management" \
+"clone:Clone remote repositories, and then add it under management" \
+"completion:Generate completion scripts for your shell" \
+"import:Import existed repositories into management" \
+"list:List local repositories managed by rhq" \
+"new:Create a new repository and add it into management" \
+"refresh:Scan repository list and drop if it is not existed or matches exclude pattern." \
+"help:Prints this message or the help of the given subcommand(s)" \
+    )
+    _describe -t commands 'rhq commands' commands "$@"
+}
+(( $+functions[_rhq__add_commands] )) ||
+_rhq__add_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq add commands' commands "$@"
+}
+(( $+functions[_cl_commands] )) ||
+_cl_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'cl commands' commands "$@"
+}
+(( $+functions[_rhq__cl_commands] )) ||
+_rhq__cl_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq cl commands' commands "$@"
+}
+(( $+functions[_rhq__clone_commands] )) ||
+_rhq__clone_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq clone commands' commands "$@"
+}
+(( $+functions[_cmpl_commands] )) ||
+_cmpl_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'cmpl commands' commands "$@"
+}
+(( $+functions[_rhq__cmpl_commands] )) ||
+_rhq__cmpl_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq cmpl commands' commands "$@"
+}
+(( $+functions[_rhq__completion_commands] )) ||
+_rhq__completion_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq completion commands' commands "$@"
+}
+(( $+functions[_rhq__help_commands] )) ||
+_rhq__help_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq help commands' commands "$@"
+}
+(( $+functions[_imp_commands] )) ||
+_imp_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'imp commands' commands "$@"
+}
+(( $+functions[_rhq__imp_commands] )) ||
+_rhq__imp_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq imp commands' commands "$@"
+}
+(( $+functions[_rhq__import_commands] )) ||
+_rhq__import_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq import commands' commands "$@"
+}
+(( $+functions[_rhq__list_commands] )) ||
+_rhq__list_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq list commands' commands "$@"
+}
+(( $+functions[_ls_commands] )) ||
+_ls_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'ls commands' commands "$@"
+}
+(( $+functions[_rhq__ls_commands] )) ||
+_rhq__ls_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq ls commands' commands "$@"
+}
+(( $+functions[_rhq__new_commands] )) ||
+_rhq__new_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq new commands' commands "$@"
+}
+(( $+functions[_rhq__refresh_commands] )) ||
+_rhq__refresh_commands() {
+    local commands; commands=(
+        
+    )
+    _describe -t commands 'rhq refresh commands' commands "$@"
+}
+
+_rhq "$@"

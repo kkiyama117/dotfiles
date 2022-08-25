@@ -1,0 +1,18 @@
+[core]
+	editor = nvim
+  pager = delta
+[user]
+  name = {{ .git_name | quote }}
+  email = {{ .git_email | quote }}
+	signingkey = {{ .git_signingkey }}
+[pull]
+	rebase = false
+[commit]
+	verbose = true
+	gpgsign = true
+[init]
+	defaultBranch = main
+[delta]
+    plus-style = syntax "#012800" 
+    minus-style = normal "#340001" 
+    syntax-theme = "Monokai Extended"
