@@ -29,7 +29,7 @@ github = "wting/autojump"
 dir = "bin"
 apply = ["PATH", "source"]
 
-[plugins.completions]
+[plugins.zsh-completions]
 github = "zsh-users/zsh-completions"
 apply = ["fpath"]
 
