@@ -33,9 +33,6 @@ apply = ["PATH", "source"]
 github = "zsh-users/zsh-completions"
 apply = ["fpath"]
 
-[plugins.autosuggestions]
-github = "zsh-users/zsh-autosuggestions"
-
 [plugins.git-open]
 github = "paulirish/git-open"
 
