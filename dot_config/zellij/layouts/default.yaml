@@ -36,7 +36,7 @@ tabs:
         split_size:
           Percent: 50
         run:
-          command: {cmd: htop}
+          command: {cmd: top}
       - direction: Vertical
         split_size:
           Percent: 50

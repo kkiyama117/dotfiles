@@ -107,5 +107,12 @@
       alias vimo=/usr/bin/vim
     fi
   }
+
+  : "chezmoi" && {
+    if (( $+commands[chezmoi] )) then
+      alias editconf='chezmoi edit'
+      alias conf='chezmoi apply -rv'
+    fi
+  }
 }
 

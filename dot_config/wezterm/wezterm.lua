@@ -64,7 +64,7 @@ return {
     -- NOTE that binding only the 'Up' event can give unexpected behaviors.
     -- Read more below on the gotcha of binding an 'Up' event only.
   },
-  default_cursor_style = 'BlinkingBlock',
+  -- default_cursor_style = 'BlinkingBlock',
 
   -- COLOR ==================================================================
   -- https://wezfurlong.org/wezterm/config/appearance.html

@@ -1,39 +1,12 @@
 # Auto installer for zplug
-: "zinit" && {
+: "plugin manager" && {
   : "initialize" && {
     : "shell envs not loaded in zshenv" && {
       export GPG_TTY=$(tty)
     }
-    # install
-    export ZPLUG_HOME=$XDG_CONFIG_HOME/.zplug
-    ### Added by Zinit's installer
-    if [[ ! -f $ZPLUG_HOME/init.zsh ]]; then
-      print -P "%F{33}▓▒░ %F{220}Installing %F{33}ZPLUG%F{220} Initiative Plugin Manager (%F{33}zplug/zplug%F{220})…%f"
-      command git clone https://github.com/zplug/zplug $ZPLUG_HOME && \
-          print -P "%F{33}▓▒░ %F{34}Installation successful.%f%b" || \
-          print -P "%F{160}▓▒░ The clone has failed.%f%b"
-    fi
-    source "$ZPLUG_HOME/init.zsh"
-    # autoload -Uz _zinit
-    # (( ${+_comps} )) && _comps[zinit]=_zinit
-    ### End of Zinit's installer chunk
+    eval "$(sheldon source)"
   }
-
-  fpath=($XDG_CONFIG_HOME/zsh/completions $fpath)
 }
-
-# Use manjaro official config
-: "manjaro" && {
-  # Source manjaro-zsh-configuration
-  #if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
-  #  source /usr/share/zsh/manjaro-zsh-config
-  #fi
-  ## Use manjaro zsh prompt
-  #if [[ -e /usr/share/zsh/manjaro-zsh-prompt ]]; then
-  #  source /usr/share/zsh/manjaro-zsh-prompt
-  #fi
-}
-
 
 : "features" && {
   for file in $XDG_CONFIG_HOME/zsh/features/**/*.zsh(N.); source $file
@@ -41,14 +14,6 @@
     # zinit ice wait"0!"; source $HOME/.zsh/features/non-vim/completions.zsh
     # for file in ~/.zsh/features/non-vim/**/*.zsh(N.); source $file
   fi
-  # Install plugins if there are plugins that have not been installed
-  if ! zplug check --verbose; then
-      printf "Install? [y/N]: "
-      if read -q; then
-          echo; zplug install
-      fi
-  fi
-  zplug load
 }
 
 : "commands" && {
@@ -67,5 +32,3 @@
 #  zcompile ~/.zshenv
 #fi
 
-export VOLTA_HOME="$HOME/.volta"
-export PATH="$VOLTA_HOME/bin:$PATH"

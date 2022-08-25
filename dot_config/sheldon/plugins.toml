@@ -1,0 +1,56 @@
+# `sheldon` configuration file
+# ----------------------------
+#
+# You can modify this file directly or you can use one of the following
+# `sheldon` commands which are provided to assist in editing the config file:
+#
+# - `sheldon add` to add a new plugin to the config file
+# - `sheldon edit` to open up the config file in the default editor
+# - `sheldon remove` to remove a plugin from the config file
+#
+# See the documentation for more https://github.com/rossmacarthur/sheldon#readme
+
+shell = "zsh"
+
+[plugins]
+
+[plugins.zsh-defer]
+github = "romkatv/zsh-defer"
+
+[templates]
+defer = { value = 'zsh-defer source "{{ file }}"', each = true }
+
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+use = ["{{ name }}.zsh"]
+
+[plugins.autojump]
+github = "wting/autojump"
+dir = "bin"
+apply = ["PATH", "source"]
+
+[plugins.completions]
+github = "zsh-users/zsh-completions"
+apply = ["fpath"]
+
+[plugins.autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+
+[plugins.git-open]
+github = "paulirish/git-open"
+
+[plugins.prompt]
+github = "sorin-ionescu/prezto"
+use = ["modules/prompt"]
+apply = ["defer"]
+
+# Use manjaro official config
+  # Source manjaro-zsh-configuration
+  #if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
+  #  source /usr/share/zsh/manjaro-zsh-config
+  #fi
+  ## Use manjaro zsh prompt
+  #if [[ -e /usr/share/zsh/manjaro-zsh-prompt ]]; then
+  #  source /usr/share/zsh/manjaro-zsh-prompt
+  #fi
+
