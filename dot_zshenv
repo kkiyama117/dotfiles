@@ -161,4 +161,9 @@
       alias upd="topgrade -y --disable cargo flutter"
     fi
   }
+  : "htop" && {
+    if (( $+commands[htop] )) then
+      alias top="htop"
+    fi
+  }
 }
