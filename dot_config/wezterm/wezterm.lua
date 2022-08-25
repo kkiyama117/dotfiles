@@ -24,61 +24,64 @@ wezterm.on('open-uri', function(window, pane, uri)
 end)
 
 return {
-
+  -- PROGRAMS ===============================================================
+  -- https://wezfurlong.org/wezterm/config/launch.html
   default_prog = { '/home/kiyama/.cargo/bin/zellij' },
+  
   -- FONT ===================================================================
-  font = wezterm.font('JetBrains Mono'),
- -- font = wezterm.font('JetBrains Mono', { weight = 'Bold', italic = true }),
-  window_background_opacity = 0.75,
-
-  -- DESIGN =================================================================
-  hide_tab_bar_if_only_one_tab = true,
-  adjust_window_size_when_changing_font_size = false,
-  use_ime = true,
+  -- https://wezfurlong.org/wezterm/config/fonts.html
+  font = wezterm.font_with_fallback {
+    'JetBrains Mono',
+  },
 
   -- KEYS ===================================================================
+  -- https://wezfurlong.org/wezterm/config/keys.html
   leader = { key = 'a', mods = 'SUPER', timeout_milliseconds = 1000 },
   disable_default_key_bindings = true,
   keys = {
     { key = 'V', mods = 'CTRL', action = wezterm.action.PasteFrom 'Clipboard' },
   },
 
+  -- MOUSE ==================================================================
+  -- https://wezfurlong.org/wezterm/config/mouse.html
+  disable_default_mouse_bindings = true,
+  mouse_bindings = {
+    -- Change the default click behavior so that it only selects
+    -- text and doesn't open hyperlinks
+    {
+      event = { Up = { streak = 1, button = 'Left' } },
+      mods = 'NONE',
+      action = act.CompleteSelection 'PrimarySelection',
+    },
+
+    -- and make CTRL-Click open hyperlinks
+    {
+      event = { Up = { streak = 1, button = 'Left' } },
+      mods = 'CTRL',
+      action = act.OpenLinkAtMouseCursor,
+    },
+    -- NOTE that binding only the 'Up' event can give unexpected behaviors.
+    -- Read more below on the gotcha of binding an 'Up' event only.
+  },
+  default_cursor_style = 'BlinkingBlock',
+
+  -- COLOR ==================================================================
+  -- https://wezfurlong.org/wezterm/config/appearance.html
+  window_background_opacity = 0.75,
+  colors = {
+    visual_bell = '#202020',
+  },
+
+  -- DESIGN =================================================================
+  hide_tab_bar_if_only_one_tab = true,
+  adjust_window_size_when_changing_font_size = false,
+
   -- LINK ===================================================================
   hyperlink_rules = {
-    -- Linkify things that look like URLs and the host has a TLD name.
-    -- Compiled-in default. Used if you don't specify any hyperlink_rules.
     {
-      regex = '\\b\\w+://[\\w.-]+\\.[a-z]{2,15}\\S*\\b',
-      format = '$0',
-    },
-
-    -- linkify email addresses
-    -- Compiled-in default. Used if you don't specify any hyperlink_rules.
-    {
-      regex = [[\b\w+@[\w-]+(\.[\w-]+)+\b]],
-      format = 'mailto:$0',
-    },
-
-    -- file:// URI
-    -- Compiled-in default. Used if you don't specify any hyperlink_rules.
-    {
-      regex = [[\bfile://\S*\b]],
-      format = '$0',
-    },
-
-    -- Linkify things that look like URLs with numeric addresses as hosts.
-    -- E.g. http://127.0.0.1:8000 for a local development server,
-    -- or http://192.168.1.1 for the web interface of many routers.
-    {
-      regex = [[\b\w+://(?:[\d]{1,3}\.){3}[\d]{1,3}\S*\b]],
-      format = '$0',
-    },
-
-    -- Make task numbers clickable
-    -- The first matched regex group is captured in $1.
-    {
-      regex = [[\b[tT](\d+)\b]],
-      format = 'https://example.com/tasks/?t=$1',
+      regex = "(ipfs:|ipns:|magnet:|mailto:|gemini:|gopher:|https:|http:|news:|file:|git:|ssh:|ftp:)\
+             [^\u0000-\u001F\u007F-\u009F<>\"\\s{-}\\^⟨⟩`]+",
+      format = '$0'
     },
 
     -- Make username/project paths clickable. This implies paths like the following are for GitHub.
@@ -90,5 +93,15 @@ return {
       format = 'https://www.github.com/$1/$3',
     },
   },
+
+  -- BELL ===================================================================
+  visual_bell = {
+    fade_in_function = 'EaseIn',
+    fade_in_duration_ms = 150,
+    fade_out_function = 'EaseOut',
+    fade_out_duration_ms = 150,
+    -- target = 'CursorColor',
+  },
   -- ========================================================================
+  use_ime = true,
 }
