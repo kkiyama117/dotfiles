@@ -166,4 +166,10 @@
       alias top="htop"
     fi
   }
+  : "chezmoi" && {
+    if (( $+commands[chezmoi] )) then
+      alias editconf='chezmoi edit --apply'
+      alias conf='chezmoi apply -rv'
+    fi
+  }
 }
