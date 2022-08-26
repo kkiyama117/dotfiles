@@ -1,0 +1,21 @@
+---
+client:
+  read_local_logs: true
+  show_confirmation_questions: false
+  show_expanded_aliases: false
+  dark_mode: true
+  max_status_height: null
+daemon:
+  default_parallel_tasks: 1
+  pause_group_on_failure: false
+  pause_all_on_failure: false
+  callback: "notify-send \"Task {{ id }}\nCommand: {{ command }}\nPath: {{ path }}\nFinished with status '{{ result }}'\nTook: $(bc <<< \"{{end}} - {{start}}\") seconds\""
+shared:
+  pueue_directory: /home/kiyama/.local/share/pueue
+  use_unix_socket: true
+  unix_socket_path: /home/kiyama/.local/share/pueue/pueue_kiyama.socket
+  host: 127.0.0.1
+  port: "6924"
+  daemon_cert: /home/kiyama/.local/share/pueue/certs/daemon.cert
+  daemon_key: /home/kiyama/.local/share/pueue/certs/daemon.key
+  shared_secret_path: /home/kiyama/.local/share/pueue/shared_secret
