@@ -8,7 +8,9 @@ README.md
 backups/   # ignore backups folder in chezmoi directory and all its contents
 backups/** # ignore all contents of backups folder in chezmoi directory
            # but not backups folder itself
+
 .config/chezmoi/
+.config/zsh/.zcompdump
 
 {{- if ne .git_email "firstname.lastname@company.com" }}
 # Ignore .company-directory unless configured with a company email
