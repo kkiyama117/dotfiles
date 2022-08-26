@@ -4,6 +4,7 @@
     : "shell envs not loaded in zshenv" && {
       export GPG_TTY=$(tty)
     }
+    fpath=($XDG_CONFIG_HOME/zsh/completions $fpath)
     eval "$(sheldon source)"
   }
 }

@@ -14,9 +14,14 @@ shell = "zsh"
 
 [plugins]
 
+# prerequire
 [plugins.zsh-defer]
 github = "romkatv/zsh-defer"
 
+[plugins.compinit]
+inline = 'autoload -Uz compinit && zsh-defer compinit'
+
+# templates
 [templates]
 defer = { value = 'zsh-defer source "{{ file }}"', each = true }
 
@@ -31,6 +36,7 @@ apply = ["PATH", "source"]
 
 [plugins.zsh-completions]
 github = "zsh-users/zsh-completions"
+dir = "src"
 apply = ["fpath"]
 
 [plugins.git-open]

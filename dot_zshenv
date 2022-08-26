@@ -168,7 +168,10 @@
   }
   : "chezmoi" && {
     if (( $+commands[chezmoi] )) then
-      alias editconf='chezmoi edit --apply'
+      alias edconf='chezmoi edit --apply'
+      alias pconf='chezmoi git -- add -A & chezmoi -- git commit -a'
+      alias gitconf='chezmoi git --'
+      alias cdconf='chezmoi cd'
       alias conf='chezmoi apply -rv'
     fi
   }
