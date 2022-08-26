@@ -1,8 +1,0 @@
-[git]
-    autoCommit = true
-    #autoPush = true
-[data]
-    git_name = "kkiyama117"
-    git_email = "k.kiyama117@gmail.com"
-    git_signingkey = "1F02DC17"
-
