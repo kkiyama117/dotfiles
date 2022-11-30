@@ -23,7 +23,11 @@ inline = 'autoload -Uz compinit && zsh-defer compinit'
 
 # templates
 [templates]
-defer = { value = 'zsh-defer source "{{ file }}"', each = true }
+defer = """
+{% for file in files %}
+zsh-defer source "{{ file }}"
+{% endfor %}
+"""
 
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
