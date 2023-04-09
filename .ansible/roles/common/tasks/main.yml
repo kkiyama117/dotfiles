@@ -1,0 +1,2 @@
+- import_tasks: pacman.yml
+- import_tasks: rust.yml
