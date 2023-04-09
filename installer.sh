@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+## before running script, run below commands
+# sudo pacman -Syu
+
 # rust
 if [ ! command -v rustup &> /dev/null ]; then
     curl https://sh.rustup.rs -sSf | sh
