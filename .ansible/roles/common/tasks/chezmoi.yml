@@ -1,0 +1,17 @@
+
+- name: check if chezmoi is installed
+  shell: command -v chezmoi
+  register: chezmoi_exists
+  ignore_errors: yes
+
+- name: Run chezmoi installer
+  when: chezmoi_exists is failed
+  register: install_chezmoi
+  pacman:
+    name: chezmoi
+    reason_for: new
+    state: present
+
+- name: print result of install
+  ansible.builtin.debug:
+    var: install_chezmoi

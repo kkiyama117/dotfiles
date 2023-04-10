@@ -3,43 +3,48 @@
   register: cargo_exists
   ignore_errors: yes
 
-- name: Download Installer
+- name: rust installer
   when: cargo_exists is failed
-  get_url:
-    url: https://sh.rustup.rs
-    dest: /tmp/sh.rustup.rs
-    mode: '0755'
-    force: 'yes'
-  tags:
+  block:
+  - name: Fetch rustup
+    register: rustup_installer
+    uri:
+      url: https://sh.rustup.rs
+      return_content: yes
+    tags:
+        - rust
+  
+  - name: Run rustup installer
+    when: rustup_installer is success
+    register: install_rust
+    ansible.builtin.shell:
+      cmd: sh -s -- -y
+      stdin: "{{ rustup_installer.content }}"
+    tags:
       - rust
 
-- name: install rust/cargo
-  when: cargo_exists is failed
-  shell: /tmp/sh.rustup.rs -y
-  tags:
-    - rust
+  - name: print result of install
+    ansible.builtin.debug:
+      var: install_rust
 
-- name: check cargo_home 
-  register: rust_env
-  assert:
-    that: cargo_home | length != 0
-  vars:
-    cargo_home:  "{{ lookup('env','CARGO_HOME2') }}"
-  ignore_errors: yes
-
-
-- name: print cargo_home 
-  when: rust_env is success
-  ansible.builtin.debug:
-    msg: "'{{ lookup('ansible.builtin.env', 'CARGO_HOME') }}' is the CARGO_HOME."
-
-- name: set cargo_home if cargo_home is not set temporary
-  when: rust_env is failed
-  vars:
-    cargo_home:  "{{ lookup('env','HOME') }}/.cargo"
-    #  environment:
-    #    PATH: $CARGO_HOME/bin:{{ ansible_env.PATH }}
-  ansible.builtin.copy:
-    content: "export PATH={{cargo_home}}/bin:$PATH"
-    dest: "{{ lookup('env','HOME') }}/.bash_profile"
+  - name: check cargo_home 
+    register: rust_env
+    assert:
+      that: cargo_home | length != 0
+    vars:
+      cargo_home:  "{{ lookup('env','CARGO_HOME') }}"
+    ignore_errors: yes
+  
+  - name: set cargo_home if cargo_home is not set temporary
+    when: rust_env is failed
+    register: set_cargo_home
+    vars:
+      cargo_home:  "{{ lookup('env','HOME') }}/.cargo"
+    ansible.builtin.copy:
+      content: "export PATH={{cargo_home}}/bin:$PATH"
+      dest: "{{ lookup('env','HOME') }}/.bash_profile"
+  
+  - name: Source the bashrc file
+    when: set_cargo_home is success
+    shell: source /root/.bashrc
 

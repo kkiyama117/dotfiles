@@ -1,2 +1,15 @@
-- import_tasks: pacman.yml
-- import_tasks: rust.yml
+- name: pacman
+  import_tasks: pacman.yml
+  become: yes
+  become_user: "{{ users.root }}"
+
+- name: rust
+  import_tasks: rust.yml
+  become: yes
+  become_user: "{{ users_local }}"
+
+- name: chezmoi
+  import_tasks: chezmoi.yml
+  become: yes
+  become_user: "{{ users.root }}"
+
