@@ -1,4 +1,3 @@
-
 - name: check if chezmoi is installed
   shell: command -v chezmoi
   register: chezmoi_exists

@@ -9,7 +9,8 @@
   vars:
     users:
       root: root
-  vars_prompt:
-  - name: users_local
-    prompt: Please enter user name
-    private: no
+      local: "{{ lookup('ansible.builtin.env', 'USER') }}"
+#  vars_prompt:
+#  - name: users_local
+#    prompt: Please enter user name
+#    private: no

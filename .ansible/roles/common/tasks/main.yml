@@ -6,7 +6,7 @@
 - name: rust
   import_tasks: rust.yml
   become: yes
-  become_user: "{{ users_local }}"
+  become_user: "{{ users.local }}"
 
 - name: chezmoi
   import_tasks: chezmoi.yml
