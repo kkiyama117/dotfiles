@@ -40,11 +40,14 @@
     register: set_cargo_home
     vars:
       cargo_home:  "{{ lookup('env','HOME') }}/.cargo"
-    ansible.builtin.copy:
-      content: "export PATH={{cargo_home}}/bin:$PATH"
-      dest: "{{ lookup('env','HOME') }}/.bash_profile"
+    ansible.builtin.blockinfile:
+      path: "{{ lookup('env','HOME') }}/.bashrc"
+      insertafter: EOF
+      block: |
+        "export PATH={{cargo_home}}/bin:$PATH"
+      state: present
   
   - name: Source the bashrc file
     when: set_cargo_home is success
-    shell: source /root/.bashrc
+    shell: "source {{ lookup('env','HOME') }}/.bashrc"
 

@@ -1,5 +1,5 @@
 - name: check if chezmoi is installed
-  shell: command -v chezmoi
+  shell: command -v chezmoi data
   register: chezmoi_exists
   ignore_errors: yes
 
@@ -14,3 +14,51 @@
 - name: print result of install
   ansible.builtin.debug:
     var: install_chezmoi
+
+- name: Check if setting file is exist
+  when: chezmoi_exists is success or install_chezmoi is success
+  register: check_chezmoi_config
+  stat:
+    path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
+
+- name: create chezmoi setting
+  when: not check_chezmoi_config.stat.exists
+  block:
+    - name: Touch empty setting file 
+      block:
+        - name: dir
+          ansible.builtin.file:
+            path: "{{lookup('env','HOME')}}/.config/chezmoi"
+            state: directory
+            recurse: true
+        - name: file
+          ansible.builtin.file:
+            path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
+            state: touch
+            access_time: preserve
+            modification_time: preserve
+
+    - name: get_key_id
+      register: get_gpg_key_id
+      shell: "gpg --list-secret-keys --with-colons | awk -F: '$1 == \"sec\" {print $5}'"
+ 
+    - name: test_key_id
+      debug:
+        var: get_gpg_key_id
+
+    - name: write setting 
+      when: not check_chezmoi_config.stat.exists 
+      register: create_chezmoi_config
+      ansible.builtin.blockinfile:
+        path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
+        insertafter: EOF
+        block: |
+          [data]
+            git_name = "{{ github_name }}"
+            git_email = "{{ github_email }}"
+            git_signingkey= "{{ get_gpg_key_id.stdout }}"
+        state: present
+
+- name: Initialize dotfiles
+  when: check_chezmoi_config.stat.exists or create_chezmoi_config is success
+  shell: chezmoi init --apply {{ github_name }}

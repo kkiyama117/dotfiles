@@ -1,0 +1,64 @@
+# $ gpg --full-generate-key
+- name: check if gpg key exist
+  shell: gpg --list-secret-keys --keyid-format=long
+  register: gpg_key_exists
+  ignore_errors: yes
+
+- name: use exists key
+  register: use_exists_key
+  when: gpg_key_exists.stdout | length != 0
+  shell: gpg --armor --export
+
+- name: create new key
+  when: not (gpg_key_exists.stdout | length != 0)
+  register: use_new_key
+  shell: gpg --quick-generate-key "{{ github_name }} <{{ github_email }}>" ed25519 default 0
+
+
+      #- name: Run chezmoi installer
+      #  when: chezmoi_exists is failed
+      #  register: install_chezmoi
+      #  pacman:
+      #    name: chezmoi
+      #    reason_for: new
+      #    state: present
+      #
+      #
+      #- name: Check if setting file is exist
+      #  when: chezmoi_exists is success or install_chezmoi is success
+      #  register: check_chezmoi_config
+      #  stat:
+      #    path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
+      #
+      #- name: create chezmoi setting
+      #  when: not check_chezmoi_config.stat.exists
+      #  block:
+      #    - name: Touch empty setting file 
+      #      block:
+      #        - name: dir
+      #          ansible.builtin.file:
+      #            path: "{{lookup('env','HOME')}}/.config/chezmoi"
+      #            state: directory
+      #            recurse: true
+      #        - name: file
+      #          ansible.builtin.file:
+      #            path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
+      #            state: touch
+      #            access_time: preserve
+      #            modification_time: preserve
+      #    - name: write setting 
+      #      when: not check_chezmoi_config.stat.exists 
+      #      register: create_chezmoi_config
+      #      ansible.builtin.blockinfile:
+      #        path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
+      #        insertafter: EOF
+      #        block: |
+      #          [data]
+      #            git_name = "{{ github_name }}"
+      #            git_email = "{{ github_email }}"
+      #            git_signingkey= "{{ github_signingkey }}"
+      #        state: present
+      #
+      #- name: Initialize dotfiles
+      #  when: check_chezmoi_config.stat.exists or create_chezmoi_config is success
+      #  shell: chezmoi init --apply {{ github_name }}

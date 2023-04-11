@@ -8,8 +8,12 @@
   become: yes
   become_user: "{{ users.local }}"
 
+- name: gpg
+  import_tasks: gpg.yml
+  become: yes
+  become_user: "{{ users.local}}"
+
 - name: chezmoi
   import_tasks: chezmoi.yml
   become: yes
-  become_user: "{{ users.root }}"
-
+  become_user: "{{ users.local}}"

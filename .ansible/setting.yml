@@ -10,7 +10,14 @@
     users:
       root: root
       local: "{{ lookup('ansible.builtin.env', 'USER') }}"
-#  vars_prompt:
-#  - name: users_local
-#    prompt: Please enter user name
-#    private: no
+  vars_prompt:
+    - name: github_name
+      prompt: "Input github_name for chezmoi"
+      private: no
+      default: "kkiyama117"
+      
+    - name: github_email
+      prompt: "Input github_name for chezmoi"
+      private: no
+      default: "k.kiyama117@gmail.com"
+      
