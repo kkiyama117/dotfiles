@@ -1,0 +1,10 @@
+- name: Change default shell
+  user: 
+    name: "{{ users.local }}"
+    shell: /bin/zsh
+  become: yes
+  become_user: "{{ users.root }}"
+  register: test1
+  tags:
+    - chsh
+    - zsh

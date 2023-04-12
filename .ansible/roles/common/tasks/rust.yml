@@ -46,8 +46,7 @@
       block: |
         "export PATH={{cargo_home}}/bin:$PATH"
       state: present
-  
-  - name: Source the bashrc file
-    when: set_cargo_home is success
-    shell: "source {{ lookup('env','HOME') }}/.bashrc"
+- name: Source the bashrc file
+  when: set_cargo_home is success
+  shell: "source {{ lookup('env','HOME') }}/.bashrc"
 
