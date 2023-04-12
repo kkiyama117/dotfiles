@@ -1,0 +1,12 @@
+- name: full system upgrade
+  paru:
+    update_cache: yes
+    upgrade: yes
+
+- name: add several aur
+  paru:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - "google-chrome"
+    - wezterm

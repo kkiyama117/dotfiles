@@ -46,7 +46,7 @@ def query_package(module, pkg, state):
     * If the package is up-to-date
     * Whether online information was available
   '''
-  local_check_cmd = 'LANG=C paru -Qi %s' % pkg
+  local_check_cmd = 'paru -Qi %s' % pkg
   local_check_rc, local_check_stdout, _ = module.run_command(local_check_cmd, check_rc=False)
   if local_check_rc != 0:
     return False, False, False

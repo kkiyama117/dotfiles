@@ -29,3 +29,9 @@
   import_tasks: cargo.yml
   become: yes
   become_user: "{{ users.local }}"
+
+- name: aur packages
+  import_tasks: paru.yml
+  become: yes
+  become_user: "{{ users.local }}"
+
