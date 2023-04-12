@@ -1,19 +1,31 @@
+# Install pacman base packages
 - name: pacman
   import_tasks: pacman.yml
   become: yes
   become_user: "{{ users.root }}"
+
+# Check gpg keys for git
+- name: gpg
+  import_tasks: gpg.yml
+  become: yes
+  become_user: "{{ users.local }}"
 
 - name: rust
   import_tasks: rust.yml
   become: yes
   become_user: "{{ users.local }}"
 
-- name: gpg
-  import_tasks: gpg.yml
-  become: yes
-  become_user: "{{ users.local}}"
-
+# Fetch config files (zsh,neovim e.t.c.)
 - name: chezmoi
   import_tasks: chezmoi.yml
   become: yes
-  become_user: "{{ users.local}}"
+  become_user: "{{ users.local }}"
+
+# install zplug e.t.c (must run after chezmoi)
+- name: zsh
+  import_tasks: zsh.yml
+
+- name: cargo packages
+  import_tasks: cargo.yml
+  become: yes
+  become_user: "{{ users.local }}"

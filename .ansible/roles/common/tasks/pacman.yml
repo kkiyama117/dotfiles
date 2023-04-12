@@ -2,3 +2,15 @@
   pacman:
     update_cache: yes
     upgrade: yes
+
+- name: add several aur
+  pacman:
+    name: "{{ item }}"
+    state: present
+  loop:
+     - base-devel
+     - pkg-config
+     - xsel
+     - make
+     - neovim
+     - zsh

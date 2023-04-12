@@ -1,0 +1,8 @@
+- name: add several items
+  community.general.cargo:
+    name: "{{ item }}"
+  loop:
+     - cargo-update
+     - paru
+     - deno
+     - sheldon
