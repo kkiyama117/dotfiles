@@ -42,10 +42,6 @@
       register: get_gpg_key_id
       shell: "gpg --list-secret-keys --with-colons | awk -F: '$1 == \"sec\" {print $5}'"
  
-    - name: test_key_id
-      debug:
-        var: get_gpg_key_id
-
     - name: write setting 
       when: not check_chezmoi_config.stat.exists 
       register: create_chezmoi_config
