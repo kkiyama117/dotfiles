@@ -2,8 +2,25 @@
   community.general.cargo:
     name: "{{ item }}"
   loop:
-     - cargo-update
-     - paru
-     - deno
-     - sheldon
-     - zellij
+    #- cargo-edit
+    #- cargo-expand
+    #- cargo-generate
+    - cargo-outdated
+    - cargo-script
+    - cargo-update
+    #- cargo-watch
+    #- cargo-zigbuild
+    #- bootimage
+    #- evcxr_repl
+    - git-delta
+    #- mdbook
+    - navi
+    - paru
+    #- pastel
+    - pueue
+    - sheldon
+    - skim
+    #- t-rec
+    #- wasm-pack
+    - zellij
+    #- zoxide

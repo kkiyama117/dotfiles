@@ -8,5 +8,16 @@
     name: "{{ item }}"
     state: latest
   loop:
-    - "google-chrome"
+    # rust tools
+    - bat
+    - deno
+    - fd
+    - ripgrep
+    - tokei
+    - topgrade
+    - lsd
     - wezterm
+    #- volta
+    #- hyperfine
+    - "google-chrome"
+    - "neovim-git"

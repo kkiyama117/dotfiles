@@ -12,5 +12,4 @@
      - pkg-config
      - xsel
      - make
-     - neovim
      - zsh
