@@ -49,6 +49,9 @@
         path: "{{lookup('env','HOME')}}/.config/chezmoi/chezmoi.toml"
         insertafter: EOF
         block: |
+          [merge]
+            command = "nvim"
+            args = ["-d", "{{ .Destination }}", "{{ .Source }}", "{{ .Target }}"]
           [data]
             git_name = "{{ github_name }}"
             git_email = "{{ github_email }}"
