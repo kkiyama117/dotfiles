@@ -81,7 +81,7 @@
     fi
   }
   : "js" && {
-    if (( $+commands[volta] )) then
+    if [[ -d $HOME/.volta ]] || (( $+commands[volta] )) then
       export VOLTA_HOME="$HOME/.volta"
       # for jetbrains
       #export PATH="$VOLTA_HOME/tools/image/yarn/$(yarn --version)/bin:$PATH"
