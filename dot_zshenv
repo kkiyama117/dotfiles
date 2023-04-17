@@ -1,11 +1,12 @@
 : "path" && {
+  export PATH=/usr/local/bin:$PATH
   : "XDG" && {
     export CONF_HOME=$HOME/.config
     export XDG_CONFIG_HOME=$CONF_HOME
     export XDG_CACHE_HOME=$HOME/.cache
     export XDG_DATA_HOME=$HOME/.local/share
 
-   : "XDG" && {
+   : "ZSH" && {
      # zsh
      export ZDOTDIR=$HOME/.config/zsh
      if [[ ! -f $XDG_DATA_HOME/zsh/history ]]; then
