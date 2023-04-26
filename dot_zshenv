@@ -175,4 +175,9 @@
       alias conf='chezmoi apply -rv'
     fi
   }
+  : "gamess" && {
+    if [[ -d $HOME/programs/tools/gamess/gamess ]]; then
+      alias rungms=~/programs/tools/gamess/gamess/rungms 
+    fi
+  }
 }
