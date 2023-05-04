@@ -1,4 +1,6 @@
 - name: add several items
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.cargo/bin:{{ ansible_env.PATH }}"
   community.general.cargo:
     name: "{{ item }}"
   loop:
