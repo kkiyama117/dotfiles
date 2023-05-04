@@ -7,9 +7,9 @@
   ignore_errors: yes
 
 - name: set cargo_home path
-   when: rust_env is failed
-   set_fact:
-     cargo_home:  "{{ lookup('env','HOME') }}/.cargo"
+  when: rust_env is failed
+  set_fact:
+    cargo_home:  "{{ lookup('env','HOME') }}/.cargo"
 
 - name: add several items
   environment:
