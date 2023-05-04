@@ -12,13 +12,3 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 .config/chezmoi/
 .config/zsh/.zcompdump
 .ansible
-
-{{- if ne .git_email "firstname.lastname@company.com" }}
-# Ignore .company-directory unless configured with a company email
-.company-directory # note that the pattern is not dot_company-directory
-{{- end }}
-
-{{- if ne .git_email "me@home.org" }}
-.personal-file
-{{- end }}
-
