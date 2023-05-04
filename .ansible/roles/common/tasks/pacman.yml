@@ -9,6 +9,7 @@
     state: present
   loop:
      - base-devel
+     - chezmoi
      - pkg-config
      - xsel
      - make
