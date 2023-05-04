@@ -1,6 +1,22 @@
+ - name: check cargo_home 
+   register: rust_env
+   assert:
+     that: cargo_home | length != 0
+   vars:
+     cargo_home:  "{{ lookup('env','CARGO_HOME') }}"
+   ignore_errors: yes
+
+
+
+  
+ - name: set cargo_home path
+   when: rust_env is failed
+   set_fact:
+     cargo_home:  "{{ lookup('env','HOME') }}/.cargo"
+
 - name: add several items
   environment:
-    PATH: "{{ ansible_env.HOME }}/.cargo/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ cargo_home }}/bin:{{ ansible_env.PATH }}"
   community.general.cargo:
     name: "{{ item }}"
   loop:
