@@ -1,9 +1,13 @@
 - name: full system upgrade
+  environment:
+    PATH: "{{ lookup('env','HOME') }}/.cargo/bin:{{ ansible_env.PATH }}"
   paru:
     update_cache: yes
     upgrade: yes
 
 - name: add several aur
+  environment:
+    PATH: "{{ lookup('env','HOME') }}/.cargo/bin:{{ ansible_env.PATH }}"
   paru:
     name: "{{ item }}"
     state: latest
