@@ -159,7 +159,7 @@
   }
   : "topgrade" && {
     if (( $+commands[topgrade] )) then
-      alias upd="topgrade -y --disable cargo flutter"
+      alias upd="topgrade -y --disable flutter"
     fi
   }
   : "htop" && {
