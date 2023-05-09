@@ -1,6 +1,6 @@
 LAST_REPO=""
 cd() { 
-    builtin cd "$@";
+    z "$@";
     git rev-parse 2>/dev/null;
 
     if [ $? -eq 0 ]; then
