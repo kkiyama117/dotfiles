@@ -21,8 +21,6 @@
 
   if (( $+commands[delta] )) then
     alias diff='delta'
-  else
-    alias diff='diff'
   fi
 
   if (( $+commands[rg] )) then
@@ -46,10 +44,12 @@
     alias gm="git merge"
   fi
 
+  # bat
   if (( $+commands[bat] )) then
     alias cat='bat'
   fi
   
+  # fd
   if (( $+commands[fd] )) then
     alias find='fd'
   fi
@@ -105,6 +105,33 @@
       alias dvi="DEBUG=true nvim"
       alias dedit=dvi
       alias vimo=/usr/bin/vim
+      alias vimdiff="nvim -d"
+    fi
+  }
+
+  : "topgrade" && {
+    if (( $+commands[topgrade] )) then
+      alias upd="topgrade -y --disable flutter"
+    fi
+  }
+
+  : "htop" && {
+    if (( $+commands[htop] )) then
+      alias top="htop"
+    fi
+  }
+
+  : "chezmoi" && {
+    if (( $+commands[chezmoi] )) then
+      alias confed='chezmoi edit --apply'
+      alias confcd='chezmoi cd'
+      alias confgit='chezmoi git --'
+      alias conf='chezmoi apply -rv'
+    fi
+  }
+  : "gamess" && {
+    if [[ -d $HOME/programs/tools/gamess/gamess ]]; then
+      alias rungms=~/programs/tools/gamess/gamess/rungms 
     fi
   }
 }

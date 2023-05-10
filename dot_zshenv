@@ -140,7 +140,6 @@
       export NHOME="$HOME/.config/nvim"
       export DENOPS_PATH="$HOME/programs/others/vim-jp/denops.vim"
       export DENOPS_TEST_NVIM="/usr/bin/nvim"
-      alias vimdiff="nvim -d"
     fi
   }
   : "skim" && {
@@ -155,34 +154,10 @@
   : "zoxide" && {
     if (( $+commands[zoxide] )) then
       export SK_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" sk "$@"
-      eval "$(zoxide init zsh)"
     else
       if (( $+commands[paru] )) then
         paru -S --noconfirm zoxide
       fi
-    fi
-  }
-  : "topgrade" && {
-    if (( $+commands[topgrade] )) then
-      alias upd="topgrade -y --disable flutter"
-    fi
-  }
-  : "htop" && {
-    if (( $+commands[htop] )) then
-      alias top="htop"
-    fi
-  }
-  : "chezmoi" && {
-    if (( $+commands[chezmoi] )) then
-      alias confed='chezmoi edit --apply'
-      alias confcd='chezmoi cd'
-      alias confgit='chezmoi git --'
-      alias conf='chezmoi apply -rv'
-    fi
-  }
-  : "gamess" && {
-    if [[ -d $HOME/programs/tools/gamess/gamess ]]; then
-      alias rungms=~/programs/tools/gamess/gamess/rungms 
     fi
   }
 }
