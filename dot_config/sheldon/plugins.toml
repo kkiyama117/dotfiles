@@ -33,7 +33,6 @@ zsh-defer source "{{ file }}"
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
 use = ["{{ name }}.zsh"]
-apply = ["defer"]
 
 [plugins.autojump]
 github = "wting/autojump"
@@ -54,16 +53,34 @@ github = "sorin-ionescu/prezto"
 use = ["modules/prompt"]
 apply = ["defer"]
 
-[plugins.manjaro]
-local = '/usr/share/zsh/'
-use = ["manjaro-zsh-prompt"]
+[plugins.powerlevel10k]
+#use immediately
+github = "romkatv/powerlevel10k"
 
-# Use manjaro official config
+[plugins.my_conf_defers]
+local="~/.config/zsh/features"
+use=["{defer/*}.zsh"]
+apply = ["defer"]
+
+[plugins.my_conf_source]
+local="~/.config/zsh/features"
+use=["{!defer/,*}.zsh"]
+
+[plugins.my_commands]
+local="~/.config/zsh/commands"
+apply = ["defer"]
+
+[plugins.my_themes]
+local="~/.config/zsh/theme"
+apply = ["defer"]
+
+#[plugins.manjaro]
+#local = '/usr/share/zsh/'
+#use = ["manjaro-zsh-prompt"]
   # Source manjaro-zsh-configuration
   #if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
   #  source /usr/share/zsh/manjaro-zsh-config
   #fi
-  ## Use manjaro zsh prompt
   #if [[ -e /usr/share/zsh/manjaro-zsh-prompt ]]; then
   #  source /usr/share/zsh/manjaro-zsh-prompt
   #fi

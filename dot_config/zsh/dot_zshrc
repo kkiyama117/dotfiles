@@ -9,22 +9,22 @@
   }
 }
 
-: "features" && {
-  for file in $XDG_CONFIG_HOME/zsh/features/**/*.zsh(N.); source $file
-  if [[ ! -n "${VIMRUNTIME}" ]]; then
-    # zinit ice wait"0!"; source $HOME/.zsh/features/non-vim/completions.zsh
-    # for file in ~/.zsh/features/non-vim/**/*.zsh(N.); source $file
-  fi
-}
+#: "features" && {
+#  for file in $XDG_CONFIG_HOME/zsh/features/**/*.zsh(N.); source $file
+#  if [[ ! -n "${VIMRUNTIME}" ]]; then
+#    # zinit ice wait"0!"; source $HOME/.zsh/features/non-vim/completions.zsh
+#    # for file in ~/.zsh/features/non-vim/**/*.zsh(N.); source $file
+#  fi
+#}
 
-: "commands" && {
-  for file in $XDG_CONFIG_HOME/zsh/commands/**/*.zsh(N.); source $file
-}
-
-: "themes" && {
-  for file in $XDG_CONFIG_HOME/zsh/theme/**/*.zsh(N.); source $file
-}
-
+#: "commands" && {
+#  for file in $XDG_CONFIG_HOME/zsh/commands/**/*.zsh(N.); source $file
+#}
+#
+#: "themes" && {
+#  for file in $XDG_CONFIG_HOME/zsh/theme/**/*.zsh(N.); source $file
+#}
+#
 # compile
 #if [ ~/.zshrc -nt ~/.zshrc.zwc ]; then
 #  zcompile ~/.zshrc
