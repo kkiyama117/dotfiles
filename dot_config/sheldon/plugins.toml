@@ -63,7 +63,7 @@ apply = ["defer"]
 
 [plugins.my_conf_source]
 local="~/.config/zsh/features"
-use=["{!defer/,*}.zsh"]
+use=["{!defer/,*,integrations/*}.zsh"]
 
 [plugins.my_commands]
 local="~/.config/zsh/commands"
