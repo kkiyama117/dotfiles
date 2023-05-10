@@ -12,4 +12,5 @@
   setopt hist_verify
   setopt inc_append_history                                       # save commands are added to the history immediately, otherwise only when shell exits.
   setopt histignorespace                                          # Don't save commands that start with space
+  WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
 }

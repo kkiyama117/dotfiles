@@ -17,11 +17,12 @@ shell = "zsh"
 # prerequire
 [plugins.zsh-defer]
 github = "romkatv/zsh-defer"
+#apply = ['source']
 
 [plugins.compinit]
 inline = 'autoload -Uz compinit && zsh-defer compinit'
 
-# templates
+# templates for use zsh-defer
 [templates]
 defer = """
 {% for file in files %}
@@ -32,11 +33,12 @@ zsh-defer source "{{ file }}"
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
 use = ["{{ name }}.zsh"]
+apply = ["defer"]
 
 [plugins.autojump]
 github = "wting/autojump"
 dir = "bin"
-apply = ["PATH", "source"]
+apply = ["PATH", "defer"]
 
 [plugins.zsh-completions]
 github = "zsh-users/zsh-completions"
@@ -45,11 +47,16 @@ apply = ["fpath"]
 
 [plugins.git-open]
 github = "paulirish/git-open"
+apply = ["defer"]
 
 [plugins.prompt]
 github = "sorin-ionescu/prezto"
 use = ["modules/prompt"]
 apply = ["defer"]
+
+[plugins.manjaro]
+local = '/usr/share/zsh/'
+use = ["manjaro-zsh-prompt"]
 
 # Use manjaro official config
   # Source manjaro-zsh-configuration
