@@ -32,7 +32,6 @@ zsh-defer source "{{ file }}"
 
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
-use = ["{{ name }}.zsh"]
 
 [plugins.autojump]
 github = "wting/autojump"
@@ -72,7 +71,6 @@ apply = ["defer"]
 
 [plugins.my_themes]
 local="~/.config/zsh/theme"
-apply = ["defer"]
 
 #[plugins.manjaro]
 #local = '/usr/share/zsh/'
