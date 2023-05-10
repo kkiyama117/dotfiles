@@ -13,11 +13,14 @@
   setopt mark_dirs             # ファイル名の展開でディレクトリにマッチした場合 末尾に / を付加
   setopt magic_equal_subst     # コマンドラインの引数で --prefix=/usr などの = 以降でも補完できる
   setopt no_beep
+  setopt nocheckjobs                                              # Don't warn about running processes when exiting
   setopt notify
   setopt print_eight_bit       # 日本語ファイル名等8ビットを通す
   setopt pushd_ignore_dups
   : "glob" && {
     setopt extended_glob
+    setopt nocaseglob                                               # Case insensitive globbing
+    setopt numericglobsort                                          # Sort filenames numerically when it makes sense
     # setopt globdots　　　　　# 明確なドットの指定なしで.から始まるファイルをマッチ
   }
   : "completion settings" && {
