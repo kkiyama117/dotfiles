@@ -156,6 +156,10 @@
     if (( $+commands[zoxide] )) then
       export SK_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" sk "$@"
       eval "$(zoxide init zsh)"
+    else
+      if (( $+commands[paru] )) then
+        paru -S --noconfirm zoxide
+      fi
     fi
   }
   : "topgrade" && {
