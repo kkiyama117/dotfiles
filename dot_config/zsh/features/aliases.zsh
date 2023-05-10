@@ -42,6 +42,7 @@
     alias gp="git pull"
     alias gs="git switch"
     alias gm="git merge"
+    alias gu='git add . && git commit && git push'
   fi
 
   # bat

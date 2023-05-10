@@ -5,7 +5,7 @@
   }
   setopt appendhistory                                            # Immediately append history instead of overwriting
   setopt hist_ignore_dups
-  setopt histignorealldups
+  setopt histignorealldups                                        # If a new command is a duplicate, remove the older one
   setopt share_history
   setopt hist_no_store
   setopt hist_reduce_blanks
