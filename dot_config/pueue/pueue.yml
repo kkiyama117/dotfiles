@@ -1,4 +1,14 @@
 ---
+profiles:
+  #  remote:
+  #    client:
+  #      read_local_logs: false
+  #    shared:
+  #      use_unix_socket: false
+  #      host: localhost
+  #      port: '8080'
+  #      daemon_cert: ~/.local/share/pueue/certs/remote_daemon.cert
+  #      shared_secret_path: ~/.local/share/pueue/remote_shared_secret
 client:
   read_local_logs: true
   show_confirmation_questions: false
