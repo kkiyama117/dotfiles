@@ -124,10 +124,10 @@
 
   : "chezmoi" && {
     if (( $+commands[chezmoi] )) then
-      alias confed='chezmoi edit --apply'
+      alias conf='chezmoi edit --apply'
       alias confcd='chezmoi cd'
       alias confgit='chezmoi git --'
-      alias conf='chezmoi apply -rv'
+      alias confapp='chezmoi apply -rv'
     fi
   }
   : "gamess" && {
