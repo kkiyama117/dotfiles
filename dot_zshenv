@@ -84,6 +84,7 @@
   : "js" && {
     if [[ -d $HOME/.volta ]] || (( $+commands[volta] )); then
       export VOLTA_HOME="$HOME/.volta"
+      export VOLTA_FEATURE_PNPM=1
       # for jetbrains
       #export PATH="$VOLTA_HOME/tools/image/yarn/$(yarn --version)/bin:$PATH"
       # normal
