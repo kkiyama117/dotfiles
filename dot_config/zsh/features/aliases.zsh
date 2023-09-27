@@ -124,7 +124,7 @@
 
   : "chezmoi" && {
     if (( $+commands[chezmoi] )) then
-      alias conf='chezmoi edit --apply'
+      alias conf='chezmoi edit --apply --watch'
       alias confcd='chezmoi cd'
       alias confgit='chezmoi git --'
       alias confapp='chezmoi apply -rv'
