@@ -112,7 +112,7 @@
 
   : "topgrade" && {
     if (( $+commands[topgrade] )) then
-      alias upd="topgrade -y --disable flutter"
+      alias upd="topgrade -y --disable flutter pnpm"
     fi
   }
 
