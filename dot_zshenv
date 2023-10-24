@@ -63,6 +63,10 @@
     : "pipenv" && {
       export PIPENV_VENV_IN_PROJECT=true
     }
+    : "rye" && {
+      export RYE_HOME=$HOME/.rye
+      export PATH=$RYE_HOME/shims:$PATH
+    }
   }
   : "ruby" && {
     if (( $+commands[rbenv] )) then
