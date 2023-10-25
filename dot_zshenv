@@ -54,19 +54,18 @@
       # zinit ice wait"0!"; eval "$(pyenv init -)"
       alias pip3='noglob python -m pip'
       alias pip=pip3
+    elif (( $+commands[rye] )) then
+      export RYE_HOME=$HOME/.rye
+      source $RYE_HOME/env
+      #export PATH=$RYE_HOME/shims:$PATH
     else
       alias python3='/usr/bin/python3'
-      alias python=python
+      alias python=python3
       alias pip3='noglob python3 -m pip'
       alias pip=pip3
     fi
     : "pipenv" && {
       export PIPENV_VENV_IN_PROJECT=true
-    }
-    : "rye" && {
-      export RYE_HOME=$HOME/.rye
-      source $RYE_HOME/env
-      #export PATH=$RYE_HOME/shims:$PATH
     }
   }
   : "ruby" && {
