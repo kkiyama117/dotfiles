@@ -65,7 +65,8 @@
     }
     : "rye" && {
       export RYE_HOME=$HOME/.rye
-      export PATH=$RYE_HOME/shims:$PATH
+      source $RYE_HOME/env
+      #export PATH=$RYE_HOME/shims:$PATH
     }
   }
   : "ruby" && {
