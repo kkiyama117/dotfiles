@@ -30,6 +30,16 @@
     export LANG=ja_JP.UTF-8
     export EDITOR=nvim
   }
+  : "rust" && {
+    if (( $+commands[cargo] )); then
+      export CARGO_HOME=$HOME/.cargo
+      export PATH=$CARGO_HOME/bin:$PATH
+    elif [ -d $HOME/.cargo ]; then
+      # export CARGO_HOME=$XDG_DATA_HOME/cargo
+      export CARGO_HOME=$HOME/.cargo
+      export PATH=$CARGO_HOME/bin:$PATH
+    fi
+  }
   : "java" && {
     : "jdk" && {
       # archlinux-java
@@ -117,16 +127,6 @@
       export FLUTTER_PUB_CACHE="$HOME/.pub-cache"
       export PATH=$FLUTTER_PUB_CACHE/bin:$PATH
       export CHROME_EXECUTABLE=google-chrome-stable
-    fi
-  }
-  : "rust" && {
-    if (( $+commands[cargo] )); then
-      export CARGO_HOME=$HOME/.cargo
-      export PATH=$CARGO_HOME/bin:$PATH
-    elif [ -d $HOME/.cargo ]; then
-      # export CARGO_HOME=$XDG_DATA_HOME/cargo
-      export CARGO_HOME=$HOME/.cargo
-      export PATH=$CARGO_HOME/bin:$PATH
     fi
   }
   : "deno" && {
