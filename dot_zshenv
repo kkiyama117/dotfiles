@@ -169,5 +169,6 @@
   }
   : "gamess" && {
     GMS_PATH=/opt/gamess
+    BOOST_ROOT=/usr/local
   }
 }
