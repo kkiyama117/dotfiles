@@ -171,6 +171,6 @@
     export GMS_PATH=/opt/gamess
     export PATH=/opt/cuda/bin:$PATH
     export BOOST_ROOT=/usr/local
-    export LD_LIBRARY_PATH=/usr/lib/
+    export LD_LIBRARY_PATH=/usr/lib/:$LD_LIBRARY_PATH
   }
 }
