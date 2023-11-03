@@ -167,4 +167,7 @@
       fi
     fi
   }
+  : "gamess" && {
+    GMS_PATH=/opt/gamess
+  }
 }
