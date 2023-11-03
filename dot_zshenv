@@ -169,6 +169,7 @@
   }
   : "gamess" && {
     GMS_PATH=/opt/gamess
+    export PATH=/opt/cuda/bin:$PATH
     BOOST_ROOT=/usr/local
   }
 }
