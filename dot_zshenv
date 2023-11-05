@@ -1,5 +1,6 @@
 : "path" && {
   export PATH=/usr/local/bin:$PATH
+  export POWERLEVEL9K_INSTANT_PROMPT=quiet
   : "XDG" && {
     export CONF_HOME=$HOME/.config
     export XDG_CONFIG_HOME=$CONF_HOME
