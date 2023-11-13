@@ -6,7 +6,7 @@ After=graphical.target
 [Service]
 Type=dbus
 BusName=org.freedesktop.Notifications
-ExecStart=/usr/local/bin/wired
+ExecStart=/usr/bin/wired
 Restart=always
 RestartSec=10
 

@@ -5,7 +5,7 @@
 
     // The default timeout, in miliseconds, for notifications that don't have an initial timeout set.
     // 1000ms = 1s.
-    timeout: 5000,
+    timeout: 4000,
 
     // `poll_interval` decides decides how often (in milliseconds) Wired checks events,
     // draws notifications (if necessary) -- the update loop while any notification is present.
