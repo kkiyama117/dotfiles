@@ -1,12 +1,8 @@
 (
-    // Maximum number of notifications to show at any one time.
-    // A value of 0 means that there is no limit.
+    // https://github.com/Toqozz/wired-notify/wiki/Config
+    // https://github.com/Toqozz/wired-notify/blob/master/wired.ron
     max_notifications: 0,
-
-    // The default timeout, in miliseconds, for notifications that don't have an initial timeout set.
-    // 1000ms = 1s.
-    timeout: 4000,
-
+    timeout: 5000,
     // `poll_interval` decides decides how often (in milliseconds) Wired checks events,
     // draws notifications (if necessary) -- the update loop while any notification is present.
     // Note that when no notifications are present, Wired polls at `idle_poll_interval` instead.
@@ -14,7 +10,7 @@
     poll_interval: 16,
 
     // The interval at which wired updates when no notifications/windows are present.
-    //idle_poll_interval: 500,
+    //idle_poll_interval: 1000,
 
     // Wired will pause notifications if you are idle (no mouse or keyboard input) for longer than
     // `idle_threshold` seconds.
