@@ -4,7 +4,7 @@
 
     // REQUIRED
     max_notifications: 0,
-    timeout: 5000,
+    timeout: 15000,
     poll_interval: 32,// 16ms ~= 60hz / 7ms ~= 144hz.
     // https://github.com/Toqozz/wired-notify/wiki/Config#shortcuts
     shortcuts: ShortcutsConfig (
