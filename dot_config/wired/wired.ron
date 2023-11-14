@@ -30,7 +30,7 @@
     unpause_on_input: true, //false
     //focus_follows: Mouse, Window
     //print_to_file: "/tmp/wired.log", //None
-    min_window_width: 100, //1
+    min_window_width: 500, //1
     min_window_height: 10, //1
     // Enable/disable debug rendering.
     //debug: true, //false

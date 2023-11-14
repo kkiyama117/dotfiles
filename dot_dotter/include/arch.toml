@@ -1,5 +1,0 @@
-[shell.variables]
-install = "paru -S"
-uninstall = "paru -Rns"
-update = "paru -Syu"
-autoremove = ""
