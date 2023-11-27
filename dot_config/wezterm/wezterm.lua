@@ -32,6 +32,7 @@ return {
   -- FONT ===================================================================
   -- https://wezfurlong.org/wezterm/config/fonts.html
   font = wezterm.font_with_fallback {
+    'Plemol JP',
     'JetBrains Mono',
   },
 
