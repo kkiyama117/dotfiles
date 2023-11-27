@@ -28,6 +28,7 @@ return {
   -- PROGRAMS ===============================================================
   -- https://wezfurlong.org/wezterm/config/launch.html
   default_prog = { '/home/kiyama/.cargo/bin/zellij' },
+  default_prog = { '/home/kiyama/.cargo/bin/zellij','a', '-c' },
   
   -- FONT ===================================================================
   -- https://wezfurlong.org/wezterm/config/fonts.html
