@@ -69,6 +69,10 @@ use=["{!defer/,*,integrations/*}.zsh"]
 local="~/.config/zsh/commands"
 apply = ["defer"]
 
+[plugins.my_fpaths]
+local="~/.config/zsh/completions"
+apply = ["fpath"]
+
 [plugins.my_themes]
 local="~/.config/zsh/theme"
 
