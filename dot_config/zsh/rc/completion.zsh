@@ -1,7 +1,7 @@
-
 #==============================================================#
 ##          Completion                                        ##
 #==============================================================#
+dir_color # eval dir_colors
 
 setopt prompt_subst          # Pass escape sequence (environment variable) through prompt
 
