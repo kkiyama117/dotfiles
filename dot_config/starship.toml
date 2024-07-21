@@ -102,7 +102,7 @@ style_root = "bold bg:color_bg2 fg:color_fg2"
 format = '[$user]($style)'
 
 [battery]
-disable = false
+disabled = false
 format = "[ $percentage $symbol]($style)"
 full_symbol = "[󰁹](italic color_green)"
 charging_symbol = "[󰂄](italic color_green)"
@@ -130,6 +130,7 @@ truncation_length = 3
 truncation_symbol = "…/"
 before_repo_root_style = "bg:color_bg3 fg:color_fg3"
 repo_root_style = "bold bg:color_bg3 fg:color_fg3"
+read_only_style = "bold bg:color_bg3 fg:color_fg3"
 
 # Keep in mind that the order matters. For example:
 # "Important Documents" = " 󰈙 "
