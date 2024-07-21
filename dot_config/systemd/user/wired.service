@@ -2,11 +2,12 @@
 Description=Wired Notification Daemon
 Documentation=https://github.om/Toqozz/wired-notify
 After=graphical.target
+ConditionEnvironment=DISPLAY
 
 [Service]
 Type=dbus
 BusName=org.freedesktop.Notifications
-ExecsStart=/usr/bin/wired
+ExecStart=/usr/bin/wired
 Restart=always
 RestartSec=10
 
