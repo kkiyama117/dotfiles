@@ -1,20 +1,49 @@
+; main
 [core]
-	editor = nvim
+  editor = nvim
   pager = delta
+  quotepath = false
 [user]
-  name = {{ .git_name | quote }}
-  email = {{ .git_email | quote }}
-	signingkey = {{ .git_signingkey }}
-[pull]
-	rebase = false
-[commit]
-	verbose = true
-	gpgsign = true
+  user = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_name.value }}
+  email = {{ (bitwarden "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").login.username }}
+  signingkey = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_signingkey.value }}
 [init]
-	defaultBranch = main
-[delta]
-    plus-style = syntax "#012800" 
-    minus-style = normal "#340001" 
-    syntax-theme = "Monokai Extended"
+  defaultBranch = main
+[commit]
+  verbose = true
+  gpgsign = true
+[pull]
+  rebase = false
+  ff = only
+[push]
+  default=current
+; cred
 [credential]
-	helper = libsecret
+  helper = libsecret
+
+; pager
+[diff]
+  colorMoved = default
+[merge]
+  conflictStyle = diff3
+  ff = false
+[pager]
+  blame = delta
+  diff = delta
+; log = delta
+  reflog = delta
+  show = delta
+[interactive]
+  diffFilter = delta --color-only
+[delta]
+  keep-plus-minus-markers = true
+  plus-style = syntax "#012800" 
+  minus-style = normal "#340001" 
+  syntax-theme = "Monokai Extended"
+  hunk-header-style = "omit"
+  diff-so-fancy = true
+  line-numbers = true
+  side-by-side = true
+  navigate = true
+  hyperlinks = true
+  dark = true

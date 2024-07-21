@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+# COMMON
+# arch linux initialize
+{{ if (not (and (eq .chezmoi.osRelease.id "manjaro") (eq .chezmoi.os "linux"))) }}
+exit 0
+{{ end }}
+echo "Initialize"
+
+{{ if (and (eq .chezmoi.osRelease.id "manjaro") (eq .chezmoi.os "linux")) }}
+read -r -d '' PACKAGES <<EOF
+base-devel
+zsh
+EOF
+
+for package in `echo $PACKAGES`; do
+      sudo pacman -S $package --needed --noconfirm
+done
+
+{{ end }}
+
+# rust
+if ! [ -x "$(command -v rustup)" ]; then
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+	cargo install cargo-edit topgrade mise git-delta
+	rustup component add clippy
+	ln -s ~/.local/share/mise ~/.asdf
+fi
+
+# install mise
+if ! [ -x "$(command -v mise)" ]; then
+  eval "$(~/.local/bin/mise activate bash)"
+  mise install
+fi
+
+# install paru
+  if ! [ -x "$(command -v paru)" ]; then
+    git clone https://aur.archlinux.org/paru.git
+    cd paru
+    makepkg -si
+    cd ..
+  fi
+
+# install programs languages
+
+# install programs with paru
+read -r -d '' PACKAGES <<EOF
+ttf-plemoljp-bin
+fcitx5
+neovim
+rofi
+wezterm
+bat
+fd
+lsd
+skim
+navi
+onefetch
+ripgrep
+tealdeer
+pueue
+zoxide
+EOF
+#eza
+
+for package in `echo $PACKAGES`; do
+   paru -S $package --needed --noconfirm
+done
+
+#command curl -fsSL https://deno.land/x/install/install.sh | sh
+#command deno run --allow-env --allow-run --allow-read="." --allow-write="logs" main.ts install $OS

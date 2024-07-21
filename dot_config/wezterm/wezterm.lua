@@ -25,15 +25,16 @@ wezterm.on('open-uri', function(window, pane, uri)
 end)
 
 return {
+  automatically_reload_config = false,
   -- PROGRAMS ===============================================================
   -- https://wezfurlong.org/wezterm/config/launch.html
-  default_prog = { '/home/kiyama/.cargo/bin/zellij' },
-  default_prog = { '/home/kiyama/.cargo/bin/zellij','a', '-c' },
-  
+  --default_prog = { '/home/kiyama/.cargo/bin/zellij','a', '-c' },
+
   -- FONT ===================================================================
   -- https://wezfurlong.org/wezterm/config/fonts.html
   font = wezterm.font_with_fallback {
-    'Plemol JP',
+    {family="PlemolJP Console NF", weight="Medium"},
+  -- 'Plemol JP Console NF'
     'JetBrains Mono',
   },
 
@@ -63,6 +64,17 @@ return {
       mods = 'CTRL|SHIFT',
       action = act.OpenLinkAtMouseCursor,
     },
+    -- mouse wheel scroll
+    {
+      event = { Down = { streak = 1, button = { WheelUp = 1 } } },
+      mods = 'NONE',
+      action = act.ScrollByCurrentEventWheelDelta,
+    },
+    {
+      event = { Down = { streak = 1, button = { WheelDown = 1 } } },
+      mods = 'NONE',
+      action = act.ScrollByCurrentEventWheelDelta,
+    },
     -- NOTE that binding only the 'Up' event can give unexpected behaviors.
     -- Read more below on the gotcha of binding an 'Up' event only.
   },
@@ -76,8 +88,13 @@ return {
   },
 
   -- DESIGN =================================================================
-  hide_tab_bar_if_only_one_tab = true,
+  -- hide_tab_bar_if_only_one_tab = true,
   adjust_window_size_when_changing_font_size = false,
+  -- Enable the scrollbar.
+  -- It will occupy the right window padding space.
+  -- If right padding is set to 0 then it will be increased
+  -- to a single cell width
+  enable_scroll_bar = true,
 
   -- LINK ===================================================================
   hyperlink_rules = {

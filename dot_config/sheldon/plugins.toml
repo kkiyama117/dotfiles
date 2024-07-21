@@ -1,89 +1,78 @@
 # `sheldon` configuration file
 # ----------------------------
-#
-# You can modify this file directly or you can use one of the following
-# `sheldon` commands which are provided to assist in editing the config file:
-#
-# - `sheldon add` to add a new plugin to the config file
-# - `sheldon edit` to open up the config file in the default editor
-# - `sheldon remove` to remove a plugin from the config file
-#
 # See the documentation for more https://github.com/rossmacarthur/sheldon#readme
 
 shell = "zsh"
 
 [plugins]
-
-# prerequire
+#############################################################################
+# "defer"
 [plugins.zsh-defer]
 github = "romkatv/zsh-defer"
-#apply = ['source']
-
-[plugins.compinit]
-inline = 'autoload -Uz compinit && zsh-defer compinit'
+apply = ['source']
 
 # templates for use zsh-defer
 [templates]
-defer = """
-{% for file in files %}
-zsh-defer source "{{ file }}"
-{% endfor %}
-"""
+defer = "{{ hooks?.pre | nl }}{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}{{ hooks?.post | nl }}"
 
+[plugins.my_pre_load]
+inline = 'source $XDG_CONFIG_HOME/zsh/rc/pre_load.zsh'
+
+#############################################################################
+# program language load
+#############################################################################
+[plugins.mise]
+inline = 'eval "$(mise activate zsh)"'
+
+#############################################################################
+# defered plugins
+#############################################################################
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
+apply = ['defer']
 
-[plugins.autojump]
-github = "wting/autojump"
-dir = "bin"
-apply = ["PATH", "defer"]
+[plugins.zsh-autosuggestions.hooks]
+#pre = "~/.config/zsh/rc/integrations/zsh-autosuggestions_atinit.sh"
+post = "source ~/.config/zsh/rc/plugin_settings/zsh-autosuggestions_atload.zsh"
 
-[plugins.zsh-completions]
-github = "zsh-users/zsh-completions"
-dir = "src"
-apply = ["fpath"]
+[plugins.fast-syntax-highlighting]
+github = 'zdharma/fast-syntax-highlighting'
+apply = ['defer']
 
-[plugins.git-open]
-github = "paulirish/git-open"
-apply = ["defer"]
+#############################################################################
+# zsh config
+#############################################################################
+[plugins.my_conf_pre_load]
+local="~/.config/zsh/rc"
+use=["{pre_load,options}.zsh"]
 
-[plugins.prompt]
-github = "sorin-ionescu/prezto"
-use = ["modules/prompt"]
-apply = ["defer"]
+[plugins.my_conf_defered]
+local="~/.config/zsh/rc"
+use=["{aliases,completion,post_load}.zsh"]
+apply = ['defer']
 
-[plugins.powerlevel10k]
-#use immediately
-github = "romkatv/powerlevel10k"
+# Original executables
+[plugins.my_executables]
+local = "~/.config/zsh/bin"
+apply = ['path']
 
-[plugins.my_conf_defers]
-local="~/.config/zsh/features"
-use=["{defer/*}.zsh"]
-apply = ["defer"]
-
-[plugins.my_conf_source]
-local="~/.config/zsh/features"
-use=["{!defer/,*,integrations/*}.zsh"]
-
-[plugins.my_commands]
-local="~/.config/zsh/commands"
-apply = ["defer"]
-
+# Completion fpath
 [plugins.my_fpaths]
-local="~/.config/zsh/completions"
+local="~/.config/zsh/.zfunc"
 apply = ["fpath"]
 
-[plugins.my_themes]
-local="~/.config/zsh/theme"
+[plugins.my_plugins]
+local="~/.config/zsh/rc"
+use=["{functions/*,my_plugins/*}.zsh"]
+apply = ['defer']
 
-#[plugins.manjaro]
-#local = '/usr/share/zsh/'
-#use = ["manjaro-zsh-prompt"]
-  # Source manjaro-zsh-configuration
-  #if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
-  #  source /usr/share/zsh/manjaro-zsh-config
-  #fi
-  #if [[ -e /usr/share/zsh/manjaro-zsh-prompt ]]; then
-  #  source /usr/share/zsh/manjaro-zsh-prompt
-  #fi
+#############################################################################
+# software integrations
+#############################################################################
+[plugins.software_integrations]
+local="~/.config/zsh/rc/integrations"
+apply = ['defer']
+
+[plugins.starship]
+inline = 'eval "$(starship init zsh)"'
 

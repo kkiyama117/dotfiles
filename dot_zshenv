@@ -1,177 +1,127 @@
-: "path" && {
-  export PATH=/usr/local/bin:$PATH
-  export POWERLEVEL9K_INSTANT_PROMPT=quiet
-  : "XDG" && {
-    export CONF_HOME=$HOME/.config
-    export XDG_CONFIG_HOME=$CONF_HOME
-    export XDG_CACHE_HOME=$HOME/.cache
-    export XDG_DATA_HOME=$HOME/.local/share
+################################################################################
+# DEBUG setting
+################################################################################
+if [[ -v "$DEBUG" ]]; then
+  zmodload zsh/zprof
+fi
 
-   : "ZSH" && {
-     # zsh
-     export ZDOTDIR=$HOME/.config/zsh
-     if [[ ! -f $XDG_DATA_HOME/zsh/history ]]; then
-       mkdir $XDG_DATA_HOME/zsh
-       touch $XDG_DATA_HOME/zsh/history
-     fi
-     export HISTFILE=$XDG_DATA_HOME/zsh/history
-   }
+################################################################################
+# PATH (GENERAL)
+################################################################################
+# パスの設定
+## 重複したパスを登録しない。
+typeset -U path PATH manpath sudo_path
 
-    # others
-    export CUDA_CACHE_PATH=$XDG_CACHE_HOME/nv
-    export DOCKER_CONFIG=$XDG_CONFIG_HOME/docker
-    #export GNUPGHOME="$XDG_DATA_HOME"/gnupg
-    #gpg2 --homedir "$XDG_DATA_HOME"/gnupg
-    #export XAUTHORITY=$XDG_CONFIG_HOME/Xauthority
-    export XINITRC=$XDG_CONFIG_HOME/X11/xinitrc
-    #export XSERVERRC=$XDG_CONFIG_HOME/X11/xserverrc
-    export WINEPREFIX="$XDG_DATA_HOME"/wineprefixes/default
-  }
-  : "general" && {
-    export LANG=ja_JP.UTF-8
-    export EDITOR=nvim
-  }
-  : "rust" && {
-    if (( $+commands[cargo] )); then
-      export CARGO_HOME=$HOME/.cargo
-      export PATH=$CARGO_HOME/bin:$PATH
-    elif [ -d $HOME/.cargo ]; then
-      # export CARGO_HOME=$XDG_DATA_HOME/cargo
-      export CARGO_HOME=$HOME/.cargo
-      export PATH=$CARGO_HOME/bin:$PATH
-    fi
-  }
-  : "java" && {
-    : "jdk" && {
-      # archlinux-java
-      export JAVA_HOME=/usr/lib/jvm/default
-      export PATH=$JAVA_HOME/bin:$PATH
-      export _JAVA_OPTIONS=-Djava.util.prefs.userRoot="$XDG_CONFIG_HOME"/java
-    }
-    : "gradle" && {
-      export GRADLE_USER_HOME="$XDG_DATA_HOME"/gradle
-    }
-  }
-  : "python" && {
-    if (( $+commands[pyenv] )) then
-      export PYENV_ROOT=$HOME/.pyenv
-      export PATH=$PYENV_ROOT/shims:$PATH
-      if ! [ -f /tmp/pyenv.cache ]
-      then
-         pyenv init - > /tmp/pyenv.cache
-         zcompile /tmp/pyenv.cache
-      fi
-      source /tmp/pyenv.cache
-      # zinit ice wait"0!"; eval "$(pyenv init -)"
-      alias pip3='noglob python -m pip'
-      alias pip=pip3
-    elif (( $+commands[rye] )) then
-      export RYE_HOME=$HOME/.rye
-      source $RYE_HOME/env
-      #export PATH=$RYE_HOME/shims:$PATH
-    else
-      alias python3='/usr/bin/python3'
-      alias python=python3
-      alias pip3='noglob python3 -m pip'
-      alias pip=pip3
-    fi
-    : "pipenv" && {
-      export PIPENV_VENV_IN_PROJECT=true
-    }
-  }
-  : "ruby" && {
-    if (( $+commands[rbenv] )) then
-      export PATH=$HOME/.rbenv/shims:$PATH
-      if ! [ -f /tmp/rbenv.cache ]
-      then
-         rbenv init - > /tmp/rbenv.cache
-         zcompile /tmp/rbenv.cache
-      fi
-      source /tmp/rbenv.cache
-    fi
-  }
-  : "go" && {
-    if (( $+commands[go] )) then
-      export GOPATH="$XDG_DATA_HOME"/go
-      export PATH=$GOPATH/bin:$PATH
-    fi
-  }
-  : "js" && {
-    if [[ -d $HOME/.volta ]] || (( $+commands[volta] )); then
-      export VOLTA_HOME="$HOME/.volta"
-      export VOLTA_FEATURE_PNPM=1
-      # for update
-      alias volta_update="curl https://get.volta.sh | bash -s -- --skip-setup"
-      # for jetbrains
-      #export PATH="$VOLTA_HOME/tools/image/yarn/$(yarn --version)/bin:$PATH"
-      # normal
-      export PATH="$VOLTA_HOME/bin:$PATH"
-      # export PATH=$XDG_DATA_HOME/npm/bin:$PATH
-      export NPM_CONFIG_USERCONFIG=$XDG_CONFIG_HOME/npm/npmrc
-    fi
-  }
-  : "android" && {
-    # export ANDROID_SDK_ROOT="/opt/android"
-    export ANDROID_SDK_ROOT="/opt/android-sdk"
-    export ANDROID_JAVA_HOME="opt/android-studio/jre"
-    export ANDROID_SDK_HOME=$XDG_CONFIG_HOME/android
-    export ANDROID_AVD_HOME=$XDG_DATA_HOME/android/
-    export ANDROID_EMULATOR_HOME=$XDG_DATA_HOME/android/
-    export ADB_VENDOR_KEY=$XDG_CONFIG_HOME/android
-    export PATH=$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:${ANDROID_SDK_ROOT}/emulator:$PATH
-  }
-  : "flutter" && {
-    # install by aur
-    export FLUTTER_ROOT="/opt/flutter"
-    export PATH=$FLUTTER_ROOT/bin:$PATH
-    if (( $+commands[flutter] )) then
-      export FLUTTER_PUB_CACHE="$HOME/.pub-cache"
-      export PATH=$FLUTTER_PUB_CACHE/bin:$PATH
-      export CHROME_EXECUTABLE=google-chrome-stable
-    fi
-  }
-  : "deno" && {
-    if (( $+commands[deno] )) then
-      export DENO_MY_PATH=$HOME/.deno
-      export PATH=$DENO_MY_PATH/bin:$PATH
-    fi
-  }
-  : "ocaml" && {
-    if (( $+commands[opam] )) then
-       #eval $(opam env)
-       # opam configuration
-       [[ ! -r /home/kiyama/.opam/opam-init/init.zsh ]] || source /home/kiyama/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
-    fi
-  }
-  : "neovim" && {
-    if (( $+commands[nvim] )) then
-      export NHOME="$HOME/.config/nvim"
-      export DENOPS_PATH="$HOME/programs/others/vim-jp/denops.vim"
-      export DENOPS_TEST_NVIM="/usr/bin/nvim"
-    fi
-  }
-  : "skim" && {
-    if (( $+commands[sk] )) then
-      export SKIM_DEFAULT_OPTIONS="--ansi"
-      lnlink="$HOME/.local/bin/fzf"
-      if [ ! -L ${lnlink} ]; then
-        ln -s "$(which sk)" ${lnlink}
-      fi
-    fi
-  }
-  : "zoxide" && {
-    if (( $+commands[zoxide] )) then
-      export SK_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" sk "$@"
-    else
-      if (( $+commands[paru] )) then
-        paru -S --noconfirm zoxide
-      fi
-    fi
-  }
-  : "gamess" && {
-    export GMS_PATH=/opt/gamess
-    export PATH=/opt/cuda/bin:$PATH
-    export BOOST_ROOT=/usr/local
-    export LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
-  }
+# sudo時のパスの設定
+# https://github.com/clear-code/zsh.d/blob/master/zshenv
+typeset -xT SUDO_PATH sudo_path
+## (N-/): 存在しないディレクトリは登録しない
+##    パス(...): ...という条件にマッチするパスのみ残す
+##            N: NULL_GLOBオプションを設定
+##               globがマッチしなかったり存在しないパスを無視する
+##            -: シンボリックリンク先のパスを評価
+##            /: ディレクトリのみ残す
+sudo_path=({,/usr/pkg,/usr/local,/usr}/sbin(N-/))
+if [ $(/sbin/id -u) -eq 0 ]; then
+    # rootの場合はsudo用のパスもPATHに加える。
+    path=($sudo_path $path)
+else
+    # 一般ユーザーの場合はsudo時にsudo用のパスをPATHに加える。
+    alias sudo="sudo env PATH=\"$SUDO_PATH:$PATH\""
+    :
+fi
+path=($HOME/.local/bin(N-/) $path)
+
+################################################################################
+# GENERAL config
+################################################################################
+export LANG="${LANG:-ja_JP.UTF-8}"
+
+if SHELL=$(builtin command -v zsh); then
+	export SHELL
+else
+	unset SHELL
+fi
+if builtin command -v nvim > /dev/null 2>&1; then
+	export EDITOR=${EDITOR:-nvim}
+else
+	export EDITOR=${EDITOR:-vim}
+fi
+export SYSTEMD_EDITOR=$EDITOR
+
+################################################################################
+# XDG 
+################################################################################
+: "XDG" && {
+  # XDG
+  export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+  export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+  export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+  export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$UID}"
 }
+
+################################################################################
+# X11 and CUDA
+################################################################################
+# X11
+# LightDM cannot use XAUTHORITY
+#export XAUTHORITY=$XDG_CONFIG_HOME/Xauthority
+export XINITRC=$XDG_CONFIG_HOME/X11/xinitrc
+#export XSERVERRC=$XDG_CONFIG_HOME/X11/xserverrc
+# CUDA
+export CUDA_CACHE_PATH="$XDG_CACHE_HOME"/nv
+# GPG
+export GNUPGHOME="$XDG_DATA_HOME"/gnupg
+
+################################################################################
+# ZSH History
+################################################################################
+# zsh
+export ZDOTDIR="${ZDOTDIR:-$XDG_CONFIG_HOME/zsh}"
+if [[ ! -f $XDG_DATA_HOME/zsh/history ]]; then
+  mkdir $XDG_DATA_HOME/zsh
+  touch $XDG_DATA_HOME/zsh/history
+fi
+# https://qiita.com/sho-t/items/d553dd694900cae0966d
+export HISTFILE=$XDG_DATA_HOME/zsh/history
+export HISTSIZE=200
+export SAVEHIST=100000
+setopt appendhistory
+#setopt extend_history
+setopt share_history
+setopt inc_append_history
+#setopt inc_append_history_time
+setopt hist_allow_clobber
+setopt hist_expand
+setopt hist_fcntl_lock
+setopt hist_ignore_all_dups
+setopt hist_ignore_space
+setopt hist_reduce_blanks
+setopt hist_save_no_dups
+setopt hist_no_store
+setopt hist_verify
+WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
+
+################################################################################
+# GENERAL programming language path
+################################################################################
+source .config/zsh/.zshenv/lang.zsh
+
+################################################################################
+# GENERAL program config and path
+################################################################################
+# GTK
+export GTK2_RC_FILES="$XDG_CONFIG_HOME"/gtk-2.0/gtkrc
+# Wine
+export WINEPREFIX="$XDG_DATA_HOME/wineprefixes/default"
+# W3M
+export W3M_DIR="$XDG_DATA_HOME"/w3m
+export RXVT_SOCKET="$XDG_RUNTIME_DIR"/urxvtd
+# moc
+alias mocp='mocp -M "$XDG_CONFIG_HOME"/moc'
+# pastel
+export PASTEL_COLOR_MODE="24bit"
+
+source .config/zsh/.zshenv/for_development.zsh
+

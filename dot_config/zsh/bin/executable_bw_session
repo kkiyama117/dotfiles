@@ -1,0 +1,11 @@
+# /usr/bin/env zsh
+bw_session () {
+    if [[ "$#" == 1 ]] && [[ "$1" == "-f" ]]; then
+	export BW_SESSION=$(bw unlock --raw)
+    elif [[ -n "$BW_SESSION" ]]; then
+	echo "already logged in"
+    else
+	export BW_SESSION=$(bw unlock --raw)
+    fi
+}
+bw_session

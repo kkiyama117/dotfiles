@@ -1,0 +1,1 @@
+alias navit= navi --tldr
