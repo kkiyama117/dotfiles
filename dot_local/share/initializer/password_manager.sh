@@ -11,8 +11,7 @@ Darwin)
 Linux)
     # commands to install password-manager-binary on Linux
     #if (( $+commands[bw] )); then
-    if [ "$(which bw)" == "" ];
-    then
+    if [ "$(which bw)" == "" ]; then
       sudo pacman -S bitwarden-cli --noconfirm --needed 
     fi
     ;;

@@ -4,7 +4,7 @@
   pager = delta
   quotepath = false
 [user]
-  user = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_name.value }}
+  name = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_name.value }}
   email = {{ (bitwarden "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").login.username }}
   signingkey = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_signingkey.value }}
 [init]
