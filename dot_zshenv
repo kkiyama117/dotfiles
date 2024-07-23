@@ -106,7 +106,7 @@ WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider
 ################################################################################
 # GENERAL programming language path
 ################################################################################
-source .config/zsh/.zshenv/lang.zsh
+source ~/.config/zsh/.zshenv/lang.zsh
 
 ################################################################################
 # GENERAL program config and path
@@ -123,5 +123,5 @@ alias mocp='mocp -M "$XDG_CONFIG_HOME"/moc'
 # pastel
 export PASTEL_COLOR_MODE="24bit"
 
-source .config/zsh/.zshenv/for_development.zsh
+source ~/.config/zsh/.zshenv/for_development.zsh
 
