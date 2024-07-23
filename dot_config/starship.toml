@@ -307,7 +307,7 @@ format = '[ $symbol ($version) ]($style)'
 [php]
 symbol = ""
 style = "bold bg:color_right_bg2 fg:color_right_fg2"
-format = '[[ $symbol( $version) ]]($style)'
+format = '[ $symbol( $version) ($style)'
 
 [python]
 symbol = ""
