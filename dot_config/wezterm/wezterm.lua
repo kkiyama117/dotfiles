@@ -78,7 +78,7 @@ config = {
 
   -- COLOR ==================================================================
   -- https://wezfurlong.org/wezterm/config/appearance.html
-  window_background_opacity = 0.75,
+  window_background_opacity = 0.5,
   colors = {
     visual_bell = '#202020',
   },
