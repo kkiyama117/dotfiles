@@ -1,5 +1,5 @@
 # default none
-dictionary = {{ .homeDir -}}/.local/share/skk/dictionary.yaskkserv2
+dictionary = {{ .chezmoi.homeDir -}}/.local/share/skk/dictionary.yaskkserv2
 
 # default 1178
 port = 1178
@@ -20,7 +20,7 @@ max-server-completions = 64
 google-timeout-milliseconds = 1000
 
 # default disable
-google-cache-filename = {{ .homeDir -}}/.cache/yaskkserv2.cache
+google-cache-filename = {{ .chezmoi.homeDir -}}/.cache/yaskkserv2.cache
 
 # default 1024
 google-cache-entries = 1024
