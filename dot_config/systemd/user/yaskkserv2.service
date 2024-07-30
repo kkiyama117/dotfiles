@@ -1,0 +1,15 @@
+[Unit]
+Description=Yet another SKK Japanese input method dictionary server2
+Documentation=https://github.com/wachikun/yaskkserv2
+After=graphical.target
+
+[Service]
+#User=nobody
+Restart=no
+ExecStart = yaskkserv2 --config-filename ~/.config/yaskkserv2/yaskkserv2.conf
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+#WantedBy=default.target
