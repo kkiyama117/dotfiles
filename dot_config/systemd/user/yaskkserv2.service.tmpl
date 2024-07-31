@@ -6,7 +6,7 @@ After=graphical.target
 [Service]
 #User=nobody
 Restart=no
-ExecStart = yaskkserv2 --config-filename {- .chezmoi.homeDir}/.config/yaskkserv2/yaskkserv2.conf --no-daemonize
+ExecStart = yaskkserv2 --config-filename { .chezmoi.homeDir -}/.config/yaskkserv2/yaskkserv2.conf --no-daemonize
 #Restart=always
 #RestartSec=10
 
