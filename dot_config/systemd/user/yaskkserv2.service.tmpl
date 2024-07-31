@@ -6,10 +6,9 @@ After=graphical.target
 [Service]
 #User=nobody
 Restart=no
-ExecStart = yaskkserv2 --config-filename ~/.config/yaskkserv2/yaskkserv2.conf
-Restart=always
-RestartSec=10
+ExecStart = yaskkserv2 --config-filename {- .chezmoi.homeDir}/.config/yaskkserv2/yaskkserv2.conf --no-daemonize
+#Restart=always
+#RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-#WantedBy=default.target
