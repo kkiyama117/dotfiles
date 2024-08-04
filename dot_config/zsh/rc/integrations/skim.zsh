@@ -1,5 +1,6 @@
 if (( $+commands[sk] )) then
   export SKIM_DEFAULT_OPTIONS="--ansi"
+  export SKIM_DEFAULT_COMMAND="fd --type f || git ls-tree -r --name-only HEAD || rg --files || find ."
   lnlink="$HOME/.local/bin/fzf"
   if [ ! -L ${lnlink} ]; then
     ln -s "$(which sk)" ${lnlink}
