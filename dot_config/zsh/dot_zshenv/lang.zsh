@@ -1,4 +1,5 @@
 # mise path
+eval "$(mise activate zsh --shims)"
 path=($XDG_DATA_HOME/mise/shims(N-/) $path)
 export MISE_DATA_DIR="${MISE_DATA_DIR:-$XDG_DATA_HOME/mise}"
 

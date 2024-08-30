@@ -44,3 +44,5 @@ export GPG_TTY=$(tty)
 if [[ -v "$DEBUG" ]]; then
    zprof
 fi
+
+. "$HOME/.local/share/cargo/env"
