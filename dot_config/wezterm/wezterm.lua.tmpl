@@ -30,7 +30,9 @@ config = {
   -- PROGRAMS ===============================================================
   -- https://wezfurlong.org/wezterm/config/launch.html
   --default_prog = { '/home/kiyama/.cargo/bin/zellij','a', '-c' },
-
+{{ if eq .chezmoi.os "windows" }}
+  default_prog = { 'pwsh.exe' },
+{{ end }}
   -- FONT ===================================================================
   -- https://wezfurlong.org/wezterm/config/fonts.html
   font = wezterm.font_with_fallback {

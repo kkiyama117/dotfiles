@@ -6,7 +6,10 @@
 [user]
   name = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_name.value }}
   email = {{ (bitwarden "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").login.username }}
+{{ if eq .chezmoi.os "windows" }}
+{{ else }}
   signingkey = {{ (bitwardenFields "item" "e3b401ae-2ed9-489b-8328-b1a9003e3cdb").user_signingkey.value }}
+{{ end }}
 [init]
   defaultBranch = main
 [commit]
@@ -18,8 +21,13 @@
 [push]
   default=current
 ; cred
+{{ if eq .chezmoi.os "windows" }}
+[gpg]
+  program = C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe
+{{ else }}
 [credential]
   helper = libsecret
+{{ end }}
 
 ; pager
 [diff]
