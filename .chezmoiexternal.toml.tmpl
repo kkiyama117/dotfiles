@@ -1,0 +1,13 @@
+{{ if eq .chezmoi.os "linux" }}
+{{   if (.chezmoi.kernel.osrelease | lower | contains "microsoft") }}
+# WSL-specific code
+{{  else }}
+# linux
+#[".config/nvim"]
+#    type = "git-repo"
+#    url = "git@github.com:kkiyama117/neovim-conf-sample.git"
+#    refreshPeriod = "1h"
+{{   end }}
+{{ else if eq .chezmoi.os "windows" }}
+# Windows code
+{{ end }}
