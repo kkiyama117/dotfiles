@@ -1,6 +1,6 @@
 {{ if eq .chezmoi.os "windows" }}
 {{ else if eq .chezmoi.os "linux" }}
 [hooks.read-source-state.pre]
-    command = ".local/share/chezmoi/dot_local/share/initializer/password_manager.sh"
+    command = ".local/share/chezmoi/.password_manager.sh"
 {{ end }}
 
