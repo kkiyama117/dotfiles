@@ -31,7 +31,7 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 !.local/share/rye/config.toml
 
 {{ if ne .chezmoi.os "windows" }}
-  AppData/*
+  AppData
 {{ end }}
 {{ if ne .chezmoi.os "linux" }}
   .config/app/file.conf
