@@ -33,7 +33,10 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 
 {{ if ne .chezmoi.os "windows" }}
   AppData
+{{ else }}
+  AppData/Roaming/nushell/history.txt
 {{ end }}
 {{ if ne .chezmoi.os "linux" }}
+  AppData
   .config/app/file.conf
 {{ end }}
