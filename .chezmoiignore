@@ -1,6 +1,7 @@
 README.md
 .cache
 .password_manager.sh
+*.code-workspace
 
 
 *.txt   # ignore *.txt in the target directory
