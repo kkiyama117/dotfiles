@@ -16,3 +16,4 @@
 #
 # You can remove these comments if you want or leave
 # them for future reference.
+$env.NU_LIB_DIRS ++= ($mise_path | path dirname | to nuon)

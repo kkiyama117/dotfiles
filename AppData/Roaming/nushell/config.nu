@@ -16,6 +16,8 @@
 #
 # You can remove these comments if you want or leave
 # them for future reference.source ~/.cache/starship/init.nu
+$env.EDITOR = "nvim"
 $env.config.shell_integration.osc133 = false
 $env.config.shell_integration.reset_application_mode = false
+
 source ~/.cache/starship/init.nu

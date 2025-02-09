@@ -5,12 +5,5 @@
 		}
 	],
 	"settings": {
-		"a-file-icon-vscode.activeIconPacks": [
-			"angular",
-			"react",
-			"redux",
-			"rails",
-			"volt"
-		]
 	}
 }

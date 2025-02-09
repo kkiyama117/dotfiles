@@ -1,4 +1,8 @@
 README.md
+.cache
+.password_manager.sh
+*.code-workspace
+
 
 *.txt   # ignore *.txt in the target directory
 */*.txt # ignore *.txt in subdirectories of the target directory
@@ -9,18 +13,30 @@ backups/   # ignore backups folder in chezmoi directory and all its contents
 backups/** # ignore all contents of backups folder in chezmoi directory
            # but not backups folder itself
 
+# ZShell tmp file
 *.zwc
 */*.zwc
 */.zcompdump
 .config/zsh/.zcompdump
 .config/zsh/.zcompcache
 
+# chezmoi
 .config/chezmoi/*
 !.config/chezmoi/chezmoi.toml
 
 .config/gh/private*.yml
 .config/gh/hosts.yml
 
+# Rye
 .local/share/rye/*
 !.local/share/rye/config.toml
-.cache
+
+{{ if ne .chezmoi.os "windows" }}
+  AppData
+{{ else }}
+  AppData/Roaming/nushell/history.txt
+{{ end }}
+{{ if ne .chezmoi.os "linux" }}
+  AppData
+  .config/app/file.conf
+{{ end }}
