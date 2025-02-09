@@ -10,4 +10,4 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 
 dot_config/gh/hosts.yml
 dot_config/zsh/dot_zcompdump
-
+dot_local/state/syncthing
