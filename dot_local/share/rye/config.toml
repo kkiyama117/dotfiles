@@ -3,4 +3,5 @@ use-uv = true
 global-python = true
 
 [default]
-toolchain = "cpython@3.12"
+#toolchain = "cpython@3.12"
+toolchain = "system@3.12"
