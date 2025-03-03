@@ -31,6 +31,10 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 .local/share/rye/*
 !.local/share/rye/config.toml
 
+# GNUPG
+.local/share/gnupg/*
+!.local/share/gnupg/common.conf
+
 {{ if eq .chezmoi.os "windows" }}
 # Windows
   AppData/Roaming/nushell/history.txt
