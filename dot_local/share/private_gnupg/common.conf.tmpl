@@ -1,0 +1,4 @@
+#use-keyboxd
+{{- if not (eq .chezmoi.hostname "boiled") }}
+no-autostart
+{{- end }}
