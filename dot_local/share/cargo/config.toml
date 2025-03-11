@@ -1,4 +1,3 @@
-## ターゲットプラットフォームがLinuxの場合のみmoldを使う
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 #rustflags = ["-C", "link-arg=-fuse-ld=lld"]
