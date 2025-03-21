@@ -17,7 +17,9 @@
 # You can remove these comments if you want or leave
 # them for future reference.source ~/.cache/starship/init.nu
 $env.EDITOR = "nvim"
-$env.config.shell_integration.osc133 = false
 $env.config.shell_integration.reset_application_mode = false
+# Fix https://github.com/nushell/nushell/issues/5585
+$env.config.shell_integration.osc133 = false
 
 source ~/.cache/starship/init.nu
+source ~/.cache/mise/init.nu
