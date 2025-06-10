@@ -60,3 +60,6 @@ if (( $+commands[git] )) then
   alias gm="git merge"
   alias gu='git add . && git commit && git push'
 fi
+
+alias claude="$HOME/.claude/local/claude"
+
