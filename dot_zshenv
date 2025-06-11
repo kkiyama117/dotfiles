@@ -22,7 +22,7 @@ typeset -xT SUDO_PATH sudo_path
 ##            -: シンボリックリンク先のパスを評価
 ##            /: ディレクトリのみ残す
 sudo_path=({,/usr/pkg,/usr/local,/usr}/sbin(N-/))
-if [ $(/sbin/id -u) -eq 0 ]; then
+if [[ ( -a /sbin/id) && ( $(/sbin/id -u) -eq 0 )]]; then
     # rootの場合はsudo用のパスもPATHに加える。
     path=($sudo_path $path)
 else

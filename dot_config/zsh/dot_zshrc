@@ -13,11 +13,19 @@
 #  ensure_zcompiled $XDG_CONFIG_HOME/zsh/.zshrc
 
 # https://wiki.archlinux.jp/index.php/GnuPG
-# "GnuPG envs not loaded in zshenv"
-export GPG_TTY=$(tty)
-# Refresh gpg-agent tty in case user switches into an X session
-gpg-connect-agent updatestartuptty /bye >/dev/null
-
+if [[ -d /mnt/wslg ]]; then
+    if [[ -z $GPG_AGENT_INFO ]]; then
+        eval $(keychain -q --eval --agents ssh,gpg $GPG_KEY_ID)
+    fi
+    typeset -gx SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+    typeset -gx GPG_TTY=$(tty)
+    gpg-connect-agent updatestartuptty /bye > /dev/null
+else
+  # "GnuPG envs not loaded in zshenv"
+  export GPG_TTY=$(tty)
+  # Refresh gpg-agent tty in case user switches into an X session
+  gpg-connect-agent updatestartuptty /bye >/dev/null
+fi
 
 #fpath=($XDG_CONFIG_HOME/zsh/completions $fpath)
 : "plugin manager" && {
