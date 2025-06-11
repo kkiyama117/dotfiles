@@ -1,4 +1,6 @@
 {{ if eq .chezmoi.os "windows" }}
+[cd]
+    command = "nu"
 {{ else if eq .chezmoi.os "linux" }}
 [hooks.read-source-state.pre]
     command = ".local/share/chezmoi/.executable_password_manager.sh"
