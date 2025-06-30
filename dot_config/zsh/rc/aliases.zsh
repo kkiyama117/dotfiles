@@ -63,6 +63,7 @@ fi
 
 # claude
 alias claude="$HOME/.config/claude/local/claude"
+alias claudia="WEBKIT_DISABLE_DMABUF_RENDERER=1 $HOME/.local/bin/claudia"
 
 # bun completions
 [ -s "/home/kiyama/.bun/_bun" ] && source "/home/kiyama/.bun/_bun"
