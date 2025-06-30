@@ -62,6 +62,11 @@ if (( $+commands[git] )) then
 fi
 
 # claude
-alias claude="$HOME/.claude/local/claude"
+alias claude="$HOME/.config/claude/local/claude"
+
+# bun completions
+[ -s "/home/kiyama/.bun/_bun" ] && source "/home/kiyama/.bun/_bun"
+
 # tmux
 alias tm="tmux new-session \; source-file ~/.config/tmux/tmux.conf"
+

@@ -123,5 +123,3 @@ alias mocp='mocp -M "$XDG_CONFIG_HOME"/moc'
 # pastel
 export PASTEL_COLOR_MODE="24bit"
 
-source ~/.config/zsh/.zshenv/for_development.zsh
-

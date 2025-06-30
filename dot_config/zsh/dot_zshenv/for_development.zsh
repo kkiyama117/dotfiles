@@ -47,3 +47,4 @@ export CPPFLAGS=-I/usr/local/stow/gettext-021/include:$CPPFLAGS
 # Ipython
 export IPYTHONDIR="$XDG_CONFIG_HOME"/jupyter
 export JUPYTER_CONFIG_DIR="$XDG_CONFIG_HOME"/jupyter
+
