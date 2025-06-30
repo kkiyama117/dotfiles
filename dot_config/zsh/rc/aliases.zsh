@@ -61,5 +61,7 @@ if (( $+commands[git] )) then
   alias gu='git add . && git commit && git push'
 fi
 
+# claude
 alias claude="$HOME/.claude/local/claude"
-
+# tmux
+alias tm="tmux new-session \; source-file ~/.config/tmux/tmux.conf"
