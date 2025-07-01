@@ -15,6 +15,6 @@ dot_config/gh/hosts.yml
 dot_config/zsh/dot_zcompdump
 # CLAUDE CONFIG
 !dot_config/claude/CLAUDE.md
-dot_config/claude
+#dot_config/claude/
 # SyncThing
 dot_local/state/syncthing
