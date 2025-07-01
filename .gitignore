@@ -9,7 +9,12 @@ backups/** # ignore all contents of backups folder in chezmoi directory
            # but not backups folder itself
 .password_manager.sh
 
+# Github CLI
 dot_config/gh/hosts.yml
+# ZShell
 dot_config/zsh/dot_zcompdump
+# CLAUDE CONFIG
+!dot_config/claude/CLAUDE.md
+dot_config/claude
+# SyncThing
 dot_local/state/syncthing
-
