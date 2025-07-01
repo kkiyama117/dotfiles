@@ -21,10 +21,6 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 .config/zsh/.zcompdump
 .config/zsh/.zcompcache
 
-# claude
-!.config/claude/CLAUDE.md
-.config/claude/*
-
 # chezmoi
 .config/chezmoi/*
 !.config/chezmoi/chezmoi.toml
