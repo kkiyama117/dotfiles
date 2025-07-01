@@ -55,7 +55,6 @@ GRADLE_USER_HOME = '{{- .chezmoi.homeDir }}/.local/share/gradle'
 # node
 #NODE_ENV = 'production'
 #NPM_CONFIG_USERCONFIG = '{{- .chezmoi.homeDir }}/.config/npm/npmrc'
-NPM_CONFIG_USERCONFIG="${NPM_CONFIG_USERCONFIG:-"$XDG_CONFIG_HOME"/npm/npmrc}"
 
 # ocaml
 OPAMROOT = '{{- .chezmoi.homeDir }}/.local/share/opam'
@@ -71,3 +70,4 @@ opam = "latest"
 pnpm = "latest"
 ruby = "latest"
 usage = "latest"
+
