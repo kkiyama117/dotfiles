@@ -43,6 +43,7 @@ go_set_gobin = true
 
 #############################################################################
 [env]
+
 # Go
 GOPATH = '{{- .chezmoi.homeDir }}/.local/share/mise/installs/go/latest/packages'
 GOROOT = '{{- .chezmoi.homeDir }}/.local/share/mise/installs/go/latest'
@@ -53,10 +54,12 @@ GRADLE_USER_HOME = '{{- .chezmoi.homeDir }}/.local/share/gradle'
 
 # node
 #NODE_ENV = 'production'
-NPM_CONFIG_USERCONFIG = '{{- .chezmoi.homeDir }}/.config/npm/npmrc'
+#NPM_CONFIG_USERCONFIG = '{{- .chezmoi.homeDir }}/.config/npm/npmrc'
+NPM_CONFIG_USERCONFIG="${NPM_CONFIG_USERCONFIG:-"$XDG_CONFIG_HOME"/npm/npmrc}"
 
 # ocaml
 OPAMROOT = '{{- .chezmoi.homeDir }}/.local/share/opam'
+#[[ ! -r "$XDG_DATA_HOME/opam-init/init.zsh" ]] || source "$XDG_DATA_HOME/opam-init/init.zsh"  > /dev/null 2> /dev/null
 
 [tools]
 bun = "latest"
