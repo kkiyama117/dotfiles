@@ -46,8 +46,8 @@ post = "source ~/.config/zsh/rc/integrations/zsh-autosuggestions_atload.zsh"
 github = "zsh-users/zsh-completions"
 apply = ['defer']
 
-[plugins.zsh-complations.hooks]
-pre = "source ~/.config/zsh/rc/integrations/zsh-autocomplations_atinit.sh"
+[plugins.zsh-completions.hooks]
+pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.sh"
 
 [plugins.zsh-syntax-highlighting]
 github = 'zsh-users/zsh-syntax-highlighting'
