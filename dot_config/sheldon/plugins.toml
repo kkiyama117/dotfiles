@@ -39,7 +39,6 @@ github = "zsh-users/zsh-autosuggestions"
 apply = ['defer']
 
 [plugins.zsh-autosuggestions.hooks]
-#pre = "~/.config/zsh/rc/integrations/zsh-autosuggestions_atinit.sh"
 post = "source ~/.config/zsh/rc/integrations/zsh-autosuggestions_atload.zsh"
 
 [plugins.zsh-completions]
@@ -47,7 +46,7 @@ github = "zsh-users/zsh-completions"
 apply = ['defer']
 
 [plugins.zsh-completions.hooks]
-pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.sh"
+pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.zsh"
 
 [plugins.zsh-syntax-highlighting]
 github = 'zsh-users/zsh-syntax-highlighting'
