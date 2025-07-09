@@ -3,20 +3,27 @@
 # See the documentation for more https://github.com/rossmacarthur/sheldon#readme
 
 shell = "zsh"
-
-[plugins]
-#############################################################################
-# "defer"
-[plugins.zsh-defer]
-github = "romkatv/zsh-defer"
-apply = ['source']
+apply = ["defer"]
 
 # templates for use zsh-defer
 [templates]
 defer = "{{ hooks?.pre | nl }}{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}{{ hooks?.post | nl }}"
 
-[plugins.my_pre_load]
-inline = 'source $XDG_CONFIG_HOME/zsh/rc/pre_load.zsh'
+[plugins]
+#############################################################################
+# "defer"
+#############################################################################
+[plugins.zsh-defer]
+github = "romkatv/zsh-defer"
+apply = ['source']
+
+#############################################################################
+# Zshell opt-in
+#############################################################################
+[plugins.compinit]
+inline = 'autoload -Uz compinit && zsh-defer compinit'
+[plugins.colors]
+inline = 'autoload -Uz colors && zsh-defer colors'
 
 #############################################################################
 # program language load
@@ -33,22 +40,46 @@ apply = ['defer']
 
 [plugins.zsh-autosuggestions.hooks]
 #pre = "~/.config/zsh/rc/integrations/zsh-autosuggestions_atinit.sh"
-post = "source ~/.config/zsh/rc/plugin_settings/zsh-autosuggestions_atload.zsh"
+post = "source ~/.config/zsh/rc/integrations/zsh-autosuggestions_atload.zsh"
+
+[plugins.zsh-completions]
+github = "zsh-users/zsh-completions"
+apply = ['defer']
+
+[plugins.zsh-complations.hooks]
+pre = "source ~/.config/zsh/rc/integrations/zsh-autocomplations_atinit.sh"
+
+[plugins.zsh-syntax-highlighting]
+github = 'zsh-users/zsh-syntax-highlighting'
+apply = ['defer']
 
 [plugins.fast-syntax-highlighting]
-github = 'zdharma/fast-syntax-highlighting'
+github = "auscompgeek/fast-syntax-highlighting"
 apply = ['defer']
 
 #############################################################################
-# zsh config
+# graphic and view
+#############################################################################
+[plugins.starship]
+inline = 'eval "$(starship init zsh)"'
+
+#############################################################################
+# tmux
+#############################################################################
+[plugins.tmux-xpanes]
+github = "greymd/tmux-xpanes"
+apply = ['defer']
+
+#############################################################################
+# Zsh local config
 #############################################################################
 [plugins.my_conf_pre_load]
 local="~/.config/zsh/rc"
-use=["{pre_load,options}.zsh"]
+use=["{options}.zsh"]
 
 [plugins.my_conf_defered]
 local="~/.config/zsh/rc"
-use=["{aliases,completion,post_load}.zsh"]
+use=["{aliases,completion}.zsh"]
 apply = ['defer']
 
 # Original executables
@@ -66,13 +97,6 @@ local="~/.config/zsh/rc"
 use=["{functions/*,my_plugins/*}.zsh"]
 apply = ['defer']
 
-#############################################################################
-# software integrations
-#############################################################################
 [plugins.software_integrations]
 local="~/.config/zsh/rc/integrations"
 apply = ['defer']
-
-[plugins.starship]
-inline = 'eval "$(starship init zsh)"'
-

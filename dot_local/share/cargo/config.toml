@@ -1,5 +1,17 @@
 [target.'cfg(target_os = "linux")']
+linker = "clang"
+#[target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 #rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
 
+[target.x86_64-pc-windows-msvc]
+linker = "lld-link.exe"
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/mold"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/mold"]
