@@ -1,9 +1,9 @@
 # if running zsh
 if [ -n "$ZSH_VERSION" ]; then
-    # include .zshrc if it exists
-    if [ -f "$ZDOTDIR/.zshrc" ]; then
-      . "$ZDOTDIR/.zshrc"
-    fi
+    # include and .zshrc if it exists
+    #if [ -f "$ZDOTDIR/.zshrc" ]; then
+    #  . "$ZDOTDIR/.zshrc"
+    #fi
 fi
 
 export QT_QPA_PLATFORMTHEME="qt5ct"
