@@ -96,6 +96,7 @@ local="~/.config/zsh/rc"
 use=["{functions/*,my_plugins/*}.zsh"]
 apply = ['defer']
 
+# Config of cli tools
 [plugins.software_integrations]
 local="~/.config/zsh/rc/integrations"
 apply = ['defer']

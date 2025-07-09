@@ -68,6 +68,3 @@ alias claudia="WEBKIT_DISABLE_DMABUF_RENDERER=1 $HOME/.local/bin/claudia"
 # bun completions
 [ -s "/home/kiyama/.bun/_bun" ] && source "/home/kiyama/.bun/_bun"
 
-# tmux
-alias tm="tmux new-session \; source-file ~/.config/tmux/tmux.conf"
-
