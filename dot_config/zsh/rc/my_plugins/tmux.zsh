@@ -25,20 +25,24 @@ tmux() {
 }
 
 tmux_claude(){
-  __tmux_claude
+    # 引数なし -> main セッションへアタッチ / なければ作成
+    # Startup configuration for tmux
+    command tmux attach-session -d -t claude 2>/dev/null \
+      || __tmux_claude
 }
 
 __tmux_claude() {
   SESSION=claude
-  command tmux new-session -A -s $SESSION
+  command tmux new-session -d -s $SESSION
   # 左右分割 & リサイズ
   command tmux splitw -h -d -p 50
   # 右側を選んで, claude 起動
-  command tmux select-pane -t %1 -T claude
+  command tmux select-pane -t 1 -T claude
   command tmux send-keys claude C-m
   # 左選ぶ
-  command tmux select-pane -t %0
+  command tmux select-pane -t 0
   # attach
-  command tmux attach-session>/dev/null
+  command tmux detach
+  command tmux attach-session -t $SESSION 2>/dev/null
 }
 
