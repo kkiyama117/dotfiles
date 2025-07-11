@@ -43,7 +43,7 @@ __tmux_claude() {
   command tmux splitw -h -d -p 50 -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.0
   # 右側を選んで, claude 起動
   command tmux select-pane -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.1 -T claude
-  command tmux send-keys -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.1 "claude" C-m
+  command tmux send-keys -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.1 "claude --continue" C-m
   # 左選ぶ
   command tmux select-pane -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.0
   # attach or switch
