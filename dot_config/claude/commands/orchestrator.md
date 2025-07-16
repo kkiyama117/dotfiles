@@ -9,7 +9,7 @@ Split complex tasks into sequential steps, where each step can contain multiple 
 ## Workflow Pattern of the orchestrator process
 
 1. **Initial Analysis**
-    - If you can choose `Claude Opus` model, use it when doing this section. 
+    - If you can choose `Claude Opus` model, use it when doing this section. and use `think` or `hard think` if you can.
     - Identify key components and dependencies.
     - Plan sequential steps and parallel subtasks
     - You can use browser if the information about tools or tasks is needed.
@@ -17,7 +17,7 @@ Split complex tasks into sequential steps, where each step can contain multiple 
       - We call this folder for the task `task_debug_folder`.
     - Write the plan down at `(task_debug_folder)/design.md`
 2. **Step Planning**
-    - If you can choise `Claude Opus` model, use it when doing this section. 
+    - If you can choise `Claude Opus` model, use it when doing this section. and use in this section `ultrathink` if you can.
     - Based on the requirements, identify all necessary task.
       - Design a hierarchical structure consisting of a major goal (step) and subtasks necessary to achieve it.
       - Each step can contain multiple parallel subtasks
@@ -29,7 +29,7 @@ Split complex tasks into sequential steps, where each step can contain multiple 
       - Branch names should start with `feature/` followed by a brief summary of the task.
     - If you can choise `Claude Sonnet` model, use it when doing this section (especially in coding) . 
     - Break down tasks into small, manageable units that can be completed within a single commit.
-    - Execute subtasks within a step (in parallel if planed in `todos.md`).
+    - Execute subtasks within a step (in parallel if told in `todos.md`).
       - Always update `.context/tasks/todos.md` to mark how far a task has been completed
     - Create a checklist for each task to manage its progress.
     - Wait for all subtasks in current step to complete
@@ -42,14 +42,14 @@ Split complex tasks into sequential steps, where each step can contain multiple 
     - Add, remove, or modify subtasks at `todos.md` and `plan.md` if needed.
     - Request concise summaries (100-200 words) from each subtask for message of git commit.
     - Do not commit your changes by yourself. Instead, ask for confirmation when each step is done.
-5. ** Execution and step loop **
+5. **Execution and step loop**
     - If you can choise `Claude Opus` model, use it when doing this section. 
-    - Once one step is complete, repeat steps 3-5 of this list for the next step, and repeat until all tasks are complete.
+    - Once one step is complete, repeat from 3(Step-by-Step Execution) to 4(Step Review and Adaptation) of this list for the next step, and repeat until all tasks are complete.
       - Synthesize results from the completed step
       - Use synthesized results as context for next step
       - Build comprehensive understanding progressively
     - Maintain flexibility to adapt plan
-      - And also update `(task_debug_folder)/plan.md` and `step_be_step.md`, `(task_debug_folder)/repomix-output.xml`.
+      - And also update `(task_debug_folder)/plan.md` and `todos.md`, `(task_debug_folder)/repomix-output.xml`.
 6. **Finish task**
     - At last (when all task completed), move `(task_debug_folder)` into `.claude/archive/(git branch name)`.
     - When instructed to create a Pull Request (PR), use the following format:
