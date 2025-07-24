@@ -5,7 +5,7 @@ __tmux_inner() {
   command tmux select-pane -t=$__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.0 -T $__TMUX_SESSION_TARGET
   command tmux source-file ~/.config/tmux/tmux.conf
   # 上下分割 & リサイズ
-  command tmux splitw -d -p 15 -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.0
+  command tmux splitw -d -p 25 -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.0
   # 下を左右に分割
   command tmux splitw -h -d -p 50 -t $__TMUX_SESSION_TARGET:$__TMUX_SESSION_TARGET.1
   # attach or switch

@@ -1,0 +1,32 @@
+gp
+git commi t -a
+git commit -a
+gP
+cd rust
+cargo new --lib data_manager
+cargo new data_manager_cli
+cd ..
+claude --continue
+claude --continue
+cargo test -- --ignored
+gs feature/toml-reader
+git add .
+git commit -a
+rustc --version
+ga .
+ga .
+cargo build
+cargo build --releasew
+cargo build --release
+ls ./target/release/
+cargo build
+cargo build
+ga .
+gc .
+ga .
+git switch -c develop
+gP
+git branch
+git merge feature/update-test-paths
+git branch -d feature/update-test-paths
+ /home/kiyama/.vscode/extensions/vadimcn.vscode-lldb-1.11.5/adapter/codelldb terminal-agent --connect=42055 
