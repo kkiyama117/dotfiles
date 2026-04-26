@@ -30,7 +30,7 @@ task_output = "prefix" # see Tasks Runner for more information
 paranoid = false       # see MISE_PARANOID
 
 shorthands_file = '~/.config/mise/shorthands.toml' # path to the shorthands file, see `MISE_SHORTHANDS_FILE`
-disable_default_shorthands = false # disable the default shorthands, see `MISE_DISABLE_DEFAULT_SHORTHANDS`
+disable_default_registry = true
 disable_tools = ['python','rust']           # disable specific tools, generally used to turn off core tools
 
 env_file = '.env' # load env vars from a dotenv file, see `MISE_ENV_FILE`
@@ -45,19 +45,19 @@ go_set_gobin = true
 [env]
 
 # Go
-GOPATH = '{{- .chezmoi.homeDir }}/.local/share/mise/installs/go/latest/packages'
-GOROOT = '{{- .chezmoi.homeDir }}/.local/share/mise/installs/go/latest'
+GOPATH = '/home/kiyama/.local/share/mise/installs/go/latest/packages'
+GOROOT = '/home/kiyama/.local/share/mise/installs/go/latest'
 
 # Java
-_JAVA_OPTIONS = '-Djava.util.prefs.userRoot={{- .chezmoi.homeDir }}/.config/java'
-GRADLE_USER_HOME = '{{- .chezmoi.homeDir }}/.local/share/gradle'
+_JAVA_OPTIONS = '-Djava.util.prefs.userRoot=/home/kiyama/.config/java'
+GRADLE_USER_HOME = '/home/kiyama/.local/share/gradle'
 
 # node
 #NODE_ENV = 'production'
-#NPM_CONFIG_USERCONFIG = '{{- .chezmoi.homeDir }}/.config/npm/npmrc'
+#NPM_CONFIG_USERCONFIG = '/home/kiyama/.config/npm/npmrc'
 
 # ocaml
-#OPAMROOT = '{{- .chezmoi.homeDir }}/.local/share/opam'
+#OPAMROOT = '/home/kiyama/.local/share/opam'
 #[[ ! -r "$XDG_DATA_HOME/opam-init/init.zsh" ]] || source "$XDG_DATA_HOME/opam-init/init.zsh"  > /dev/null 2> /dev/null
 
 [tools]
@@ -65,9 +65,11 @@ bun = "latest"
 deno = "latest"
 go = "latest"
 java = "22"
+julia = "latest"
 node = "latest"
 #opam = "latest"
 pnpm = "latest"
+ruby = "latest"
 #ruby = "latest"
 usage = "latest"
 
