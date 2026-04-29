@@ -8,29 +8,23 @@
 
 ## アクティブタスク
 
-### F-3. wired 通知の左クリック / 右クリックアクション実装 🆕
-- 背景: B 案で Claude Code → wired のデスクトップ通知が復活し、`--expire-time=0` で自動消去されなくなった (`dot_local/bin/executable_claude-notify-sound.sh`)。次のステップとして popup を **左クリックで発信元セッションへフォーカス** / **右クリックでコンテキストメニュー (or 即時 dismiss)** にしたい。
-- 該当: `dot_local/bin/executable_claude-notify-sound.sh` 拡張、または新規 `dot_local/bin/executable_claude-notify-dispatch.sh` (仮)
-- 設計メモ:
-  - libnotify のアクション: `notify-send --action="default=Open" --wait` で popup にクリック領域を生やせる。`--wait` は ActionInvoked シグナルが返るまでブロックし、action key を stdout に出力。
-  - Claude Code hook 本体は短命で `--wait` を同期保持できない → **バックグラウンドサブシェル** で `notify-send --wait` を fork し `setsid` でセッション分離。hook 自体は即 return。
-  - 左クリック (`default` アクション):
-    - hook payload の `session_id` / `transcript_path` / `cwd` を `--hint=string:x-claude-session:<id>` 等に載せて受け渡す
-    - tmux 上で動いていれば `tmux switch-client -t <session>` + `select-pane -t <pane>` で前面化
-    - 既存 `dot_config/tmux/scripts/tmux-claude-*.sh` (commit `4c00b7a` / `9b12f16` で導入) のロジックを流用可能か確認
-    - tmux 外なら fallback として `cwd` を持つ ghostty / kitty ウィンドウを `wmctrl` / `swaymsg` で focus、もしくは `transcript_path` を `$EDITOR` で開く
-  - 右クリック: wired のデフォルト (dismiss) を尊重するか、`--action=open-transcript=Open transcript` 等で別アクションを増やすか検討。`wired.ron` の `notification.action_default` / `action_anywhere` の挙動を実機で確認してから決める。
-  - 多重発火対策: 同一 session に対する未処理 popup が複数残っているとアクション競合する → libnotify の `replace-id` で前の popup を上書きするか、session_id をキーに de-dup。
-- 対応:
-  - [ ] hook payload (`session_id`, `transcript_path`, `cwd`) を `--hint=string:x-claude-session:<value>` で `notify-send` に乗せる
-  - [ ] `notify-send --wait --action=default=Focus` を fork するディスパッチャースクリプトを追加 (`setsid` + `disown` で hook 親プロセスから分離)
-  - [ ] アクション受信時に tmux セッション特定 → switch-client。tmux に無ければ `transcript_path` を `$EDITOR` で開く fallback
-  - [ ] 右クリックの挙動を決定 (デフォルト dismiss を維持 / カスタムアクション追加)
-  - [ ] wired 側で `default` アクションが左クリックで発火することを `wired.ron` 既定構成のまま動作確認 (必要なら `notification.action_default = "left_click"` の設定例をドキュメント化のみ。wired.ron 自体は変更しない)
-  - [ ] `replace-id` ベースで同一 `session_id` の通知が積み上がらないようにする (任意)
-- 注意:
-  - `notify-send --wait` は呼び出した libnotify プロセスが生きている間しかアクションを受けない。fork 後に親 hook が exit すると D-Bus name が消える可能性 → `setsid` でセッションリーダー化、または常駐 helper デーモン化を検討。
-  - tmux 外で起動された Claude Code (素の terminal) のフォーカス手段は WM 依存 (Wayland: `swaymsg`, X11: `wmctrl` / `xdotool`)。最小は tmux 連携のみ実装し、それ以外は no-op + ログにとどめる。
+### F-3. wired 通知の左クリック / 右クリックアクション実装 (v1 完了 / follow-up あり)
+- 背景: B 案で Claude Code → wired のデスクトップ通知が復活し、`--expire-time=0` で自動消去されなくなった (`dot_local/bin/executable_claude-notify-sound.sh`)。次のステップとして popup を **左クリックで発信元セッションへフォーカス** / **右クリックで個別 close**。設計ドキュメントは [`superpowers/specs/2026-04-30-wired-click-actions-design.md`](superpowers/specs/2026-04-30-wired-click-actions-design.md)、実装計画は [`superpowers/plans/2026-04-30-wired-click-actions.md`](superpowers/plans/2026-04-30-wired-click-actions.md) を参照。
+
+#### v1 (実装済み, 2026-04-30)
+- [x] hook を `claude-notify-hook.sh` (orchestrator) / `claude-notify-sound.sh` (sound worker) / `claude-notify-dispatch.sh` (popup + action loop) の 3 ファイルに分割
+- [x] hook payload (`session_id`, `message`) と env (`TMUX_PANE`, tmux session 名) を環境変数で dispatcher に受け渡し
+- [x] `notify-send --print-id --wait --action=default=Focus` で popup を保持し、ActionInvoked 受領時に tmux focus + `gdbus CloseNotification` で auto-dismiss
+- [x] `wired.ron` shortcuts を `notification_interact: 1` (左) / `notification_close: 3` (右) / `notification_closeall: 2` (中) に組み替え
+- [x] dispatcher を `setsid` で hook 親 (claude) から分離し、hook は即 exit 0
+- [x] `docs/manage_claude.md` §5.7 と `docs/claude_tmux_cheatsheet.md` §5 にクリックアクション表を追記
+
+#### F-3.next (follow-up, 未着手)
+- [ ] 同一 `session_id` の通知が積み重なった場合の **`replace-id` ベース de-dup**。state ファイル or libnotify hint で session→notif_id を覚えて上書き
+- [ ] **bare terminal fallback** — tmux 外で起動された Claude セッションを左クリックした時に `wmctrl` (X11) / `swaymsg` (Wayland) で cwd を持つ window を focus、または `transcript_path` を `$EDITOR` で開く
+- [ ] **セッション消失時の自動再オープン** — kill されたあと残った popup を左クリック → `tmux_claude_new` 相当のロジックで tmux session を再生成 + `claude --resume <session_id>` で claude を復元
+- [ ] **右クリックの拡張アクション** — 単純 close 以外に「transcript を開く」など二重アクションを検討 (要 wired/notify-send の追加 action 設計)
+- [ ] **dispatcher を 1 本の常駐 helper daemon に集約** — D-Bus signal を直接 listen する案 (ブレストの案 B)。多重 popup 時の状態管理が綺麗になる代わりに systemd unit が増える
 
 ### S-1. シェルコマンド発見系3層 (zsh補完 / tldr / navi) の役割整理と統合 🆕
 - 背景: 現在 zsh autocomplete + tealdeer + navi の3つを併用しているが、明示的な役割分担とキー動線、chezmoi での管理粒度が未整理。冗長なストック (例: navi に tldr 相当を貯める) と新規マシンでの再現性低下を防ぐため、A→B→C の段階で進める。フェーズ A は本コミット前後で着手、B/C は後続。
