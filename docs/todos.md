@@ -58,13 +58,16 @@
   - [x] `$GPG_KEY_ID` の代替として `git config --global user.signingkey` から実行時取得。これは `dot_config/git/config.tmpl:12` で Bitwarden から既に注入済みのキー ID なので、新規 bw call 不要
   - [x] `(( $+commands[keychain] ))` ガード、`signingkey` が空のときは `ssh` agent のみで keychain 起動するフォールバック追加
 
-### H-3. sheldon プラグインに pin を入れる（サプライチェーン）
+### H-3. sheldon プラグインに pin を入れる（サプライチェーン） ✅ 2026-04-29
 - 該当: `dot_config/sheldon/plugins.toml` 全 GitHub プラグイン
 - 現状: `tag` / `rev` 指定なし → リポジトリ乗っ取り or 悪意ある merge があれば次回 `sheldon source` で実行される。
 - 対応:
-  - [ ] `zsh-defer` / `zsh-autosuggestions` / `zsh-completions` / `zsh-syntax-highlighting` / `fast-syntax-highlighting` / `tmux-xpanes` に `tag = "..."` か `rev = "<sha>"` を付与
-  - [ ] 検討: `fast-syntax-highlighting` は `auscompgeek` フォーク。本家との差分とメンテ状況を確認
-  - [ ] 更新は意図的な操作のみ（`sheldon lock` 等を運用に組み込む）
+  - [x] `zsh-defer` → `rev = "53a26e287fbbe2dcebb3aa1801546c6de32416fa"` (リリースタグ無しのため master HEAD で固定)
+  - [x] `zsh-autosuggestions` → `tag = "v0.7.1"`
+  - [x] `zsh-completions` → `tag = "0.36.0"`
+  - [x] `fast-syntax-highlighting` (auscompgeek フォーク) → `tag = "v1.55"`
+  - [x] `tmux-xpanes` → `tag = "v4.2.0"`
+  - [ ] _follow-up_: `auscompgeek/fast-syntax-highlighting` のメンテ状況を再確認し、本家 `zdharma-continuum` 系への乗り換え検討
 
 ### H-4. mise のセキュリティ設定を引き締める ✅ 2026-04-29
 - 該当: `dot_config/mise/config.toml:26,28,30`
@@ -135,34 +138,37 @@
 
 ## MEDIUM
 
-### M-1. mise `shorthands.toml` のリンク切れ
+### M-1. mise `shorthands.toml` のリンク切れ ❌ 誤判断 (2026-04-29)
 - 該当: `dot_config/mise/config.toml:32`, `dot_config/mise/empty_shorthands.toml`
-- 現状: `shorthands_file = '~/.config/mise/shorthands.toml'` を指しているが、chezmoi 管理側のファイル名が `empty_shorthands.toml`。target に `shorthands.toml` は配置されない → `disable_default_registry = true` と組み合わせて全 shorthand 不能になる。
+- 当初の判断: ファイル名不一致と思い `git mv empty_shorthands.toml shorthands.toml` でリネーム → mise が `~/.config/mise/shorthands.toml: No such file or directory` を WARN
+- 真因: chezmoi では `empty_` は「空ファイルでもデプロイする」ことを示す**メタデータ prefix**。target 名は **`empty_` を strip した `shorthands.toml`** で正しい。prefix を落とすと chezmoi は 0-byte ファイルを skip して target が消える。
 - 対応:
-  - [ ] chezmoi 側のファイル名を `empty_shorthands.toml` → `shorthands.toml` にリネーム、または `config.toml` の参照を修正
+  - [x] リネームを差し戻し（`empty_shorthands.toml` に復元）
+  - [x] `chezmoi apply ~/.config/mise/shorthands.toml` で 0-byte target 再生成を確認
+- 学び: `empty_` / `private_` / `executable_` / `readonly_` 等は target 名から strip される chezmoi prefix。prefix が無いと挙動が変わるので削除しない。
 
-### M-2. `mise` の `env_file = '.env'` で `.env` 自動読込
+### M-2. `mise` の `env_file = '.env'` で `.env` 自動読込 ✅ 2026-04-29
 - 該当: `dot_config/mise/config.toml:36`
 - 現状: カレントの `.env` を自動展開。サードパーティ repo に `cd` するだけで環境汚染の可能性。
 - 対応:
-  - [ ] `env_file` をコメントアウトし、direnv 等の明示的な仕組みに統一
+  - [x] `env_file = '.env'` をコメントアウト（明示が必要なら direnv 等で運用）
 
-### M-3. `gpg-connect-agent` を未インストール環境でも無条件実行
+### M-3. `gpg-connect-agent` を未インストール環境でも無条件実行 ✅ 2026-04-29
 - 該当: `dot_config/zsh/dot_zshrc:22, 27`
 - 対応:
-  - [ ] `command -v gpg-connect-agent >/dev/null 2>&1 &&` でガード
+  - [x] 両箇所に `(( $+commands[gpg-connect-agent] )) && \` ガードを追加
 
-### M-4. `~/.local/bin/env` を無条件 source
+### M-4. `~/.local/bin/env` を無条件 source ✅ 2026-04-29
 - 該当: `dot_config/zsh/dot_zshrc:60`
 - 現状: chezmoi 管理外のスクリプトを source している。`INSTALLER_NO_MODIFY_PATH=1` 設定済みで通常生成されないはずなので冗長＋潜在リスク。
 - 対応:
-  - [ ] 削除を第一候補。残すなら `[[ -f ... ]] && source ...` ガード
+  - [x] 行を削除（理由コメントは残置）
 
-### M-5. `cargo/env` の冗長 source
+### M-5. `cargo/env` の冗長 source ✅ 2026-04-29
 - 該当: `dot_config/zsh/dot_zshrc:59`
 - 現状: `$CARGO_HOME/bin` は `dot_zshenv.tmpl:116` で既に PATH に追加済み。
 - 対応:
-  - [ ] L59 を削除
+  - [x] 行を削除（理由コメントは残置）
 
 ### M-6. `dot_zprofile` の二重定義 / ハードコード
 - 該当: `dot_config/zsh/dot_zprofile:9-12`
@@ -181,10 +187,10 @@
 - 対応:
   - [ ] `onefetch.zsh` を `chpwd_functions` フックに切り替え、`cd` の上書きをやめる
 
-### M-8. `.chezmoiignore` のサンプル残骸
+### M-8. `.chezmoiignore` のサンプル残骸 ✅ 2026-04-29
 - 該当: `.chezmoiignore:8-15`
 - 対応:
-  - [ ] `*.txt`, `*/*.txt`, `backups/`, `backups/**` のテンプレートサンプルを削除
+  - [x] `*.txt`, `*/*.txt`, `backups/`, `backups/**` のサンプルを削除し、重複していた `/docs/**/*` を `docs/` に統合
 
 ### M-9. `dot_zshenv` がディレクトリ扱い ✅ 2026-04-29
 - 該当: `dot_config/zsh/dot_zshenv/for_development.zsh`
@@ -198,26 +204,26 @@
 
 ## LOW
 
-### L-1. `aliases.zsh` の危険 alias `gu`
+### L-1. `aliases.zsh` の危険 alias `gu` ✅ 2026-04-29
 - 該当: `dot_config/zsh/rc/aliases.zsh:61`
 - 現状: `alias gu='git add . && git commit && git push'` — `add .` で意図しないファイルを巻き込む。
 - 対応:
-  - [ ] 削除 or `git add -p` などに変更
+  - [x] alias を削除（`git add -p` を直接打つ運用に変更）
 
-### L-2. `aliases.zsh` の `$HOME` ハードコード
+### L-2. `aliases.zsh` の `$HOME` ハードコード ✅ 2026-04-29
 - 該当: `dot_config/zsh/rc/aliases.zsh:65, 68`
 - 現状:
   - `alias claude="$HOME/.local/bin/claude"` — PATH に既にあるため冗長
   - `[ -s "/home/kiyama/.bun/_bun" ] && source "/home/kiyama/.bun/_bun"` — `/home/kiyama` が直書き
 - 対応:
-  - [ ] `claude` alias を削除
-  - [ ] bun の path を `$HOME/.bun/_bun` に変更（あるいはテンプレ化）
+  - [x] `claude` alias を削除
+  - [x] bun の path を `$HOME/.bun/_bun` に変更し、`[[ -r ... ]]` ガードに変更
 
-### L-3. `navi.zsh` のスペースバグ
+### L-3. `navi.zsh` のスペースバグ ✅ 2026-04-29
 - 該当: `dot_config/zsh/rc/integrations/navi.zsh:1`
 - 現状: `alias navit= navi --tldr` （`=` の後にスペース）
 - 対応:
-  - [ ] `alias navit='navi --tldr'` に修正
+  - [x] `alias navit='navi --tldr'` に修正
 
 ### L-4. `pandapdf.zsh` に個人特定情報がハードコード
 - 該当: `dot_config/zsh/rc/my_plugins/pandapdf.zsh:7, 15`
@@ -244,11 +250,12 @@
 - 対応:
   - [ ] `aliases.zsh` 側のデフォルトをコメントで「`integrations/*.zsh` で上書きされる」と注記、または整理
 
-### L-8. `.password_manager.sh` と `.executable_password_manager.sh` の二重管理
-- 該当: `.executable_password_manager.sh`, `.password_manager.sh`
-- 現状: ほぼ同内容。`.chezmoiignore` で `.password_manager.sh` を除外しているが、両方残っている。
+### L-8. `.password_manager.sh` と `.executable_password_manager.sh` の二重管理 ✅ 2026-04-29
+- 該当: `.executable_password_manager.sh`, `dot_config/chezmoi/.password_manager.sh`, `dot_local/share/chezmoi/dot_password_manager.sh`
+- 現状: アクティブなのは source root の `.executable_password_manager.sh` のみ。他 2 箇所は古いコピー（`bw` チェックも非推奨形式）が放置されていた。
 - 対応:
-  - [ ] 旧ファイル `.password_manager.sh` を削除
+  - [x] `git rm dot_config/chezmoi/.password_manager.sh dot_local/share/chezmoi/dot_password_manager.sh`
+  - [ ] _follow-up_: `dot_local/share/chezmoi/dot_keep`（chezmoi ソース dir 内への自己参照）も整理候補だが、本タスクの範囲外として残置
 
 ### L-9. `dot_config/zsh/completions/` と `dot_zfunc/` の二重補完
 - 該当: `dot_config/zsh/completions/`, `dot_config/zsh/dot_zfunc/`
@@ -304,13 +311,13 @@
 
 1. ✅ C-1 / C-2（API キーと BW_SESSION） — セキュリティ最優先
 2. ✅ H-6 / H-7 / H-8 / H-9 / H-10 / H-11 — 動作バグ
-3. H-3 / ✅ H-4 / ✅ H-1 / ✅ H-2 — サプライチェーン・シークレット周り（H-3 のみ未着手）
-4. ✅ H-5 / ✅ H-12 / M-1 / ✅ M-9 — 不要・壊れた構成（M-1 のみ未着手）
-5. M-2〜M-8、L-1〜L-9 — クリーンアップ
+3. ✅ H-3 / ✅ H-4 / ✅ H-1 / ✅ H-2 — サプライチェーン・シークレット周り
+4. ✅ H-5 / ✅ H-12 / ❌ M-1 (誤判断・差し戻し) / ✅ M-9 — 不要・壊れた構成
+5. ✅ M-2 / ✅ M-3 / ✅ M-4 / ✅ M-5 / M-6 / M-7 / ✅ M-8、✅ L-1 / ✅ L-2 / ✅ L-3 / L-4 / L-5 / L-6 / L-7 / ✅ L-8 / L-9 — クリーンアップ
 6. F-1 / F-2 — 派生フォローアップ
 
 ### 残タスクサマリー
-- **HIGH 残**: H-3 (sheldon プラグイン pin)
-- **MEDIUM 残**: M-1〜M-8（M-9 のみ完了）
-- **LOW 残**: L-1〜L-9 全て
-- **Follow-ups**: F-1, F-2
+- **HIGH**: 全完了
+- **MEDIUM 残**: M-6 (`dot_zprofile` 二重定義), M-7 (`cd` 関数二重再定義)
+- **LOW 残**: L-4 (`pandapdf.zsh` 個人特定情報), L-5 (rustup curl-pipe-sh), L-6 (HISTSIZE 乖離), L-7 (integration alias 重複), L-9 (`completions/` と `dot_zfunc/` 二重補完)
+- **Follow-ups**: F-1 (`upd` で chezmoi apply 統合), F-2 (`bw_lock` 文書化)

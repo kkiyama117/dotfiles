@@ -1,1 +1,1 @@
-alias navit= navi --tldr
+alias navit='navi --tldr'

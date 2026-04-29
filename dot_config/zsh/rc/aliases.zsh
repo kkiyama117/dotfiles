@@ -58,12 +58,12 @@ if (( $+commands[git] )) then
   alias gp="git pull"
   alias gs="git switch"
   alias gm="git merge"
-  alias gu='git add . && git commit && git push'
+  # L-1: 旧 `gu` alias は `git add .` で意図しないファイルを巻き込みやすいため削除。
+  #      段階的に追加する `git add -p` を直接打つ運用に変更。
 fi
 
-# claude
-alias claude="$HOME/.local/bin/claude"
-
-# bun completions
-[ -s "/home/kiyama/.bun/_bun" ] && source "/home/kiyama/.bun/_bun"
+# L-2: `claude` は `$HOME/.local/bin` が PATH に含まれていれば不要なため削除。
+# L-2: bun completions は `/home/kiyama` 直書きを `$HOME` に置換し、ファイルが
+#      ある場合のみ source する。
+[[ -r "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 

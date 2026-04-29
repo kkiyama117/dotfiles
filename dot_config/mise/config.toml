@@ -37,7 +37,9 @@ shorthands_file = '~/.config/mise/shorthands.toml' # path to the shorthands file
 disable_default_registry = true
 disable_tools = ['python','rust']           # disable specific tools, generally used to turn off core tools
 
-env_file = '.env' # load env vars from a dotenv file, see `MISE_ENV_FILE`
+# M-2: 任意ディレクトリの `.env` を黙って読み込むと、サードパーティ repo に
+# `cd` するだけで環境変数が汚染されうる。明示が必要なら direnv 等で運用する。
+#env_file = '.env' # load env vars from a dotenv file, see `MISE_ENV_FILE`
 
 # configure messages displayed when entering directories with config files
 status = { missing_tools = "if_other_versions_installed", show_env = false, show_tools = false }

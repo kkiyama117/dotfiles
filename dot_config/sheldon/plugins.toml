@@ -13,8 +13,11 @@ defer = "{{ hooks?.pre | nl }}{% for file in files %}zsh-defer source \"{{ file 
 #############################################################################
 # "defer"
 #############################################################################
+# H-3: zsh-defer はリリースタグを切らない方針のため `rev` で固定。
+# 更新は意図的な操作のみ — 差分を確認した上で sha を上げる。
 [plugins.zsh-defer]
 github = "romkatv/zsh-defer"
+rev = "53a26e287fbbe2dcebb3aa1801546c6de32416fa"
 apply = ['source']
 
 #############################################################################
@@ -36,6 +39,7 @@ inline = 'eval "$(mise activate zsh)"'
 #############################################################################
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
+tag = "v0.7.1"
 apply = ['defer']
 
 [plugins.zsh-autosuggestions.hooks]
@@ -43,6 +47,7 @@ post = "source ~/.config/zsh/rc/integrations/zsh-autosuggestions_atload.zsh"
 
 [plugins.zsh-completions]
 github = "zsh-users/zsh-completions"
+tag = "0.36.0"
 apply = ['defer']
 
 [plugins.zsh-completions.hooks]
@@ -50,8 +55,11 @@ pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.zsh"
 
 # シンタックスハイライトは fast-syntax-highlighting (auscompgeek フォーク) のみを使用。
 # 旧 zsh-users/zsh-syntax-highlighting は重複ロードのため削除済み。
+# H-3: auscompgeek フォークの最新タグ v1.55 で固定。本家 zdharma-continuum 系への
+# 乗り換え検討は別 task。
 [plugins.fast-syntax-highlighting]
 github = "auscompgeek/fast-syntax-highlighting"
+tag = "v1.55"
 apply = ['defer']
 
 #############################################################################
@@ -65,6 +73,7 @@ inline = 'eval "$(starship init zsh)"'
 #############################################################################
 [plugins.tmux-xpanes]
 github = "greymd/tmux-xpanes"
+tag = "v4.2.0"
 apply = ['defer']
 
 #############################################################################

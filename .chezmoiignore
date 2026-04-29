@@ -3,16 +3,7 @@ CLAUDE.md
 .cache
 .password_manager.sh
 *.code-workspace
-
-
-*.txt   # ignore *.txt in the target directory
-*/*.txt # ignore *.txt in subdirectories of the target directory
-        # but not in subdirectories of subdirectories;
-        # so a/b/c.txt would *not* be ignored
-
-backups/   # ignore backups folder in chezmoi directory and all its contents
-backups/** # ignore all contents of backups folder in chezmoi directory
-           # but not backups folder itself
+docs/
 
 # ZShell tmp file
 *.zwc
@@ -27,7 +18,6 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 # `chezmoi init` で生成されるローカル設定。`dot_config/chezmoi/` 配下からは
 # deploy しない（promptStringOnce 等が使えないため）。
 .config/chezmoi/*
-/docs/**/*
 
 .config/gh/private*.yml
 .config/gh/hosts.yml

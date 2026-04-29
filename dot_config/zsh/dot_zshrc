@@ -27,12 +27,15 @@ if [[ -d /mnt/wslg ]]; then
     fi
     typeset -gx SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
     typeset -gx GPG_TTY=$(tty)
-    gpg-connect-agent updatestartuptty /bye > /dev/null
+    # M-3: gpg-connect-agent / gpg が無い環境（コンテナ等）でのエラーを抑止。
+    (( $+commands[gpg-connect-agent] )) && \
+        gpg-connect-agent updatestartuptty /bye > /dev/null
 else
   # "GnuPG envs not loaded in zshenv"
   export GPG_TTY=$(tty)
   # Refresh gpg-agent tty in case user switches into an X session
-  gpg-connect-agent updatestartuptty /bye >/dev/null
+  (( $+commands[gpg-connect-agent] )) && \
+      gpg-connect-agent updatestartuptty /bye >/dev/null
 fi
 
 #fpath=($XDG_CONFIG_HOME/zsh/completions $fpath)
@@ -64,6 +67,9 @@ if [[ -v DEBUG ]]; then
    zprof
 fi
 
-. "$HOME/.local/share/cargo/env"
-. "$HOME/.local/bin/env"
+# M-5: $CARGO_HOME/bin は dot_zshenv.tmpl で PATH に追加済みのため
+#      `cargo/env` の二重 source は不要。
+# M-4: `~/.local/bin/env` は rustup/uv 等のインストーラが PATH 修正用に
+#      生成するファイル。`INSTALLER_NO_MODIFY_PATH=1` を指定済みのため
+#      通常は生成されない → 無条件 source は冗長で潜在リスク。
 
