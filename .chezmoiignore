@@ -1,5 +1,6 @@
 README.md
 CLAUDE.md
+CHANGELOG.md
 .cache
 .password_manager.sh
 *.code-workspace

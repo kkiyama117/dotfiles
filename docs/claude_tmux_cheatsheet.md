@@ -119,6 +119,8 @@ tmux_claude_new feature/x
 # = ~/.config/tmux/scripts/tmux-claude-new.sh feature/x
 ```
 
+`<branch>` がローカル/`origin/<branch>` のどちらにも無い場合は **現在の HEAD を起点に新規ブランチが自動で切られる**。明示的にベースを指定したいときは事前に `git switch <base>` してから呼ぶ。
+
 ---
 
 ## 4. ステータスバーの読み方

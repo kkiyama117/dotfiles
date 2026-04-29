@@ -24,7 +24,13 @@ worktree="${repo_root}-${safe}"
 
 # Ensure worktree exists
 if [ ! -d "$worktree" ]; then
-  git worktree add "$worktree" "$branch" || {
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    git worktree add "$worktree" "$branch"
+  elif git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    git worktree add -b "$branch" "$worktree" "origin/$branch"
+  else
+    git worktree add -b "$branch" "$worktree" HEAD
+  fi || {
     echo "tmux-claude-new: failed to create worktree at $worktree" >&2
     exit 1
   }

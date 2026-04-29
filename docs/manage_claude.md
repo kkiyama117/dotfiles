@@ -144,7 +144,7 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 
 | スクリプト | 役割 |
 |---|---|
-| `tmux-claude-new.sh <branch>` | branch 名から `claude-<safe>` session 名を作り、`<repo-root>-<safe>` に git worktree を生成、左 pane = shell / 右 pane = `claude --continue --fork-session` の 2-pane session を起動 |
+| `tmux-claude-new.sh <branch>` | branch 名から `claude-<safe>` session 名を作り、`<repo-root>-<safe>` に git worktree を生成、左 pane = shell / 右 pane = `claude --continue --fork-session` の 2-pane session を起動。ローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する |
 | `claude-pick-branch.sh` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec` |
 | `claude-pick-session.sh` | `claude-*` の session を fzf 選択 → `switch-client` |
 | `claude-respawn-pane.sh` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
