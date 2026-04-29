@@ -41,9 +41,10 @@
 - 該当: `dot_zshenv.tmpl:143` (C-1 で削除済み) → `dot_config/zsh/rc/private_secrets.zsh.tmpl` に移動済み → 本タスクで UUID リテラル除去
 - 現状: `eaefa7ca-a68b-4de5-bf20-b26000f35f93` が公開リポジトリに直書き。UUID 単独でアクセスは不可だが、漏洩時の標的特定を容易にする情報。
 - 対応:
-  - [x] `dot_config/chezmoi/chezmoi.toml.tmpl` で `promptStringOnce` を使い、`.bitwardenOpenRouterItemId` を chezmoi の `[data]` セクションに保存（保存先 `~/.config/chezmoi/chezmoi.toml` は `.chezmoiignore` で deploy 対象外、リポジトリには混入しない）
+  - [x] `.chezmoi.toml.tmpl`（**ソースルート**）で `promptStringOnce` を使い、`.bitwardenOpenRouterItemId` を chezmoi の `[data]` セクションに保存（保存先 `~/.config/chezmoi/chezmoi.toml` は `.chezmoiignore` で deploy 対象外、リポジトリには混入しない）
   - [x] `private_secrets.zsh.tmpl` をハードコード UUID から `.bitwardenOpenRouterItemId` 参照に変更
   - [x] `bitwardenOpenRouterItemId` が未定義のときは export ブロック全体をスキップ（chezmoi data 不在時に空 export を防ぐ）
+  - [x] **fix (2026-04-29)**: 当初 `dot_config/chezmoi/chezmoi.toml.tmpl` に置いたが、これは deploy ターゲットとして処理されるため `promptStringOnce` が `function not defined` エラーになる。`.chezmoi.toml.tmpl`（ソースルート、`chezmoi init` 時専用）に移動して解消（commit `7399c71`）
 - **移行手順** (適用前に必須):
   1. `chezmoi init kkiyama117 --apply=false` を実行 → UUID 入力プロンプト → `eaefa7ca-a68b-4de5-bf20-b26000f35f93` を入力
   2. または手動で `~/.config/chezmoi/chezmoi.toml` を編集し、`[data]` セクションに `bitwardenOpenRouterItemId = "eaefa7ca-a68b-4de5-bf20-b26000f35f93"` を追加
@@ -74,10 +75,10 @@
   - [x] `not_found_auto_install = false`
   - [ ] `trusted_config_paths = ['~/programs']` の範囲をプロジェクト単位に縮小（TODO コメントのみ残置、運用への影響を避けるため別 task で）
 
-### H-5. `bw_session` の構造バグ（C-2 と同根）
-- 該当: `dot_config/sheldon/plugins.toml:85-87`, `dot_config/zsh/bin/executable_bw_session`
+### H-5. `bw_session` の構造バグ（C-2 と同根） ✅ 2026-04-29
+- 該当: `dot_config/sheldon/plugins.toml:85-87`, `dot_config/zsh/bin/executable_bw_session`（削除済み）
 - 現状: `apply = ['path']` で PATH 追加されるが、外部実行された子プロセス内で `export` しても親に効かない。
-- 対応: C-2 とまとめて修正（source 化）
+- 対応: C-2 とまとめて修正済（`rc/functions/bw_session.zsh` で defer source される関数定義に切り替え）
 
 ### H-6. `for_development.zsh` の壊れた path 展開 ✅ 2026-04-29
 - 該当: `dot_config/zsh/dot_zshenv/for_development.zsh:33`（旧、削除済み） → `dot_config/zsh/rc/for_development.zsh`
@@ -301,8 +302,15 @@
 
 ## 対応順の推奨
 
-1. C-1 / C-2（API キーと BW_SESSION） — セキュリティ最優先
-2. H-6 / H-7 / H-8 / H-9 / H-10 / H-11 — 動作バグ
-3. H-3 / H-4 / H-1 / H-2 — サプライチェーン・シークレット周り
-4. H-12 / M-1 / M-9 — 不要・壊れた構成
+1. ✅ C-1 / C-2（API キーと BW_SESSION） — セキュリティ最優先
+2. ✅ H-6 / H-7 / H-8 / H-9 / H-10 / H-11 — 動作バグ
+3. H-3 / ✅ H-4 / ✅ H-1 / ✅ H-2 — サプライチェーン・シークレット周り（H-3 のみ未着手）
+4. ✅ H-5 / ✅ H-12 / M-1 / ✅ M-9 — 不要・壊れた構成（M-1 のみ未着手）
 5. M-2〜M-8、L-1〜L-9 — クリーンアップ
+6. F-1 / F-2 — 派生フォローアップ
+
+### 残タスクサマリー
+- **HIGH 残**: H-3 (sheldon プラグイン pin)
+- **MEDIUM 残**: M-1〜M-8（M-9 のみ完了）
+- **LOW 残**: L-1〜L-9 全て
+- **Follow-ups**: F-1, F-2
