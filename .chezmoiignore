@@ -4,6 +4,7 @@ CLAUDE.md
 .password_manager.sh
 *.code-workspace
 docs/
+.worktrees
 
 # ZShell tmp file
 *.zwc
@@ -40,3 +41,6 @@ docs/
 {{ if ne .chezmoi.os "linux" }}
   .config/app/file.conf
 {{ end }}
+
+# tmux-resurrect / continuum 自動保存（生成物 — chezmoi 管理対象外）
+.local/share/tmux/*

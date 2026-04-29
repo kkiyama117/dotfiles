@@ -76,6 +76,8 @@ ripgrep
 tealdeer
 pueue
 zoxide
+tmux
+fzf
 EOF
 #eza
 
@@ -85,3 +87,8 @@ done
 
 #command curl -fsSL https://deno.land/x/install/install.sh | sh
 #command deno run --allow-env --allow-run --allow-read="." --allow-write="logs" main.ts install $OS
+
+# tmux: TPM bootstrap (idempotent)
+if [ -x "$HOME/.config/tmux/scripts/tpm-bootstrap.sh" ]; then
+  "$HOME/.config/tmux/scripts/tpm-bootstrap.sh"
+fi

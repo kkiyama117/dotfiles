@@ -107,7 +107,101 @@ tmux attach -t <session>
 
 ---
 
-## 5. 公式ドキュメント
+## 5. このリポジトリ独自の tmux + 通知セットアップ
+
+このリポジトリ (`chezmoi`) は §3 のワークフローを **キーバインド一発** で実行できる tmux 統合を備える。生の `tmux new-window` / `git worktree add` を毎回打つ代わりに `prefix + C, n` のような二段ショートカットで等価操作が走る。
+
+### 5.1 tmux prefix と直下バインド
+
+prefix は **`C-t`** (Ctrl+t)。`dot_config/tmux/conf/options.conf` で `unbind C-b` 後 `set -g prefix C-t`。
+
+| 打鍵 | 動作 | 実装 |
+|---|---|---|
+| `prefix + g` | 現リポジトリの **git worktree** を fzf で選び新 window で開く | `bindings.conf` インライン |
+| `prefix + s` | **全 tmux session** を fzf で選び switch-client | `bindings.conf` インライン |
+| `prefix + C` | **claude_table** へ二段プレフィックス遷移（次のキー待ち） | `switch-client -T claude_table` |
+| `prefix + h/j/k/l` | vim 風 pane 移動 | — |
+| `prefix + \|` / `_` | カレント PWD を継承して水平 / 垂直分割 | — |
+| `prefix + M-c` / `M-C` | 現 PWD で新 window / 新 session | — |
+| `prefix + J/K` / `L/H` | 次/前 window / 次/前 session | — |
+| `prefix + q` | 現 pane を kill | — |
+
+### 5.2 claude_table（`prefix + C` 後の二段目）
+
+`prefix + C` を押すと status-left に `⟨claude_table⟩` が表示され、次のキー入力 1 つで以下が走る (`bindings.conf` の `bind -T claude_table ...` 群):
+
+| キー | 動作 | 実装スクリプト |
+|---|---|---|
+| `c` | 現 pane で `claude --continue` を送信 | inline `send-keys` |
+| `n` | git branch を fzf で選び **新規 worktree + 2-pane Claude session** を作成 | `claude-pick-branch.sh` → `tmux-claude-new.sh` |
+| `r` | 現 session 内の `claude` pane を kill → `claude --continue` で再起動 | `claude-respawn-pane.sh` |
+| `s` | `claude-*` 名前の session を fzf で選び switch-client | `claude-pick-session.sh` |
+| `k` | 現 session が `claude-*` なら **session + worktree を一括削除**（`confirm-before` で確認） | `claude-kill-session.sh` |
+
+### 5.3 ヘルパースクリプト (`dot_config/tmux/scripts/`)
+
+| スクリプト | 役割 |
+|---|---|
+| `tmux-claude-new.sh <branch>` | branch 名から `claude-<safe>` session 名を作り、`<repo-root>-<safe>` に git worktree を生成、左 pane = shell / 右 pane = `claude --continue --fork-session` の 2-pane session を起動 |
+| `claude-pick-branch.sh` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec` |
+| `claude-pick-session.sh` | `claude-*` の session を fzf 選択 → `switch-client` |
+| `claude-respawn-pane.sh` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
+| `claude-kill-session.sh` | `claude-*` session 限定で `kill-session` + `git worktree remove --force` |
+| `claude-status-count.sh` | `pgrep -c -x claude` の値で `[claude:N]` を status-right に出力 |
+| `claude-branch.sh <path>` | path の git branch を `[branch] ` 形式で status-right に出力 |
+| `tpm-bootstrap.sh` | TPM (`~/.config/tmux/plugins/tpm/`) のクローン + `install_plugins` 実行（idempotent） |
+
+### 5.4 zsh ラッパー
+
+シェル直叩き用に zsh 関数を 1 つ用意 (`dot_config/zsh/rc/my_plugins/tmux.zsh`):
+
+```zsh
+tmux_claude_new <branch>   # ~/.config/tmux/scripts/tmux-claude-new.sh の薄ラッパー
+```
+
+`prefix + C, n` の popup と同じロジックを通常のシェルからも呼べる。
+
+### 5.5 ステータスバー
+
+`dot_config/tmux/conf/status.conf`:
+
+- **左**: `[<session>:<window>:<pane>]` + `⌘` (prefix 入力中) + `⟨claude_table⟩` (key-table 進入中)
+- **右**: `[claude:N]` (実行中 claude プロセス数) + `[branch]` (現 pane の git branch) + 時刻
+- 5 秒間隔で更新
+
+`dot_config/tmux/conf/claude.conf` で pane-border-format を上書きし、**`pane_current_command == claude` の pane は黄色枠**でハイライト。
+
+### 5.6 TPM プラグイン
+
+`dot_config/tmux/conf/plugins.conf` で TPM 経由で 3 つ宣言:
+
+| プラグイン | 役割 | 関連設定 |
+|---|---|---|
+| `tmux-plugins/tmux-resurrect` | `prefix + Ctrl-s` で session 状態 (pane 内容含む) を保存 / `prefix + Ctrl-r` で復元 | `@resurrect-capture-pane-contents 'on'`, `@resurrect-strategy-nvim 'session'` |
+| `tmux-plugins/tmux-continuum` | 15 分間隔で自動保存 + tmux 起動時に自動復元 | `@continuum-save-interval '15'`, `@continuum-restore 'on'` |
+| `tmux-plugins/tmux-yank` | コピーモードのバッファをシステムクリップボードへ | — |
+
+TPM 自体は `~/.config/tmux/plugins/tpm/` (XDG パス) に配置。新規マシンでは `chezmoi run_once` 内で `tpm-bootstrap.sh` が走り自動インストールされる。手動実行も同コマンドで可能。
+
+### 5.7 デスクトップ通知 + サウンド
+
+ターン完了 / 入力待ちで **音 + デスクトップ popup** を出す統合フック (`dot_local/bin/executable_claude-notify-sound.sh`):
+
+| トリガー | 音 | 通知タイトル | urgency |
+|---|---|---|---|
+| `Notification` (入力待ち) | `message.oga` | Claude Code | normal |
+| `Stop` (ターン完了) | `complete.oga` | Claude Code | normal |
+| `subagent-stop` | `bell.oga` | Claude Code | low |
+| `error` | `dialog-error.oga` | Claude Code | critical |
+
+ポイント:
+
+- `notify-send --expire-time=0` で **自動消去せず居残る**（ユーザがクリックして dismiss するまで表示）
+- `pw-play` → `paplay` → `ffplay` の順でフォールバック再生
+- 通知 daemon は **wired-notify** (`dot_config/wired/wired.ron` + `dot_config/systemd/user/wired.service`)。`--expire-time=0` を尊重して popup が永続化される
+- フック登録は `dot_config/claude/settings.json` の `hooks.Notification` と `hooks.Stop`
+
+## 6. 公式ドキュメント
 
 - セッション管理: <https://code.claude.com/docs/en/how-claude-code-works.md>
 - Agent Teams: <https://code.claude.com/docs/en/agent-teams>

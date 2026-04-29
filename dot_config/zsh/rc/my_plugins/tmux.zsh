@@ -70,3 +70,9 @@ tmux_claude(){
     fi
 }
 
+tmux_claude_new() {
+  # Thin wrapper around the portable shell script so tmux popups can call the
+  # same logic. Keeps tmux / tmux_claude untouched.
+  ~/.config/tmux/scripts/tmux-claude-new.sh "$@"
+}
+
