@@ -15,7 +15,9 @@
 # sudo_command = "sudo"
 
 # Disable specific steps - same options as the command line flag
-disable = ["opam"]
+# chezmoi: bitwarden 解錠が必要なため topgrade では走らせない。
+#          手動で `chezmoi_apply` (rc/functions/bw_session.zsh) を使うこと。
+disable = ["opam", "chezmoi"]
 
 # Ignore failures for these steps
 # ignore_failures = ["powershell"]

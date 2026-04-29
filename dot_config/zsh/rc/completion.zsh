@@ -1,7 +1,11 @@
 #==============================================================#
 ##          Completion                                        ##
 #==============================================================#
-dir_color # eval dir_colors
+# Populate LS_COLORS from $XDG_CONFIG_HOME/dircolors so that the zstyle
+# list-colors below has values to consume.
+if (( $+commands[dircolors] )) && [[ -r "$XDG_CONFIG_HOME/dircolors" ]]; then
+    eval "$(dircolors -b "$XDG_CONFIG_HOME/dircolors")"
+fi
 
 setopt prompt_subst          # Pass escape sequence (environment variable) through prompt
 

@@ -48,10 +48,8 @@ apply = ['defer']
 [plugins.zsh-completions.hooks]
 pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.zsh"
 
-[plugins.zsh-syntax-highlighting]
-github = 'zsh-users/zsh-syntax-highlighting'
-apply = ['defer']
-
+# シンタックスハイライトは fast-syntax-highlighting (auscompgeek フォーク) のみを使用。
+# 旧 zsh-users/zsh-syntax-highlighting は重複ロードのため削除済み。
 [plugins.fast-syntax-highlighting]
 github = "auscompgeek/fast-syntax-highlighting"
 apply = ['defer']
@@ -74,7 +72,11 @@ apply = ['defer']
 #############################################################################
 [plugins.my_conf_pre_load]
 local="~/.config/zsh/rc"
-use=["{options}.zsh"]
+use=["{options,secrets,for_development}.zsh"]
+# 同期 source (defer しない) — secrets.zsh の env と for_development.zsh の
+# PATH/env を Claude Code/codex plugin 等、プロンプト直後の子プロセスにも
+# 確実に継承させるため。
+apply = ['source']
 
 [plugins.my_conf_defered]
 local="~/.config/zsh/rc"

@@ -1,7 +1,7 @@
 ################################################################################
 # DEBUG setting
 ################################################################################
-if [[ -v "$DEBUG" ]]; then
+if [[ -v DEBUG ]]; then
   zmodload zsh/zprof
 fi
 
@@ -80,7 +80,7 @@ export GNUPGHOME="$XDG_DATA_HOME"/gnupg
 # zsh
 export ZDOTDIR="${ZDOTDIR:-$XDG_CONFIG_HOME/zsh}"
 if [[ ! -f $XDG_DATA_HOME/zsh/history ]]; then
-  mkdir $XDG_DATA_HOME/zsh
+  mkdir -p $XDG_DATA_HOME/zsh
   touch $XDG_DATA_HOME/zsh/history
 fi
 # https://qiita.com/sho-t/items/d553dd694900cae0966d
@@ -101,7 +101,7 @@ setopt hist_reduce_blanks
 setopt hist_save_no_dups
 setopt hist_no_store
 setopt hist_verify
-WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
+WORDCHARS=${WORDCHARS//[\/&.;]/}                                # Don't consider certain characters part of the word
 
 ################################################################################
 # GENERAL programming language path
@@ -135,12 +135,6 @@ export NPM_CONFIG_USERCONFIG="${NPM_CONFIG_USERCONFIG:-"$XDG_CONFIG_HOME"/npm/np
 #path=($XDG_DATA_HOME/mise/shims(N-/) $path)
 eval "$(mise activate zsh --shims)"
 export MISE_DATA_DIR="${MISE_DATA_DIR:-$XDG_DATA_HOME/mise}"
-
-################################################################################
-# API tokens / Secrets (Bitwarden 経由)
-################################################################################
-# OpenRouter (item: openrouter.CODEX)
-export OPENROUTER_API_KEY="{{ (bitwardenFields "item" "eaefa7ca-a68b-4de5-bf20-b26000f35f93").CODEX.value }}"
 
 ################################################################################
 # GENERAL program config and path

@@ -25,6 +25,7 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 # chezmoi
 .config/chezmoi/*
 !.config/chezmoi/chezmoi.toml
+/docs/**/*
 
 .config/gh/private*.yml
 .config/gh/hosts.yml

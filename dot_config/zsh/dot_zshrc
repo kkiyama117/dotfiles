@@ -14,8 +14,16 @@
 
 # https://wiki.archlinux.jp/index.php/GnuPG
 if [[ -d /mnt/wslg ]]; then
-    if [[ -z $GPG_AGENT_INFO ]]; then
-        eval $(keychain -q --eval --agents ssh,gpg $GPG_KEY_ID)
+    if [[ -z $GPG_AGENT_INFO ]] && (( $+commands[keychain] )); then
+        # GPG_KEY_ID は git の signingkey から拾う (chezmoi 経由で Bitwarden から
+        # injection 済み)。signingkey が空なら ssh agent のみで keychain を起動。
+        _gpg_key_id="$(git config --global user.signingkey 2>/dev/null)"
+        if [[ -n $_gpg_key_id ]]; then
+            eval "$(keychain -q --eval --agents ssh,gpg "$_gpg_key_id")"
+        else
+            eval "$(keychain -q --eval --agents ssh)"
+        fi
+        unset _gpg_key_id
     fi
     typeset -gx SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
     typeset -gx GPG_TTY=$(tty)
@@ -52,7 +60,7 @@ fi
 #unset DBUS_SESSION_BUS_ADDRESS
 
 # debug zsh
-if [[ -v "$DEBUG" ]]; then
+if [[ -v DEBUG ]]; then
    zprof
 fi
 

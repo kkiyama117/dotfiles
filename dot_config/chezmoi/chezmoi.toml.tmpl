@@ -1,3 +1,8 @@
+{{- /* H-1: Bitwarden item UUID は公開リポジトリに混入させず、初回のみユーザーに
+       問い合わせて `~/.config/chezmoi/chezmoi.toml` のローカル data に保存する。
+       `.chezmoiignore` で `.config/chezmoi/*` は deploy 対象外。 */ -}}
+{{- $bwOpenRouterItemId := promptStringOnce . "bitwardenOpenRouterItemId" "Bitwarden item ID for OpenRouter API key (CODEX field)" -}}
+
 {{ if eq .chezmoi.os "windows" }}
 [cd]
     command = "nu"
@@ -6,3 +11,5 @@
     command = ".local/share/chezmoi/.executable_password_manager.sh"
 {{ end }}
 
+[data]
+bitwardenOpenRouterItemId = {{ $bwOpenRouterItemId | quote }}
