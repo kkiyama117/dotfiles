@@ -117,9 +117,17 @@ git worktree remove ../<branch-safe>
 ```bash
 tmux_claude_new feature/x
 # = ~/.config/tmux/scripts/tmux-claude-new.sh feature/x
+
+# メイン worktree の Claude セッションから引き継いで起動 (fzf 選択)
+tmux_claude_new feature/x --from-root
+
+# session ID を直接指定して引き継ぎ
+tmux_claude_new feature/x --from-root 8f9e2bd7-7494-4217-9d7c-28e132041998
 ```
 
 `<branch>` がローカル/`origin/<branch>` のどちらにも無い場合は **現在の HEAD を起点に新規ブランチが自動で切られる**。明示的にベースを指定したいときは事前に `git switch <base>` してから呼ぶ。
+
+`--from-root` は **メイン worktree** の `~/.claude/projects/<encoded>/*.jsonl` から選択し（`/` と `.` を `-` に置換した path がディレクトリ名）、`claude --resume <id> --fork-session` を実行する。`--fork-session` 経由なので **元のセッションは破壊されない**（worktree 側で別 ID として独立に進む）。
 
 ---
 
