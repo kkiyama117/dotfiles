@@ -111,6 +111,8 @@ tmux attach -t <session>
 
 このリポジトリ (`chezmoi`) は §3 のワークフローを **キーバインド一発** で実行できる tmux 統合を備える。生の `tmux new-window` / `git worktree add` を毎回打つ代わりに `prefix + C, n` のような二段ショートカットで等価操作が走る。
 
+> **使い方の早見表**は [`docs/claude_tmux_cheatsheet.md`](./claude_tmux_cheatsheet.md) を参照。本節は実装側の仕様・設計判断を記録する。
+
 ### 5.1 tmux prefix と直下バインド
 
 prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf` で `set -g prefix C-b`。過去に C-t / C-Space / C-\ / C-] / F12 / C-a を試したが、いずれも真因 (Ghostty + X11 + GTK DE での `focus-events on` 暴発、ghostty-org/ghostty#9620) を見落とした早合点だった。`set -g focus-events off` で根本解決済 — 詳細は [`docs/keybinds.md`](./keybinds.md)。

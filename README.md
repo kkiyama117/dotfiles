@@ -14,7 +14,7 @@ Some files`./.local/share/initializer/` folder run by chezmoi and `.config/chezm
 - [starship](https://starship.rs/) prompt
 
 ### Terminal Emulators
-- wezterm
+- kitty
 - ghostty
 
 ### Editor
