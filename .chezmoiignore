@@ -20,6 +20,7 @@ backups/** # ignore all contents of backups folder in chezmoi directory
 */.zcompdump
 .config/zsh/.zcompdump
 .config/zsh/.zcompcache
+.config/zsh/.zsh_history
 
 # chezmoi
 .config/chezmoi/*
