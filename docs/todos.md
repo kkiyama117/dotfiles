@@ -272,19 +272,16 @@
 
 ## Follow-ups（既存タスクから派生したもの）
 
-### F-1. `upd` / `topgrade` 実行時に `chezmoi apply` も自動で走らせる
+### F-1. `upd` / `topgrade` 実行時に `chezmoi apply` も自動で走らせる ✅ 2026-04-29
 - 背景: C-2 / 関連で `topgrade.toml` の `disable` に `chezmoi` を追加し、`upd` alias からも除外した。これは bw 解錠を伴う chezmoi step が unattended 実行で失敗するのを防ぐためだが、結果として **定期更新フローから chezmoi apply が抜け落ちている**。本来は `upd` 一発で chezmoi も最新になってほしい。
-- 候補:
-  - **A**: `upd` を function 化し、`topgrade ... && chezmoi_apply` で連結する（一番素直）
-  - **B**: `topgrade.toml` の `[post_commands]` で `chezmoi_apply` を呼ぶ（topgrade の通知系・タイミング制御に乗る）
-  - **C**: topgrade の `[commands]` カスタムコマンドとして `"Chezmoi (with bw)" = "chezmoi_apply"` を登録する
+- 採用: **A** — `upd` を function 化し、`topgrade ... && chezmoi_apply` で連結。zsh 関数 (`chezmoi_apply` も) のままで完結し、B/C のような `zsh -ic` 経由の起動コストや topgrade 設定との二重管理を避けられる。
 - 注意点:
   - `chezmoi_apply` は内部で `bw unlock` のパスワード入力を要求するため、unattended（cron 等）で `upd` を流す場合は別途 `BW_SESSION` を事前 export する運用にする
-  - `bw_session` / `chezmoi_apply` は zsh 関数なので、topgrade 経由で呼ぶ場合は `zsh -ic 'chezmoi_apply'` のように interactive shell 経由になる（PATH に置く実体ではないため）
+  - `bw_session` / `chezmoi_apply` は zsh 関数なので、topgrade 経由で呼ぶ場合は `zsh -ic 'chezmoi_apply'` のように interactive shell 経由になる（PATH に置く実体ではないため） → A 採用でこの問題は回避
 - 対応:
-  - [ ] A / B / C のいずれを採用するか決める（A 推奨）
-  - [ ] 採用案を実装
-  - [ ] CLAUDE.md / README.md に「`upd` で chezmoi も適用される」旨を追記
+  - [x] A 採用を決定
+  - [x] `dot_config/zsh/rc/integrations/topgrade.zsh` で `alias upd=...` を function 定義に置換し、`topgrade -y ... && chezmoi_apply` 連結
+  - [x] `README.md` に「`upd` (topgrade + chezmoi apply)」節を追加
 
 ### F-2. `bw_lock` 運用の文書化 ✅ 2026-04-29
 - 背景: C-2 で `BW_SESSION` の export は残しつつ、対の `bw_lock` で明示的に解除する運用とした。利用者（自分）が忘れると long-lived な bw セッションが env に残る。
@@ -320,12 +317,12 @@
 3. ✅ H-3 / ✅ H-4 / ✅ H-1 / ✅ H-2 — サプライチェーン・シークレット周り
 4. ✅ H-5 / ✅ H-12 / ❌ M-1 (誤判断・差し戻し) / ✅ M-9 — 不要・壊れた構成
 5. ✅ M-2 / ✅ M-3 / ✅ M-4 / ✅ M-5 / ✅ M-6 / ✅ M-7 / ✅ M-8、✅ L-1 / ✅ L-2 / ✅ L-3 / ✅ L-4 / ✅ L-5 / ✅ L-6 / ✅ L-7 / ✅ L-8 / ✅ L-9 — クリーンアップ
-6. F-1（要 A/B/C 判断） / ✅ F-2 — 派生フォローアップ
+6. ✅ F-1 (A 採用) / ✅ F-2 — 派生フォローアップ
 
 ### 残タスクサマリー
 - **HIGH**: 全完了
 - **MEDIUM**: 全完了（M-1 は誤判断・差し戻し済）
 - **LOW**: 全完了
-- **Follow-ups**:
-  - F-1 (`upd` で chezmoi apply 統合) — A/B/C のどれを採用するか要決定（A 推奨）
+- **Follow-ups**: 全完了
+  - ✅ F-1 (`upd` で chezmoi apply 統合 — A 採用)
   - ✅ F-2 (`bw_lock` 文書化)

@@ -83,3 +83,18 @@ bw_lock                 # `unset BW_SESSION` — always run when you finish
 
 `BW_SESSION` is a vault-wide access key inherited by child processes, so do not leave it
 exported for long-running shells.
+
+### `upd` (topgrade + chezmoi apply)
+
+`upd` (`dot_config/zsh/rc/integrations/topgrade.zsh`) は topgrade を完走させた後に
+`chezmoi_apply` を連結する zsh 関数。`chezmoi` step は topgrade 側では disable して
+あり、bw 解錠を要する適用はこの関数で別途行う:
+
+```
+bw_session              # 事前に解錠しておくと topgrade 中に再入力されない
+upd                     # topgrade -y ... && chezmoi_apply
+bw_lock                 # 終わったら必ず BW_SESSION を破棄
+```
+
+`upd` は topgrade が rc=0 のときだけ chezmoi_apply を実行する。失敗時に chezmoi
+だけ走らせたいなら `chezmoi_apply` を直接呼べばよい。
