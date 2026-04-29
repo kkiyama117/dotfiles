@@ -38,6 +38,7 @@ bw_lock                 # `unset BW_SESSION` のヘルパ
 ### Path 規約（chezmoi の prefix）
 - `dot_*` → `~/.*`  (例: `dot_config/` → `~/.config/`)
 - `private_*` → 0600 で配置
+- `empty_*` → 空ファイルの場合必須
 - `executable_*` → 実行ビット付き
 - `symlink_*` → シンボリックリンクとして配置（中身は target path）
 - `*.tmpl` → Go `text/template` で展開後に配置
@@ -70,4 +71,3 @@ bw_lock                 # `unset BW_SESSION` のヘルパ
 ## Workflow Notes
 - 編集後は **必ず `chezmoi diff` で差分確認 → `chezmoi apply`**。テンプレ構文ミスはここで初めて顕在化する。
 - 新規 Bitwarden 参照を加えたら、別シェルで `BW_SESSION` を解いて `chezmoi apply` を実行し、展開結果を確認する。
-- `~/.claude/...` 配下を編集したい場合、実体は `dot_config/claude/` にあり、ここでコミットすればよい（symlink 経由）。
