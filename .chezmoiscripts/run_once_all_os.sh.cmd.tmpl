@@ -33,7 +33,10 @@ done
 
 # rust
 if ! [ -x "$(command -v rustup)" ]; then
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+	# L-5: --no-modify-path: rc ファイルへの自動 PATH 追加を抑止（dot_zshenv.tmpl で
+	#      INSTALLER_NO_MODIFY_PATH=1 を export 済みだが、明示でも指定）。
+	#      -y: 非対話モード（chezmoi run_once 経由で unattended 実行されるため）。
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --no-modify-path -y
 	cargo install cargo-edit topgrade mise git-delta
 	rustup component add clippy
 	ln -s ~/.local/share/mise ~/.asdf

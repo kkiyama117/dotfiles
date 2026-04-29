@@ -13,6 +13,9 @@ alias sudo='sudo -H'
 alias osc52='printf "\x1b]52;;%s\x1b\\" "$(base64 <<< "$(date +"%Y/%m/%d %H:%M:%S"): hello")"'
 
 # ls
+# L-7: ls / cat / find / grep のデフォルト alias は coreutils 想定のフォールバック。
+#      `integrations/{lsd,bat,fd,ripgrep}.zsh` が defer source されると上書きされる
+#      （lsd/bat/fd/rg がインストール済みの環境では integrations 側が優先）。
 alias ls='ls -Fh --color=auto'
 alias la='ls -aFh --color=auto'
 alias ll='ls -lh --color=auto'

@@ -72,8 +72,14 @@ You need to edit `/etc/xrdp/startwm.sh` to load $XDG_CONFIG_HOME/zsh/zprofile
 ## update
 
 When you update some of settings, bitwarden-cli runs and require master password to unlock key.
-`BW_SESSION` avoid it.
+Use the `bw_session` / `bw_lock` helpers (defined in `dot_config/zsh/rc/functions/bw_session.zsh`)
+to avoid repeated prompts and to clear the session afterward:
 
 ```
-export BW_SESSION=$(bw unlock --raw)
+bw_session              # wraps `export BW_SESSION=$(bw unlock --raw)`
+chezmoi apply           # or any tool that needs the unlocked vault
+bw_lock                 # `unset BW_SESSION` — always run when you finish
 ```
+
+`BW_SESSION` is a vault-wide access key inherited by child processes, so do not leave it
+exported for long-running shells.

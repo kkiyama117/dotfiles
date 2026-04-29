@@ -170,22 +170,24 @@
 - 対応:
   - [x] 行を削除（理由コメントは残置）
 
-### M-6. `dot_zprofile` の二重定義 / ハードコード
+### M-6. `dot_zprofile` の二重定義 / ハードコード ✅ 2026-04-29
 - 該当: `dot_config/zsh/dot_zprofile:9-12`
 - 現状:
   - `if [ -n "$ZSH_VERSION" ]` ブロック**外**で env を export しており bash でも適用される
   - `GTK2_RC_FILES` を `dot_zshenv.tmpl:149` と二重定義（zprofile が後勝ち）
   - `BROWSER=/usr/bin/google-chrome-stable` ハードコード
 - 対応:
-  - [ ] `GTK2_RC_FILES` の定義場所を一元化（zshenv 側に寄せる）
-  - [ ] `BROWSER` は `command -v google-chrome-stable` で動的に決定 or 不要なら削除
-  - [ ] zsh 限定にしたい設定は `if` ブロック内に
+  - [x] `GTK2_RC_FILES` の定義場所を `dot_zshenv.tmpl` に一元化（zprofile 側を削除）
+  - [x] `BROWSER` を `for ... commands[$_browser]` で動的解決（`google-chrome-stable / google-chrome / chromium / firefox` の順）
+  - [x] `dot_zprofile` は ZDOTDIR 配下にあり zsh login shell 専用のため `ZSH_VERSION` 判定ブロックを削除（実質無意味だった）
 
-### M-7. `cd` 関数の二重再定義
+### M-7. `cd` 関数の二重再定義 ✅ 2026-04-29
 - 該当: `dot_config/zsh/rc/integrations/zoxide.zsh:95`, `dot_config/zsh/rc/integrations/onefetch.zsh:2`
 - 現状: defer ロード順で後勝ち。最終的に `onefetch.zsh` の `cd` が有効化され、内部で `z "$@"` を呼ぶ。
 - 対応:
-  - [ ] `onefetch.zsh` を `chpwd_functions` フックに切り替え、`cd` の上書きをやめる
+  - [x] `onefetch.zsh` を `chpwd_functions` フックに切り替え（`__onefetch_chpwd`）、`cd` の上書きを廃止
+  - [x] `LAST_REPO`（グローバル）→ `__ONEFETCH_LAST_REPO`（typeset -g, 衝突低減）へリネーム
+  - [x] `git rev-parse --is-inside-work-tree` で worktree チェックを早期 return に整理
 
 ### M-8. `.chezmoiignore` のサンプル残骸 ✅ 2026-04-29
 - 該当: `.chezmoiignore:8-15`
@@ -225,30 +227,31 @@
 - 対応:
   - [x] `alias navit='navi --tldr'` に修正
 
-### L-4. `pandapdf.zsh` に個人特定情報がハードコード
+### L-4. `pandapdf.zsh` に個人特定情報がハードコード ✅ 2026-04-29
 - 該当: `dot_config/zsh/rc/my_plugins/pandapdf.zsh:7, 15`
 - 現状: `6530365061_木山.pdf` という学籍番号風数字＋姓が公開リポジトリに含まれる。
 - 対応:
-  - [ ] 関数を引数化（`pandapdf <output.pdf> <page>`）
-  - [ ] あるいは chezmoi data / Bitwarden から差し込みでテンプレ化
+  - [x] 出力ファイル名を環境変数 `PANDAPDF_OUTPUT`（既定 `output.pdf`）で上書き可能に変更
+  - [x] 直接呼び出し時は `pandapdf <page> [output.pdf]` で第 2 引数指定可能
+  - [x] PII（学籍番号風 ID + 姓）をリポジトリから除去
 
-### L-5. rustup の curl-pipe-sh
+### L-5. rustup の curl-pipe-sh ✅ 2026-04-29
 - 該当: `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl:36`
 - 現状: `--proto '=https' --tlsv1.2` 指定済みで実害は小さいが、curl-pipe-sh アンチパターン。
 - 対応:
-  - [ ] `--no-modify-path` の追加（`INSTALLER_NO_MODIFY_PATH=1` で代用済みのため任意）
+  - [x] `sh -s -- --no-modify-path -y` を追加（`INSTALLER_NO_MODIFY_PATH=1` の二重防御 + run_once での非対話実行を明示）
 
-### L-6. `HISTSIZE=200` と `SAVEHIST=100000` の乖離
+### L-6. `HISTSIZE=200` と `SAVEHIST=100000` の乖離 ✅ 2026-04-29
 - 該当: `dot_zshenv.tmpl:88-89`
 - 現状: インメモリ 200・ディスク 10 万件。`hist_ignore_space` 有効でシークレット引数の漏洩は緩和されている。
 - 対応:
-  - [ ] `HISTSIZE=10000` 程度に揃える（任意）
+  - [x] `HISTSIZE=10000` に変更（SAVEHIST=100000 と整合）
 
-### L-7. integration alias の重複
+### L-7. integration alias の重複 ✅ 2026-04-29
 - 該当: `aliases.zsh` と `integrations/{lsd,bat,fd,ripgrep}.zsh`
 - 現状: `ls` / `cat` / `find` / `grep` を 2 ファイルで上書き。意図的だが見通しが悪い。
 - 対応:
-  - [ ] `aliases.zsh` 側のデフォルトをコメントで「`integrations/*.zsh` で上書きされる」と注記、または整理
+  - [x] `aliases.zsh` の ls 群に「coreutils フォールバック・lsd/bat/fd/rg があれば integrations 側で上書きされる」旨をコメントで明記
 
 ### L-8. `.password_manager.sh` と `.executable_password_manager.sh` の二重管理 ✅ 2026-04-29
 - 該当: `.executable_password_manager.sh`, `dot_config/chezmoi/.password_manager.sh`, `dot_local/share/chezmoi/dot_password_manager.sh`
@@ -257,11 +260,13 @@
   - [x] `git rm dot_config/chezmoi/.password_manager.sh dot_local/share/chezmoi/dot_password_manager.sh`
   - [ ] _follow-up_: `dot_local/share/chezmoi/dot_keep`（chezmoi ソース dir 内への自己参照）も整理候補だが、本タスクの範囲外として残置
 
-### L-9. `dot_config/zsh/completions/` と `dot_zfunc/` の二重補完
+### L-9. `dot_config/zsh/completions/` と `dot_zfunc/` の二重補完 ✅ 2026-04-29
 - 該当: `dot_config/zsh/completions/`, `dot_config/zsh/dot_zfunc/`
 - 現状: 同じ補完ファイル群（`_btm`, `_cargo`, `_chezmoi`, ...）が両方に存在。`plugins.toml` の `my_fpaths` は `~/.config/zsh/.zfunc` のみ参照。
 - 対応:
-  - [ ] どちらか一方に統合
+  - [x] `dot_config/zsh/completions/` を `git rm -r`（fpath 未参照のため dead code）
+  - [x] `dot_config/zsh/dot_zshrc` のコメントアウト済み旧 fpath 行を、廃止の経緯を残す注記に置換
+  - 注: 両ディレクトリで内容が異なる補完（`_cargo`, `_deno`, `_pueue`, `_rustup`, `_rye`, `_volta`）は `dot_zfunc/` 側を生かしている
 
 ---
 
@@ -281,11 +286,12 @@
   - [ ] 採用案を実装
   - [ ] CLAUDE.md / README.md に「`upd` で chezmoi も適用される」旨を追記
 
-### F-2. `bw_lock` 運用の文書化
+### F-2. `bw_lock` 運用の文書化 ✅ 2026-04-29
 - 背景: C-2 で `BW_SESSION` の export は残しつつ、対の `bw_lock` で明示的に解除する運用とした。利用者（自分）が忘れると long-lived な bw セッションが env に残る。
 - 対応:
-  - [ ] CLAUDE.md / README.md に「作業終了時は `bw_lock`」を明記
-  - [ ] 検討: `precmd` フックで一定時間アイドルなら自動 `bw_lock` する（過剰になりやすい）
+  - [x] `CLAUDE.md` の「Bitwarden セッション」節を `bw_session` / `bw_lock` ヘルパ前提に書き換え + 注意書き追加
+  - [x] `README.md` の "update" 節を `bw_session` → `chezmoi apply` → `bw_lock` の流れに更新
+  - [ ] _follow-up_: `precmd` フックで一定時間アイドルなら自動 `bw_lock` する案は別タスクで検討（過剰になりやすいため、現時点では明示運用に留める）
 
 ---
 
@@ -313,11 +319,13 @@
 2. ✅ H-6 / H-7 / H-8 / H-9 / H-10 / H-11 — 動作バグ
 3. ✅ H-3 / ✅ H-4 / ✅ H-1 / ✅ H-2 — サプライチェーン・シークレット周り
 4. ✅ H-5 / ✅ H-12 / ❌ M-1 (誤判断・差し戻し) / ✅ M-9 — 不要・壊れた構成
-5. ✅ M-2 / ✅ M-3 / ✅ M-4 / ✅ M-5 / M-6 / M-7 / ✅ M-8、✅ L-1 / ✅ L-2 / ✅ L-3 / L-4 / L-5 / L-6 / L-7 / ✅ L-8 / L-9 — クリーンアップ
-6. F-1 / F-2 — 派生フォローアップ
+5. ✅ M-2 / ✅ M-3 / ✅ M-4 / ✅ M-5 / ✅ M-6 / ✅ M-7 / ✅ M-8、✅ L-1 / ✅ L-2 / ✅ L-3 / ✅ L-4 / ✅ L-5 / ✅ L-6 / ✅ L-7 / ✅ L-8 / ✅ L-9 — クリーンアップ
+6. F-1（要 A/B/C 判断） / ✅ F-2 — 派生フォローアップ
 
 ### 残タスクサマリー
 - **HIGH**: 全完了
-- **MEDIUM 残**: M-6 (`dot_zprofile` 二重定義), M-7 (`cd` 関数二重再定義)
-- **LOW 残**: L-4 (`pandapdf.zsh` 個人特定情報), L-5 (rustup curl-pipe-sh), L-6 (HISTSIZE 乖離), L-7 (integration alias 重複), L-9 (`completions/` と `dot_zfunc/` 二重補完)
-- **Follow-ups**: F-1 (`upd` で chezmoi apply 統合), F-2 (`bw_lock` 文書化)
+- **MEDIUM**: 全完了（M-1 は誤判断・差し戻し済）
+- **LOW**: 全完了
+- **Follow-ups**:
+  - F-1 (`upd` で chezmoi apply 統合) — A/B/C のどれを採用するか要決定（A 推奨）
+  - ✅ F-2 (`bw_lock` 文書化)

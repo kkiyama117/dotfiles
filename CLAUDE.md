@@ -24,8 +24,11 @@ chezmoi init --apply kkiyama117
 ### Bitwarden セッション
 `apply` 時に pre-source hook (`.executable_password_manager.sh`) が `bw` の存在を確認し、テンプレ展開でマスターパスワードが要求される。連続作業時は事前にアンロックしておく:
 ```
-export BW_SESSION=$(bw unlock --raw)
+bw_session              # `export BW_SESSION=$(bw unlock --raw)` のラッパー (rc/functions/bw_session.zsh)
+# 作業終了時は必ず:
+bw_lock                 # `unset BW_SESSION` のヘルパ
 ```
+`BW_SESSION` は Bitwarden ボルト全体へのアクセスキーで、子プロセスに継承されるため長時間 env に残さないこと。
 
 ### Xrdp (該当時)
 `/etc/xrdp/startwm.sh` を編集して `$XDG_CONFIG_HOME/zsh/.zprofile` を読み込ませる必要がある。

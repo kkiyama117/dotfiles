@@ -85,7 +85,9 @@ if [[ ! -f $XDG_DATA_HOME/zsh/history ]]; then
 fi
 # https://qiita.com/sho-t/items/d553dd694900cae0966d
 export HISTFILE=$XDG_DATA_HOME/zsh/history
-export HISTSIZE=200
+# L-6: HISTSIZE はインメモリ履歴件数。SAVEHIST(=100000) と乖離していたため
+#      整合性のある値に揃える。`hist_ignore_space` 等で機密ノイズは抑制済み。
+export HISTSIZE=10000
 export SAVEHIST=100000
 setopt appendhistory
 #setopt extend_history

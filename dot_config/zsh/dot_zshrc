@@ -38,7 +38,8 @@ else
       gpg-connect-agent updatestartuptty /bye >/dev/null
 fi
 
-#fpath=($XDG_CONFIG_HOME/zsh/completions $fpath)
+# L-9: `~/.config/zsh/completions` ディレクトリは廃止（未参照 + dot_zfunc/ と重複）。
+#      補完は sheldon `[plugins.my_fpaths]` から `~/.config/zsh/.zfunc` のみを fpath に追加。
 : "plugin manager" && {
   # ファイル名を変数に入れる
   cache_dir=${XDG_CACHE_HOME:-$HOME/.cache}

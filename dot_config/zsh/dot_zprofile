@@ -1,12 +1,16 @@
-# if running zsh
-if [ -n "$ZSH_VERSION" ]; then
-    # include and .zshrc if it exists
-    #if [ -f "$ZDOTDIR/.zshrc" ]; then
-    #  . "$ZDOTDIR/.zshrc"
-    #fi
-fi
+# M-6: dot_zprofile は ZDOTDIR=~/.config/zsh 配下にあり zsh login shell でのみ
+#      読み込まれるため、`if [ -n "$ZSH_VERSION" ]` 判定は不要。
+# M-6: GTK2_RC_FILES は dot_zshenv.tmpl で XDG 準拠パスに既に export 済みのため
+#      ここでの再定義は削除（旧定義は ~/.gtkrc-2.0 を上書きしていた）。
 
 export QT_QPA_PLATFORMTHEME="qt5ct"
-export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
+
 # fix "xdg-open" export your preferred browser from here
-export BROWSER=/usr/bin/google-chrome-stable
+# M-6: ハードコードを廃し、存在するブラウザを優先順で動的に解決。
+for _browser in google-chrome-stable google-chrome chromium firefox; do
+  if (( $+commands[$_browser] )); then
+    export BROWSER="$commands[$_browser]"
+    break
+  fi
+done
+unset _browser
