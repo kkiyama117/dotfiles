@@ -45,3 +45,17 @@ window-padding-balance = true
 background-opacity = 0.45
 background-blur-radius = 10
 
+# Keybinds
+# ========
+# Ghostty のデフォルトキーバインド (約 70 個) は tmux / zsh / fcitx5 と
+# 衝突する可能性があるため一括クリアし、ターミナル内で消費する必要が
+# 本当にあるものだけ手動で復活させる。
+# - tmux 側でタブ/ペイン/分割/コピー/ペーストを管理しているため、
+#   Ctrl+Shift+T (new_tab) や Ctrl+Tab (next_tab) などは不要。
+# - mouse on + tmux-yank で選択コピーは自動的にシステムクリップボードへ。
+# - 但し「外部アプリ → ターミナル」へのペーストは tmux の paste-buffer では
+#   システムクリップボードに届かないため、ctrl+shift+v だけは復活させる。
+# 詳細は docs/keybinds.md 参照。
+keybind = clear
+keybind = ctrl+shift+v=paste_from_clipboard
+

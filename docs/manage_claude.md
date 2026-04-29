@@ -113,7 +113,7 @@ tmux attach -t <session>
 
 ### 5.1 tmux prefix と直下バインド
 
-prefix は **`C-t`** (Ctrl+t)。`dot_config/tmux/conf/options.conf` で `unbind C-b` 後 `set -g prefix C-t`。
+prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf` で `set -g prefix C-b`。過去に C-t / C-Space / C-\ / C-] / F12 / C-a を試したが、いずれも真因 (Ghostty + X11 + GTK DE での `focus-events on` 暴発、ghostty-org/ghostty#9620) を見落とした早合点だった。`set -g focus-events off` で根本解決済 — 詳細は [`docs/keybinds.md`](./keybinds.md)。
 
 | 打鍵 | 動作 | 実装 |
 |---|---|---|
