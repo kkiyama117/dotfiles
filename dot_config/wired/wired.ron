@@ -9,11 +9,11 @@
     // https://github.com/Toqozz/wired-notify/wiki/Config#shortcuts
     shortcuts: ShortcutsConfig (
         notification_interact: 1,
-        // notification_close: 2,
-        notification_closeall: 3,
+        notification_close: 3,
+        notification_closeall: 2,
         // notification_pause: 99,
 
-        notification_action1: 2,
+        // notification_action1: 99,
         // notification_action2: 99,
         // notification_action3: 99,
         // notification_action4: 99,
