@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.local/bin/claude-notify-sound.sh notification"
+            "command": "/home/kiyama/.local/bin/claude-notify-hook.sh notification"
           }
         ]
       }
@@ -75,7 +75,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.local/bin/claude-notify-sound.sh stop"
+            "command": "/home/kiyama/.local/bin/claude-notify-hook.sh stop"
           }
         ]
       }
