@@ -62,8 +62,7 @@ if (( $+commands[git] )) then
 fi
 
 # claude
-alias claude="$HOME/.config/claude/local/claude"
-alias claudia="WEBKIT_DISABLE_DMABUF_RENDERER=1 $HOME/.local/bin/claudia"
+alias claude="$HOME/.local/bin/claude"
 
 # bun completions
 [ -s "/home/kiyama/.bun/_bun" ] && source "/home/kiyama/.bun/_bun"
