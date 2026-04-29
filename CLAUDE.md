@@ -4,57 +4,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a dotfiles repository managed by [Chezmoi](https://www.chezmoi.io/), containing personal configuration files for various tools and applications on a Linux system (Manjaro).
+[Chezmoi](https://www.chezmoi.io/) で管理する個人用 dotfiles リポジトリ。主要ターゲットは Linux (Manjaro)、副次的に Windows / WSL。Bitwarden をシークレットバックエンドとして利用する。
 
 ## Common Commands
 
-### Chezmoi Operations
-- `chezmoi init --apply kkiyama117` - Initial repository setup
-- `chezmoi update` - Pull latest changes and apply them
-- `chezmoi apply` - Apply configuration changes to the system
-- `chezmoi diff` - Show differences between repository and actual files
-- `chezmoi add ~/.config/someapp` - Add a new configuration file to management
-- `chezmoi edit ~/.config/someapp` - Edit a managed file
-- `chezmoi cd` - Navigate to the Chezmoi source directory
+### Chezmoi
+- `chezmoi diff` — 適用前にローカルとの差分を確認する（編集後は必ず実行）
+- `chezmoi apply` — このリポジトリの変更を `~/` 以下に反映
+- `chezmoi update` — `git pull` + `apply`
+- `chezmoi cd` — このリポジトリ (`~/.local/share/chezmoi`) に移動
+- `chezmoi add ~/path` — 既存ファイルを管理対象に追加（prefix 変換は自動）
 
-### Secret Management
-This repository uses Bitwarden for managing secrets. Templates (`.tmpl` files) reference secrets using:
-- `{{ (bitwarden "item" "secret-name").value }}`
-- `{{ (bitwardenFields "item" "secret-name").field_name.value }}`
+### Bootstrap (新規マシン)
+```
+chezmoi init --apply kkiyama117
+```
+初回のみ `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` が走り、Manjaro 上では `rustup`, `mise`, `paru`, および `ttf-plemoljp-bin / fcitx5 / neovim / wezterm / ripgrep / pueue / zoxide` 等の paru パッケージを導入する。Manjaro 以外では即 `exit 0`。
 
-## Architecture & Structure
+### Bitwarden セッション
+`apply` 時に pre-source hook (`.executable_password_manager.sh`) が `bw` の存在を確認し、テンプレ展開でマスターパスワードが要求される。連続作業時は事前にアンロックしておく:
+```
+export BW_SESSION=$(bw unlock --raw)
+```
 
-### Directory Organization
-- `dot_config/` - Maps to `~/.config/` (XDG config directory)
-- `dot_local/` - Maps to `~/.local/` (XDG local directory)
-- `private_dot_*` - Private files (permissions 0600)
-- `executable_*` - Executable scripts
-- `*.tmpl` - Template files processed by Chezmoi
+### Xrdp (該当時)
+`/etc/xrdp/startwm.sh` を編集して `$XDG_CONFIG_HOME/zsh/.zprofile` を読み込ませる必要がある。
 
-### Key Configuration Areas
-1. **Shell Environment (ZSH)**
-   - Main configs: `dot_config/zsh/.zshrc`, `.zshenv`, `.zprofile`
-   - Aliases: `dot_config/zsh/rc/aliases.zsh`
-   - Plugin management via Sheldon: `dot_config/sheldon/plugins.toml`
+## Architecture
 
-2. **Development Tools**
-   - Git configuration with Bitwarden integration: `dot_config/git/config.tmpl`
-   - Neovim configuration: `dot_config/nvim/`
-   - Terminal emulators: wezterm, alacritty configs
+### Path 規約（chezmoi の prefix）
+- `dot_*` → `~/.*`  (例: `dot_config/` → `~/.config/`)
+- `private_*` → 0600 で配置
+- `executable_*` → 実行ビット付き
+- `symlink_*` → シンボリックリンクとして配置（中身は target path）
+- `*.tmpl` → Go `text/template` で展開後に配置
 
-3. **System Integration**
-   - Systemd user services: `dot_config/systemd/user/`
-   - Desktop entries: `dot_local/share/applications/`
+### 重要なシンボリックリンク
+- `symlink_dot_claude` の中身は `.config/claude` → 結果として **`~/.claude` は `~/.config/claude` への symlink**。`~/.claude/CLAUDE.md` 等を編集すると、このリポジトリの `dot_config/claude/` 配下が更新される（chezmoi の管理対象は後者）。
 
-### Template System
-Templates use Go's text/template syntax with Chezmoi functions:
-- OS detection: `{{ .chezmoi.os }}`, `{{ .chezmoi.osRelease.id }}`
-- Conditional logic: `{{ if eq .chezmoi.os "linux" }}...{{ end }}`
-- Password manager integration for secrets
+### テンプレート分岐の軸
+- `eq .chezmoi.os "linux" / "windows"`
+- `.chezmoi.osRelease.id` (例: `manjaro`)
+- `.chezmoi.kernel.osrelease | lower | contains "microsoft"` で WSL 判定
+- 共有スニペットは `.chezmoitemplates/{linux,windows}/` 配下
 
-### Important Patterns
-1. **Never commit secrets directly** - Always use Bitwarden integration
-2. **Test template changes** with `chezmoi diff` before applying
-3. **Use appropriate file prefixes** (private_, executable_) for permissions
-4. **Follow XDG Base Directory specification** for file locations
+### Bitwarden 参照（`*.tmpl` 内）
+- `{{ (bitwarden "item" "<id>").value }}`
+- `{{ (bitwardenFields "item" "<id>").<field>.value }}`
 
+代表例: `dot_config/git/config.tmpl` で `user.name` / `user.email` / `user.signingkey` を Bitwarden から注入。
+
+### ZSH ロード順
+- ルート直下の `dot_zshenv` (= `~/.zshenv`) で `XDG_CONFIG_HOME` 等を確定し、`ZDOTDIR` を `~/.config/zsh` に向ける
+- 以降は `dot_config/zsh/{dot_zshenv,dot_zprofile,dot_zshrc}` と `rc/*.zsh` が読まれる
+- プラグインは Sheldon (`dot_config/sheldon/plugins.toml`) で `zsh-defer` 経由の遅延読込
+- mise は sheldon 内で `eval "$(mise activate zsh)"` により有効化
+
+### `.chezmoiignore` の特徴
+- ターゲット側にコピーしないものを列挙: `README.md`, `CLAUDE.md`, `*.code-workspace`, `*.zwc`, `dot_config/chezmoi/*` (除く `chezmoi.toml`), `dot_config/gh/hosts.yml`, `.local/share/rye/*` (除く `config.toml`), `.local/share/gnupg/*` (除く `common.conf`)
+- OS 別: 非 Windows では `AppData` を無視、非 Linux では `.config/app/file.conf` を無視
+
+## Workflow Notes
+- 編集後は **必ず `chezmoi diff` で差分確認 → `chezmoi apply`**。テンプレ構文ミスはここで初めて顕在化する。
+- 新規 Bitwarden 参照を加えたら、別シェルで `BW_SESSION` を解いて `chezmoi apply` を実行し、展開結果を確認する。
+- `~/.claude/...` 配下を編集したい場合、実体は `dot_config/claude/` にあり、ここでコミットすればよい（symlink 経由）。
