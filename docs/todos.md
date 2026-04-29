@@ -32,6 +32,42 @@
   - `notify-send --wait` は呼び出した libnotify プロセスが生きている間しかアクションを受けない。fork 後に親 hook が exit すると D-Bus name が消える可能性 → `setsid` でセッションリーダー化、または常駐 helper デーモン化を検討。
   - tmux 外で起動された Claude Code (素の terminal) のフォーカス手段は WM 依存 (Wayland: `swaymsg`, X11: `wmctrl` / `xdotool`)。最小は tmux 連携のみ実装し、それ以外は no-op + ログにとどめる。
 
+### S-1. シェルコマンド発見系3層 (zsh補完 / tldr / navi) の役割整理と統合 🆕
+- 背景: 現在 zsh autocomplete + tealdeer + navi の3つを併用しているが、明示的な役割分担とキー動線、chezmoi での管理粒度が未整理。冗長なストック (例: navi に tldr 相当を貯める) と新規マシンでの再現性低下を防ぐため、A→B→C の段階で進める。フェーズ A は本コミット前後で着手、B/C は後続。
+- 該当範囲:
+  - `dot_config/zsh/` 配下のキーバインド / widget 定義 (`rc/functions/`, `rc/aliases.zsh` 等)
+  - `dot_config/navi/` (新規予定: cheats と config)
+  - `dot_config/tealdeer/` (新規予定: config)
+  - `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の `PACKAGES` (パッケージ追加対象)
+  - `docs/` 配下のポリシードキュメント (例: `docs/shell_discovery.md` 仮)
+
+- フェーズ A (まず実施 = ロール分離のドキュメント化): **完了 (2026-04-30)** → [`shell_discovery.md`](shell_discovery.md)
+  - [x] `docs/shell_discovery.md` を新規作成し、3層の使い分けを明文化
+  - [x] zsh 補完 = 既に打ち始めたコマンドの続きをタブで補完 (無意識動線)
+  - [x] tldr (tealdeer) = コマンド単位の公式チートシート参照 ("どう使うんだっけ" レベル)
+  - [x] navi = 自分用 / プロジェクト固有のワンライナー保存・引数埋め込み実行 (個人スニペット集)
+  - [x] 「navi に tldr 相当 (公式コマンドの基本用法) を蓄積しない」運用ルールを明記
+  - [x] `docs/keybinds.md` への参照を貼り、後続フェーズでキーバインド統一案を反映できる余地を残す
+
+- フェーズ B (後で = chezmoi に設定一式を取り込み):
+  - [ ] `dot_config/tealdeer/config.toml` を chezmoi 管理下に追加
+  - [ ] tealdeer の cache 更新を週次相当で走らせる仕組みを選定 (`run_onchange` / cron / pueue のいずれか) — config 変更時にも cache 引き直せるよう `run_onchange` 寄りで検討
+  - [ ] `dot_config/navi/` にチートシート (`*.cheat`) と config を配置 (private なものは `private_*` プレフィックス検討)
+  - [ ] `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の `PACKAGES` に `tealdeer` / `navi` を追加 (既存の有無を確認)
+  - [ ] zsh 側のキーバインド / widget を `rc/functions/` 配下に整理し、Sheldon 経由で `zsh-defer` ロード
+  - [ ] tldr / navi の起動キーを統一 (案: tldr=Alt+H, navi=Ctrl+G) — 既存 zsh keybind / `zsh-vi-mode` との衝突を実機確認
+
+- フェーズ C (後で = navi cheat 棚卸し):
+  - [ ] 既存 `dot_config/zsh/rc/aliases.zsh` 等の自作 alias / 関数のうち、引数を取りパラメタライズ可能なものを抽出
+  - [ ] `*.cheat` 形式に書き換えて navi 管理へ移行
+  - [ ] 移行済み alias は削除 or thin wrapper のみ残し、シェル起動コストを下げる
+  - [ ] チートシートのタグ規約を決定 (例: `@chezmoi`, `@bitwarden`, `@tmux`, `@git`, `@claude`)
+
+- 注意:
+  - 全 alias を navi に移すのは過剰 — 1〜2 単語で頻打する alias はキータイプ速度の利得があるため残置基準を作る (例: 引数を3つ以上取る or 30 文字以上のものだけ navi 化)
+  - tealdeer の初回 cache fetch はネットワーク必須 → 新規マシン bootstrap で `run_onchange` が走るタイミングと bw_session unlock のタイミング順序に注意
+  - navi の widget が zsh の line editor フックに割り込むため、`fzf-tab` / `zsh-autosuggestions` / `zsh-vi-mode` 等の widget と衝突する可能性。フェーズ B で `bindkey -L` 出力を取って差分管理する
+
 ### F-4. wired-notify を chezmoi run_once で管理対象化 🆕
 - 背景: 通知用 daemon `wired-notify` のバイナリが何らかの理由で OS から消えていた (`/usr/bin/wired` 不在 → `wired.service` が `status=203/EXEC` で 140+ 回 restart loop)。設定 (`dot_config/wired/wired.ron`) と systemd unit (`dot_config/systemd/user/wired.service`) は chezmoi 管理下にあるが、**パッケージ本体は `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の paru パッケージ列に含まれていない** ため、新規マシンや AUR クリーンアップ後に同じ事態が再発する。今回 (2026-04-29) は `paru -S wired-notify` で手動復旧済み。
 - 該当: `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` (line 65-81 付近の `PACKAGES` ヒアドキュメント)
