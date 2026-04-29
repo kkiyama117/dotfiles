@@ -159,7 +159,7 @@ tmux_claude_new feature/x --from-root 8f9e2bd7-7494-4217-9d7c-28e132041998
 
 ## 5. 通知 / サウンド
 
-設定: `dot_config/claude/settings.json` の `hooks.*` + `dot_local/bin/executable_claude-notify-sound.sh`。
+設定: `dot_config/claude/settings.json` の `hooks.*` + `dot_local/bin/executable_claude-notify-hook.sh` (内部で sound + dispatcher を fork)。
 
 | トリガー | 音 | popup タイトル | urgency |
 |---|---|---|---|
@@ -167,6 +167,16 @@ tmux_claude_new feature/x --from-root 8f9e2bd7-7494-4217-9d7c-28e132041998
 | `Stop`（ターン完了） | `complete.oga` | Claude Code | normal |
 | `subagent-stop` | `bell.oga` | Claude Code | low |
 | `error` | `dialog-error.oga` | Claude Code | critical |
+
+クリックアクション:
+
+| ボタン | 動作 |
+|---|---|
+| 左クリック | 発火元の tmux pane に focus を戻して popup を auto-dismiss |
+| 中クリック | 滞留 popup を一括 close |
+| 右クリック | この popup だけ close |
+
+詳細は [`docs/manage_claude.md`](./manage_claude.md) §5.7 / `dot_config/wired/wired.ron`。
 
 ポイント:
 
@@ -202,7 +212,9 @@ tmux_claude_new feature/x --from-root 8f9e2bd7-7494-4217-9d7c-28e132041998
 | `dot_config/tmux/scripts/` | claude 関連ヘルパースクリプト群 |
 | `dot_config/zsh/rc/my_plugins/tmux.zsh` | `tmux_claude_new` 関数 |
 | `dot_config/claude/settings.json` | Claude Code フック登録 |
-| `dot_local/bin/executable_claude-notify-sound.sh` | 通知音 + popup 統合フック |
+| `dot_local/bin/executable_claude-notify-hook.sh` | Claude Code hook 入口 |
+| `dot_local/bin/executable_claude-notify-sound.sh` | sound 再生 worker |
+| `dot_local/bin/executable_claude-notify-dispatch.sh` | popup + click action ハンドラ |
 
 ---
 
