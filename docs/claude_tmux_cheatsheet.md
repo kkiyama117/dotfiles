@@ -170,7 +170,7 @@ tmux_claude_new feature/x
 
 | 症状 | 確認場所 |
 |---|---|
-| `C-b` が効かない | Ghostty の `keybind = clear` で `C-b` を消費していないか / `focus-events off`（`options.conf`） |
+| `C-b` が効かない | Ghostty の `keybind = clear` で `C-b` を消費していないか / Ghostty 併用時のみ `focus-events on` (`options.conf`) との相互作用で 1 回目が落ちる場合あり (ghostty#9620)、その端末では一時的に `tmux set -g focus-events off` |
 | `C-b C, n` で popup が出ない | `~/.config/tmux/scripts/claude-pick-branch.sh` の実行ビット / `fzf` がインストール済みか |
 | `[claude:N]` が常に 0 | `pgrep -c -x claude` を直接叩いて実プロセスがあるか確認 |
 | 通知音が鳴らない | `pw-play /usr/share/sounds/freedesktop/stereo/complete.oga` を直接実行 / wired-notify の起動状態 (`systemctl --user status wired`) |
