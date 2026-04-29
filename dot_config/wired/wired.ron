@@ -8,12 +8,16 @@
     poll_interval: 32,// 16ms ~= 60hz / 7ms ~= 144hz.
     // https://github.com/Toqozz/wired-notify/wiki/Config#shortcuts
     shortcuts: ShortcutsConfig (
-        notification_interact: 1,
+        // notification_interact tries to open a URL from the body and does
+        // NOT fire the DBus ActionInvoked signal, so it cannot drive
+        // claude-notify-dispatch.sh. Use notification_action1 instead — it
+        // invokes the first --action= entry (default=Focus).
+        // notification_interact: 99,
+        notification_action1: 1,
         notification_close: 3,
         notification_closeall: 2,
         // notification_pause: 99,
 
-        // notification_action1: 99,
         // notification_action2: 99,
         // notification_action3: 99,
         // notification_action4: 99,

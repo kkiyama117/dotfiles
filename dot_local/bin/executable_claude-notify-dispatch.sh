@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Claude Code popup dispatcher. Lives alongside the libnotify popup,
 # reads `notify-send --print-id --wait` output, and on left-click
-# ("default" action) focuses the originating tmux pane and dismisses
-# the popup explicitly via CloseNotification.
+# ("default" action — wired.ron maps button 1 to notification_action1)
+# focuses the originating tmux pane and dismisses the popup explicitly
+# via CloseNotification.
 #
 # Right-click is wired to `notification_close` in wired.ron and is
 # handled entirely by wired -> notify-send returns without an action
