@@ -50,13 +50,41 @@ action_key="${lines[1]:-}"
 if [[ -n "$tmux_pane" && -n "$tmux_session" ]] \
     && command -v tmux >/dev/null 2>&1 \
     && tmux has-session -t "$tmux_session" 2>/dev/null; then
-  tmux switch-client -t "$tmux_session" \; select-pane -t "$tmux_pane" \
-    >/dev/null 2>&1 || true
+  tmux_err="$(tmux switch-client -t "$tmux_session" \; select-pane -t "$tmux_pane" 2>&1 >/dev/null)" \
+    && rc=0 || rc=$?
+  logger -t claude-notify-dispatch \
+    "focus tmux: rc=$rc session='$tmux_session' pane='$tmux_pane' sid=${session_id:-?}${tmux_err:+ err=$tmux_err}" \
+    || true
 else
-  # TODO(F-3): bare terminal fallback via wmctrl / swaymsg using cwd
   # TODO(F-3): auto-reopen tmux session if it was killed, then resume claude
   logger -t claude-notify-dispatch \
-    "focus skipped: no tmux context (sid=${session_id:-?})" || true
+    "focus skipped: no tmux context (pane='${tmux_pane:-}' session='${tmux_session:-}' sid=${session_id:-?})" \
+    || true
+fi
+
+# === window-manager focus: bring the terminal window to the foreground ===
+# tmux switch-client only changes what the *currently attached* client shows;
+# if the terminal window itself is in the background, the user will not see
+# anything change. Use xdotool (X11) / swaymsg (Wayland) to raise the window.
+wm_focused=0
+if [[ "${DISPLAY:-}" != "" ]] && command -v xdotool >/dev/null 2>&1; then
+  for wm_class in kitty ghostty wezterm Alacritty; do
+    if xdotool search --class "$wm_class" windowactivate 2>/dev/null; then
+      wm_focused=1
+      logger -t claude-notify-dispatch "focus wm: xdotool class=$wm_class" || true
+      break
+    fi
+  done
+elif [[ "${WAYLAND_DISPLAY:-}" != "" ]] && command -v swaymsg >/dev/null 2>&1; then
+  if swaymsg -t command '[app_id="kitty"] focus, [app_id="com.mitchellh.ghostty"] focus' \
+       >/dev/null 2>&1; then
+    wm_focused=1
+    logger -t claude-notify-dispatch "focus wm: swaymsg" || true
+  fi
+fi
+if [[ "$wm_focused" -eq 0 ]]; then
+  logger -t claude-notify-dispatch \
+    "focus wm: no tool available (install xdotool for X11)" || true
 fi
 
 # === auto-dismiss popup (FDO spec doesn't auto-close on ActionInvoked) ===
