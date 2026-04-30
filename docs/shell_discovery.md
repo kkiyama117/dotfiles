@@ -94,7 +94,7 @@
 | 1〜3 文字の短縮 alias | `ga`, `gP`, `ll`, `lal` 等 | 残置 (頻打、navi 圏外) |
 | Suffix alias | `alias -s md=$EDITOR` 等 | 残置 (alias 機構の特殊用法、navi で再現不可) |
 | 拡張子分岐スクリプト | `extract()` | 残置 (副作用あり、bin スクリプト圏) |
-| 環境変数操作 | `bw_session`, `bw_lock`, `chezmoi_apply` | 残置 (export を親シェルに反映するため関数必須) |
+| 環境変数操作 | `bw_session`, `bw_lock`, `chezmoi_apply`, `chezmoi`/`bw` ラッパ | 残置 (export を親シェルに反映するため関数必須。`chezmoi`/`bw` ラッパは tmpfs cache 経由で `BW_SESSION` を透過復元) |
 | tmux ラッパ | `tmux`, `tmux_claude`, `tmux_claude_new` | 残置 (複数行ロジック、副作用あり) |
 | 30 文字超の固定文字列 | `osc52` | 残置 (引数なし、navi 不適合) |
 

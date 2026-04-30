@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-05-01 — BW_SESSION tmpfs cache (F-2 派生)
+
+### Added
+- `dot_config/zsh/rc/functions/bw_session.zsh` に tmpfs バックの session cache を追加。`${XDG_RUNTIME_DIR:-/tmp}/bw_session_${UID}` (mode 0600, 再起動で消滅) に bw unlock 後の session key を保存し、別シェルからの `chezmoi apply/diff/update/verify` および `bw <data-cmd>` 実行時に透過的に復元する
+- `chezmoi` / `bw` zsh 関数ラッパを新設。`chezmoi apply|diff|update|verify` のみ `_bw_ensure_session` (env → cache → プロンプトの優先順) で `BW_SESSION` を確保してから実 chezmoi に委譲。`bw` ラッパは data 系サブコマンド (get/list/sync など) で silent restore、`bw lock` は cache も削除、unlock/login/logout/status/config は pass-through
+- 内部 helper: `_bw_cache_{file,save,load,clear}` (atomic 0600 書き込み、`bw unlock --check` 検証付きロード、失敗時は静かに cache 削除)
+
+### Changed
+- `bw_session`: 通常呼び出しは `_bw_ensure_session` 経由で cache 参照。`-f` 指定時のみ強制再解錠 + cache 上書き
+- `bw_lock`: `bw lock` でサーバー側のロックも実行し、cache を削除してから `unset BW_SESSION`
+- `chezmoi_apply`: 自前ロジックを廃止し `chezmoi apply "$@"` への薄いシムに整理 (zsh 関数解決により新ラッパ経由で cache 恩恵を受ける)。topgrade integration (`upd` in `dot_config/zsh/rc/integrations/topgrade.zsh`) は変更不要で 2 回目以降の事前 `bw_session` が不要に
+- `CLAUDE.md` / `README.md` / `docs/shell_discovery.md` / `docs/todos.md` を新フローに追従
+
+### Notes
+- シェル起動時の auto-restore は意図的に行わない (起動時の `bw` 呼び出し / プロンプトを避けるため)。cache は `chezmoi`/`bw` ラッパ経由でのみ参照される
+- 全失敗パスは「マスターパスワード再プロンプト」に degrade。新規の失敗モードは追加されない
+- tmpfs cache は再起動で自動クリア。長時間放置するマシンでは作業終了時の `bw_lock` を引き続き推奨
+
+---
+
 ## 2026-04-30 — wired 通知 de-dup (F-3.next #1)
 
 ### Changed
