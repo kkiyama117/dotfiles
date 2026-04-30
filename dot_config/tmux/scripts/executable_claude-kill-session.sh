@@ -30,3 +30,7 @@ if [ -n "$repo_root" ]; then
       || tmux display-message "kept worktree $worktree (remove manually)"
   fi
 fi
+
+# Cockpit: drop cached state files for the killed session
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude-cockpit"
+rm -f "$cache/sessions/${session}.status" "$cache/panes/${session}"_*.status 2>/dev/null || true
