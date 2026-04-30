@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30 (F-5 cockpit LOW-1 logger / LOW-2 display-message duration を実装)
+最終更新: 2026-04-30 (F-6 tmux session/window 階層再構成 plan 着手)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -136,6 +136,20 @@
   - hook ordering: cockpit-state.sh は **既存 observer の後ろに append** してある (spec §Notes 通り)。state hook は数 ms で完了するため observer / notify-hook の latency に影響しない
   - cache layout (`panes/<S>_<P>.status`) は上流 `tmux-agent-status` と同形式 — 将来上流に乗り換える場合は `~/.cache/claude-cockpit/panes` → `~/.cache/tmux-agent-status/panes` の symlink で状態を継承可能
   - SIGKILL で Claude が強制停止された場合 Stop hook が発火しないため `working` のまま残るが、prune.sh が tmux 側で消えた pane の cache を回収する設計
+
+### F-6. tmux session/window 階層再構成 (完了 2026-04-30)
+- 背景: flat な `claude-<branch>` session スキームを **session = main repo basename / window = branch / 各 window 2 pane** に再構成。複数 repo で同名 branch (`develop` 等) を持つ際の session 名衝突を解消し、cockpit 階層 fzf スイッチャの 3 段表現を活かす。設計は [`superpowers/specs/2026-04-30-tmux-repo-session-window-design.md`](superpowers/specs/2026-04-30-tmux-repo-session-window-design.md)、実装計画は [`superpowers/plans/2026-04-30-tmux-repo-session-window.md`](superpowers/plans/2026-04-30-tmux-repo-session-window.md)。
+- 該当: `tmux-claude-new.sh` / `claude-kill-session.sh` / `bindings.conf` / `manage_claude.md` / `keybinds.md`
+- 対応:
+  - [x] Task 1: tmux-claude-new.sh を repo-session + branch-window scheme に refactor
+  - [x] Task 2: claude-kill-session.sh を window-scoped kill に縮小、`@claude-managed` 判定を導入
+  - [x] Task 3: bindings.conf の `claude_table.k` の note と confirm message を更新
+  - [x] Task 4: docs/manage_claude.md と docs/keybinds.md を新スキーマに更新
+  - [x] Task 5: 8-step 手動スモークの実機通し (2026-04-30 PASS 19 / FAIL 0)
+- 注意:
+  - 既存 `claude-*` session には介入しない (自然消滅させる migration)
+  - tmux-continuum の resurrect で旧 session 名が部分復活する可能性あり (要 follow-up)
+  - 異 repo + 同 basename の collision は v1 では非対応 (spec §3.4 / Q1)
 
 ---
 

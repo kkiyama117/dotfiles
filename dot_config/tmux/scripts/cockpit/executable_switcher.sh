@@ -72,9 +72,17 @@ build_lines() {
   done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null | sort)
 }
 
+# --layout=reverse: prompt on top, results grow downward in INPUT order
+#   (default fzf layout puts the first input line at the BOTTOM, which made
+#    the tree appear visually reversed: panes over windows over session).
+# --no-sort + --tiebreak=index: preserve our build order even after typing,
+#   so the S → W → P hierarchy stays intact while filtering.
 selection=$(build_lines | fzf \
   --prompt='cockpit> ' \
   --height=100% \
+  --layout=reverse \
+  --no-sort \
+  --tiebreak=index \
   --delimiter=$'\t' \
   --with-nth='5..' \
   --expect='ctrl-x,ctrl-r' \
@@ -94,25 +102,47 @@ case "$key" in
     exec ~/.config/tmux/scripts/cockpit/switcher.sh
     ;;
   ctrl-x)
+    # Confirmation runs as `read` in the popup terminal AFTER fzf exits.
+    # Using `tmux confirm-before` here was unreliable: when invoked from a
+    # shell spawned by `display-popup -E`, the confirm prompt was attached
+    # to a transient client and disappeared as the popup closed, so the
+    # action was never executed. `read` keeps the prompt inside the popup
+    # while it is still alive.
     case "$kind" in
       P)
-        tmux kill-pane -t "$p_id"
+        printf 'kill pane %s? (y/N) ' "$p_id"
+        IFS= read -r ans </dev/tty
+        case "$ans" in
+          [Yy]*) tmux kill-pane -t "$p_id" ;;
+        esac
         ;;
       W)
-        tmux confirm-before -p "kill window ${sname}:${w_idx}? (y/n) " \
-          "kill-window -t ${sname}:${w_idx}"
+        # Route claude-managed windows through claude-kill-session.sh so the
+        # worktree is removed too. Non-managed windows just kill-window.
+        managed=$(tmux show-options -w -t "${sname}:${w_idx}" -v '@claude-managed' 2>/dev/null || echo "")
+        if [ "$managed" = "yes" ]; then
+          printf 'kill claude window %s:%s and worktree? (y/N) ' "$sname" "$w_idx"
+          IFS= read -r ans </dev/tty
+          case "$ans" in
+            [Yy]*) ~/.config/tmux/scripts/claude-kill-session.sh "${sname}:${w_idx}" ;;
+          esac
+        else
+          printf 'kill window %s:%s? (y/N) ' "$sname" "$w_idx"
+          IFS= read -r ans </dev/tty
+          case "$ans" in
+            [Yy]*) tmux kill-window -t "${sname}:${w_idx}" ;;
+          esac
+        fi
         ;;
       S)
-        # delegate to existing claude-kill-session.sh which removes worktree too
-        case "$sname" in
-          claude-*)
-            tmux confirm-before -p "kill claude session ${sname} and worktree? (y/n) " \
-              "run-shell '~/.config/tmux/scripts/claude-kill-session.sh ${sname}'"
-            ;;
-          *)
-            tmux confirm-before -p "kill session ${sname}? (y/n) " \
-              "kill-session -t ${sname}"
-            ;;
+        # Under the repo-session scheme, a session is just the repo name and
+        # has no inherent claude affiliation; killing it removes all windows
+        # at once (worktrees are NOT cleaned up — kill window-by-window if
+        # you want worktree removal).
+        printf 'kill session %s? (worktrees kept) (y/N) ' "$sname"
+        IFS= read -r ans </dev/tty
+        case "$ans" in
+          [Yy]*) tmux kill-session -t "$sname" ;;
         esac
         ;;
     esac
