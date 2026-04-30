@@ -1,0 +1,17 @@
+% chezmoi
+
+# chezmoi: show diff for a managed path
+chezmoi diff <path>
+
+$ path: chezmoi managed --- --column 1
+
+# chezmoi: add an existing file or directory
+chezmoi add <path>
+
+# chezmoi: dry-run apply with Bitwarden unlock (zsh function)
+chezmoi_apply --dry-run
+
+# chezmoi: edit the source file backing a target path
+chezmoi edit <path>
+
+$ path: chezmoi managed --- --column 1

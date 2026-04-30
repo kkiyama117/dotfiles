@@ -54,16 +54,27 @@
     - navi: 既定の `Ctrl+G` を採用 (zsh `send-break` を上書き)。SKK Hiragana / 変換中は SKK が `^G` を `abort` で消費するため、Latin モード時のみ widget 発動。fallback として `nv` / `navi` / `navit` alias を提供
     - 詳細: [`shell_discovery.md`](shell_discovery.md) §4 / [`keybinds.md`](keybinds.md) §3.4 末尾
 
-- フェーズ C (後で = navi cheat 棚卸し):
-  - [ ] 既存 `dot_config/zsh/rc/aliases.zsh` 等の自作 alias / 関数のうち、引数を取りパラメタライズ可能なものを抽出
-  - [ ] `*.cheat` 形式に書き換えて navi 管理へ移行
-  - [ ] 移行済み alias は削除 or thin wrapper のみ残し、シェル起動コストを下げる
-  - [ ] チートシートのタグ規約を決定 (例: `@chezmoi`, `@bitwarden`, `@tmux`, `@git`, `@claude`)
+- フェーズ C (棚卸し完了, 2026-04-30):
+  - [x] 既存 `dot_config/zsh/rc/aliases.zsh` / `rc/functions/` / `rc/my_plugins/` を §3-2 基準で精査 → **移行候補ゼロ** (詳細は [`shell_discovery.md`](shell_discovery.md) §6-1)
+  - [x] `*.cheat` 形式に書き換えて navi 管理へ移行 → 移行候補が無いため対象なし。代わりに **新規スニペット用 seed として** `dot_config/navi/cheats/{chezmoi,git}.cheat` を 2 ファイル配置
+  - [x] 移行済み alias の削除 / thin wrapper 化 → 移行案件無しのためスキップ
+  - [x] チートシートのタグ規約を決定 → `chezmoi` / `bitwarden` / `tmux` / `git` / `claude` / `chezmoi-private` を採用 ([`shell_discovery.md`](shell_discovery.md) §6-2)
 
 - 注意:
   - 全 alias を navi に移すのは過剰 — 1〜2 単語で頻打する alias はキータイプ速度の利得があるため残置基準を作る (例: 引数を3つ以上取る or 30 文字以上のものだけ navi 化)
   - tealdeer の初回 cache fetch はネットワーク必須 → 新規マシン bootstrap で `run_onchange` が走るタイミングと bw_session unlock のタイミング順序に注意
   - navi の widget が zsh の line editor フックに割り込むため、`fzf-tab` / `zsh-autosuggestions` / `zsh-vi-mode` 等の widget と衝突する可能性。フェーズ B で `bindkey -L` 出力を取って差分管理する
+
+### S-2. navi config.yaml を新版 navi 互換に修正 🆕 (S-1 派生)
+- 背景: S-1 phase C 作業中に、現行 `dot_config/navi/config.yaml` (2024 年版) が手元の navi バイナリで `Error parsing config file: finder: Failed to deserialize finder: sk at line 17 column 3` を出して finder 設定が読み込めないことが判明。実害はフォールバック finder で動くため軽微だが、`cheats.path` を有効化したいので合わせて修正したい。
+- 該当: `dot_config/navi/config.yaml`
+- 対応:
+  - [ ] 手元の `navi --version` を確認し、対応する config schema を [navi docs](https://github.com/denisidoro/navi/blob/master/docs/config_file.md) と突合
+  - [ ] `finder.command: sk` の deserialize エラーを解消 (新書式 / クォート / セクション削除のいずれか)
+  - [ ] `cheats.path: ~/.config/navi/cheats` を有効化して `dot_config/navi/cheats/*.cheat` がロードされるようにする
+  - [ ] 反映後に `navi info cheats-path` が `~/.config/navi/cheats` を返すことを実機確認
+- 注意:
+  - 環境変数 `NAVI_PATH` は手元 navi で効かなかったため使わない (誤導を避けるため `dot_config/zsh/rc/integrations/navi.zsh` でも export しない方針に変更済み)。
 
 ### F-4. wired-notify を nix で管理対象化 🆕 (方針更新: 2026-04-30)
 - 背景: 通知用 daemon `wired-notify` のバイナリが何らかの理由で OS から消えていた (`/usr/bin/wired` 不在 → `wired.service` が `status=203/EXEC` で 140+ 回 restart loop)。設定 (`dot_config/wired/wired.ron`) と systemd unit (`dot_config/systemd/user/wired.service`) は chezmoi 管理下にあるが、**パッケージ本体は宣言的に管理されていない**ため、新規マシンや AUR クリーンアップ後に同じ事態が再発する。今回 (2026-04-29) は `paru -S wired-notify` で手動復旧済み。

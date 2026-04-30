@@ -77,7 +77,51 @@
 ## 5. 段階導入 (todos.md `S-1` と同期)
 
 - **フェーズ A** (本ドキュメント): 役割分離を明文化
-- **フェーズ B**: chezmoi に `dot_config/tealdeer/` と `dot_config/navi/` を取り込み、`PACKAGES` 追加、widget / キーバインドを `rc/functions/` に整理
-- **フェーズ C**: 既存 `dot_config/zsh/rc/aliases.zsh` を棚卸しし、上記 §3-2 の基準で `*.cheat` 化
+- **フェーズ B** (2026-04-30 完了): chezmoi に `dot_config/tealdeer/` を取り込み、widget / alias を `rc/integrations/{navi,tealdeer}.zsh` に整理、キーバインドを実機検証して §4 に確定
+- **フェーズ C** (2026-04-30 棚卸し完了): 既存 alias / 関数を §3-2 の基準で精査した結果、移行候補はほぼゼロ (詳細は §6)。**新規スニペット追加時の受け皿** として `dot_config/navi/cheats/` とタグ規約だけ整備
 
 各フェーズの具体的なチェックリストは [`todos.md`](todos.md) `S-1` を参照。
+
+## 6. navi cheat のタグ規約と運用 (フェーズ C 成果)
+
+### 6-1. 棚卸しサマリ (2026-04-30)
+
+`dot_config/zsh/rc/{aliases,functions/*,my_plugins/*}.zsh` を §3-2 の基準
+(引数3つ以上 or 30 文字以上) で精査した結果:
+
+| 区分 | 例 | 判定 |
+|------|----|------|
+| 1〜3 文字の短縮 alias | `ga`, `gP`, `ll`, `lal` 等 | 残置 (頻打、navi 圏外) |
+| Suffix alias | `alias -s md=$EDITOR` 等 | 残置 (alias 機構の特殊用法、navi で再現不可) |
+| 拡張子分岐スクリプト | `extract()` | 残置 (副作用あり、bin スクリプト圏) |
+| 環境変数操作 | `bw_session`, `bw_lock`, `chezmoi_apply` | 残置 (export を親シェルに反映するため関数必須) |
+| tmux ラッパ | `tmux`, `tmux_claude`, `tmux_claude_new` | 残置 (複数行ロジック、副作用あり) |
+| 30 文字超の固定文字列 | `osc52` | 残置 (引数なし、navi 不適合) |
+
+**結論: 既存 alias / 関数のうち navi 移行候補は実質ゼロ**。既に役割分担が
+できている状態だった。
+
+### 6-2. タグ規約 (新規 cheat 追加時)
+
+新規スニペットを `dot_config/navi/cheats/*.cheat` に書く際は、`% tags`
+ヘッダで以下を最低 1 つ付ける。複数該当する場合は空白区切りで併記。
+
+| タグ | 用途 |
+|------|------|
+| `chezmoi` | chezmoi 操作 (apply / diff / add / cd 連携) |
+| `bitwarden` | `bw_session` / `bw` CLI を前提とする操作 |
+| `tmux` | tmux session / pane / popup 操作 |
+| `git` | リポジトリ固有の Git ワンライナー (短縮 alias で済まないもの) |
+| `claude` | Claude Code 関連の運用スニペット |
+| `chezmoi-private` | 機密を含む cheat (ファイルは `private_*` プレフィックス必須) |
+
+ファイル分割は **タグ単位ではなく文脈単位** (例: `chezmoi.cheat`,
+`tmux.cheat`) を推奨。横断的に検索したいときは navi の `--tag-rules` で絞る。
+
+### 6-3. 追加運用ルール
+
+- **L2 (tldr) で済むものは書かない**: 公式コマンドの基本用法は tldr に任せる
+  (§3-1)。例: `git log --oneline` は cheat にしない
+- **書く前に「他人のマシンで動くか」を自問**: 動くなら tldr 圏、動かないなら navi 圏
+- **`extract()` のような副作用ありスクリプトは bin に**: cheat ではなく
+  `dot_local/bin/` (chezmoi の `executable_*` プレフィックス) で配布

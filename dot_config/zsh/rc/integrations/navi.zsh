@@ -6,6 +6,9 @@
 #             Latin モード (起動時の既定) のときのみ widget が発動する想定。
 #             衝突詳細は `docs/keybinds.md` §3 と `docs/shell_discovery.md` §4 を参照。
 if (( $+commands[navi] )); then
+  # cheat 探索パスは `dot_config/navi/config.yaml` の `cheats.path` で
+  # `~/.config/navi/cheats` を指定する想定 (todos.md S-2 で対応予定)。
+  # 環境変数 `NAVI_PATH` は手元の navi バイナリでは効かなかったため設定しない。
   alias navit='navi --tldr'
   alias nv='navi'
   # widget は zsh の zle が初期化された後に bindkey する必要がある。

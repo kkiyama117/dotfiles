@@ -1,0 +1,24 @@
+% git
+
+# git: interactive rebase last N commits
+git rebase -i HEAD~<n>
+
+$ n: seq 1 20
+
+# git: show log between two refs (oneline)
+git log --oneline <from>..<to>
+
+$ from: git for-each-ref --format='%(refname:short)' refs/heads refs/remotes
+$ to: git for-each-ref --format='%(refname:short)' refs/heads refs/remotes
+
+# git: show commits in a date range on current branch
+git log --since=<since> --until=<until> --oneline
+
+$ since: echo -e "1 day ago\n1 week ago\n2 weeks ago\n1 month ago\n3 months ago"
+$ until: echo -e "now\n1 day ago\n1 week ago\n1 month ago"
+
+# git: cherry-pick a range of commits
+git cherry-pick <from>^..<to>
+
+$ from: git log --oneline -50 --- --column 1
+$ to: git log --oneline -50 --- --column 1
