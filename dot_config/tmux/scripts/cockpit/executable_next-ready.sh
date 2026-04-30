@@ -6,7 +6,7 @@
 set -u
 
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/claude-cockpit/panes"
-[ -d "$cache_dir" ] || { tmux display-message "no ready claude pane"; exit 0; }
+[ -d "$cache_dir" ] || { tmux display-message -d 1000 "no ready claude pane"; exit 0; }
 
 # Build inbox-ordered list of "session\twindow_idx\tpane_id\tpane_idx" rows
 # whose cached state is "done".
@@ -25,7 +25,7 @@ build_done_list() {
 
 list=$(build_done_list)
 if [ -z "$list" ]; then
-  tmux display-message "no ready claude pane"
+  tmux display-message -d 1000 "no ready claude pane"
   exit 0
 fi
 

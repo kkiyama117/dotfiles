@@ -39,14 +39,25 @@ tmux_session=$(tmux display-message -p -t "$tmux_pane" '#{session_name}' 2>/dev/
 [ -z "$tmux_session" ] && exit 0
 
 cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/claude-cockpit/panes"
-mkdir -p "$cache_dir" 2>/dev/null || exit 0
+if ! mkdir -p "$cache_dir" 2>/dev/null; then
+  command -v logger >/dev/null 2>&1 && \
+    logger -t claude-cockpit-state "mkdir failed: $cache_dir"
+  exit 0
+fi
 
 file="$cache_dir/${tmux_session}_${tmux_pane}.status"
 tmp="$file.$$.tmp"
 
 # atomic write: write to tmp, then rename
 if printf '%s' "$state" > "$tmp" 2>/dev/null; then
-  mv "$tmp" "$file" 2>/dev/null || rm -f "$tmp"
+  if ! mv "$tmp" "$file" 2>/dev/null; then
+    rm -f "$tmp"
+    command -v logger >/dev/null 2>&1 && \
+      logger -t claude-cockpit-state "atomic mv failed: $file"
+  fi
+else
+  command -v logger >/dev/null 2>&1 && \
+    logger -t claude-cockpit-state "tmp write failed: $tmp"
 fi
 
 exit 0
