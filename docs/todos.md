@@ -158,6 +158,14 @@
   - [x] **A: graceful exit パス** — Claude Code の `SessionEnd` hook (`/exit` / `/clear` / `/logout` 等) を `claude-cockpit-state.sh` に追加し、status file を `rm -f` で削除。`settings.json` にも `SessionEnd` entry を追加
   - [x] **B: defensive reader-side filter** — `summary.sh` / `next-ready.sh` / `switcher.sh` に `pane_current_command == claude` ガードを追加。SessionEnd が発火しなかった場合（SIGKILL / OOM / pane closed without /exit）でも幽霊カウントを回避
   - [x] **prune.sh 拡張** — 既存「live でない pane」の削除条件を「live pane で claude を動かしている集合 にいない」に拡張。tmux 起動時 (`tmux.conf:15`) / switcher 起動時 (`switcher.sh:18`) / 任意の手動実行で死蔵 file を回収
+- 残: **実機検証 (chezmoi apply 後に通す)**
+  - [ ] `chezmoi diff` → `chezmoi apply` で `~/.local/bin/claude-cockpit-state.sh` / `~/.config/claude/settings.json` / `~/.config/tmux/scripts/cockpit/*` の差分を反映
+  - [ ] `tmux source-file ~/.tmux.conf` で `bindings.conf` の `prefix + C + N` 説明文を再ロード
+  - [ ] Claude を再起動して `settings.json` の `SessionEnd` hook entry がロードされたことを確認
+  - [ ] **A 検証**: 任意の window で `/exit` → 数秒以内に status-right の `⏸ N` / `✓ N` のカウントが 1 減る
+  - [ ] **B 検証**: claude pane を `prefix + C + k` 等で強制 kill (`/exit` を経由しない経路) → 直後の status-right 更新でカウントが 1 減る
+  - [ ] **prune 検証**: 死蔵 status file を 1 つ手で作って `tmux kill-server` → 再起動後の `~/.cache/claude-cockpit/panes/` に残骸が無い
+  - [ ] **next-ready 検証**: 複数 pane を意図的に `waiting` / `done` にして `prefix + C + N` で `waiting` 優先ジャンプを目視確認
 - 残: **eBPF ベース process death リアルタイム検出 🚧 (検討中)**
   - 動機: B のフィルタは reader 呼出時にしか効かず、`prune.sh` も tmux 起動 / switcher 起動の bursty なタイミングのみ。`/exit` 以外の経路（SIGKILL / OOM / pane closed）では status file 削除が遅延する。kernel 側の終了イベントを直接観測すれば即時クリーンアップが可能。
   - アイデア:
