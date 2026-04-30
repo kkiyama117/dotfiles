@@ -246,6 +246,7 @@ prefix を 1 度押した後、以下のキーが各テーブルで効く。
 |---|---|---|
 | `c` | `claude --continue` を現 pane に send-keys | inline |
 | `n` | branch fzf → 新規 worktree + 2-pane Claude session | `claude-pick-branch.sh` → `tmux-claude-new.sh` |
+| `o` | branch fzf → 新規 worktree (shell-only, claude を起動しない) | `claude-pick-branch.sh --no-claude` → `tmux-claude-new.sh --no-claude` |
 | `r` | 現 session 内の claude pane を kill→再起動 | `claude-respawn-pane.sh` |
 | `s` | tmux session/window/pane 階層 fzf スイッチャ (cockpit) | `cockpit/switcher.sh` |
 | `N` | `done` 状態 pane に inbox 順循環ジャンプ | `cockpit/next-ready.sh` |

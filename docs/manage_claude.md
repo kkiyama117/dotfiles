@@ -136,6 +136,7 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 |---|---|---|
 | `c` | 現 pane で `claude --continue` を送信 | inline `send-keys` |
 | `n` | git branch を fzf で選び **新規 worktree + 2-pane Claude session** を作成 | `claude-pick-branch.sh` → `tmux-claude-new.sh` |
+| `o` | git branch を fzf で選び **新規 worktree (shell-only)** を作成（claude を起動しない） | `claude-pick-branch.sh --no-claude` → `tmux-claude-new.sh --no-claude` |
 | `r` | 現 session 内の `claude` pane を kill → `claude --continue` で再起動 | `claude-respawn-pane.sh` |
 | `s` | tmux session/window/pane を **階層 fzf** で表示し、cockpit state badge 付きで switch / kill / reload | `cockpit/switcher.sh` |
 | `N` | `done` 状態の pane に **inbox 順 (session asc / window idx asc / pane idx asc)** で循環ジャンプ | `cockpit/next-ready.sh` |
@@ -145,8 +146,8 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 
 | スクリプト | 役割 |
 |---|---|
-| `tmux-claude-new.sh <branch> [--from-root [<id>]]` | branch 名から `claude-<safe>` session 名を作り、`<repo-root>-<safe>` に git worktree を生成、左 pane = shell / 右 pane = `claude --continue --fork-session` の 2-pane session を起動。ローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する。`--from-root` を付けると **メイン worktree の Claude セッション履歴**（`~/.claude/projects/<encoded main repo>/`）から fzf で選択（`<id>` 直指定も可）し、`claude --resume <id> --fork-session` で起動する |
-| `claude-pick-branch.sh` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec` |
+| `tmux-claude-new.sh <branch> [--from-root [<id>]] [--no-claude]` | branch 名から `claude-<safe>` session 名を作り、`<repo-root>-<safe>` に git worktree を生成、左 pane = shell / 右 pane = `claude --continue --fork-session` の 2-pane session を起動。**branch が既に他 worktree にチェックアウト済みなら**（main repo 含む）`git worktree list` から既存パスを再利用し新規 add は行わない。新規作成時はローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する。worktree に対応する `~/.claude/projects/<encoded>/*.jsonl` が **空なら `--continue` を付けず** 素の `claude` を起動して "Fatal Error" を回避。`--from-root` を付けると **メイン worktree の Claude セッション履歴**（`~/.claude/projects/<encoded main repo>/`）から fzf で選択（`<id>` 直指定も可）し、`claude --resume <id> --fork-session` で起動する。`--no-claude` を付けると **claude を起動せず 1-pane shell session のみ** 作成する（`--from-root` と排他） |
+| `claude-pick-branch.sh [--no-claude]` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec`（追加引数は passthrough） |
 | `cockpit/switcher.sh` | tmux 全 session/window/pane を fzf 階層表示。Enter=switch / Ctrl-X=kill (worktree-aware) / Ctrl-R=reload |
 | `cockpit/next-ready.sh` | inbox 順で `done` 状態の pane に循環ジャンプ |
 | `claude-respawn-pane.sh` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
