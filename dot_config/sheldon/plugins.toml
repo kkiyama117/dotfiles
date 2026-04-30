@@ -53,13 +53,13 @@ apply = ['defer']
 [plugins.zsh-completions.hooks]
 pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.zsh"
 
-# シンタックスハイライトは fast-syntax-highlighting (auscompgeek フォーク) のみを使用。
+# シンタックスハイライトは fast-syntax-highlighting (zdharma-continuum) のみを使用。
 # 旧 zsh-users/zsh-syntax-highlighting は重複ロードのため削除済み。
-# H-3: auscompgeek フォークの最新タグ v1.55 で固定。本家 zdharma-continuum 系への
-# 乗り換え検討は別 task。
+# H-3 / H-12 deferred (2026-04-30 完了): auscompgeek フォークは 2020-02 で停止 → 現役メンテの
+# zdharma-continuum へ移行。最新リリースタグ v1.56 (2025-07-16, sha 5ecd353c8121) で固定。
 [plugins.fast-syntax-highlighting]
-github = "auscompgeek/fast-syntax-highlighting"
-tag = "v1.55"
+github = "zdharma-continuum/fast-syntax-highlighting"
+tag = "v1.56"
 apply = ['defer']
 
 #############################################################################

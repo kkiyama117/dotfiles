@@ -104,7 +104,7 @@
 過去レビューから派生したが、現状運用で痛みが小さいため後回しにしているもの。
 
 - **API キー lazy export 化**（C-1 派生）: 利用直前にだけ `OPENROUTER_API_KEY` を export するラッパー関数 / direnv 移行の検討。現状 `private_secrets.zsh.tmpl`（0600）で許容範囲
-- **fast-syntax-highlighting の本家移行**（H-3 / H-12 派生）: `auscompgeek/fast-syntax-highlighting` のメンテ状況を再確認し、`zdharma-continuum/fast-syntax-highlighting` への乗り換えを検討
+- ~~**fast-syntax-highlighting の本家移行**（H-3 / H-12 派生）~~ → **完了 (2026-04-30)**: メンテ状況を gh API で確認した結果、auscompgeek フォークは 2020-02 で停止、zdharma-continuum は 2025-07 までアクティブ。`dot_config/sheldon/plugins.toml` を `zdharma-continuum/fast-syntax-highlighting` の v1.56 タグへ切替済み。次回 `sheldon lock` で新フォークが clone される
 - ~~**mise `trusted_config_paths` の縮小**（H-4 派生）~~ → **完了 (2026-04-30)**: `~/programs` 全体から `data_manager` / `data_manager2` / `everything-claude-code` の 3 プロジェクト直下のみへ縮小。新規 mise プロジェクト追加時は明示登録する運用に変更
 - ~~**`dircolor` alias の整理**（H-10 派生）~~ → **完了 (2026-04-30)**: `aliases.zsh:7` に用途コメントを追加 (alias 自体は dircolors 設定変更時の手動再読込ヘルパとして必要なので残置)
 - ~~**chezmoi ソース dir 内の自己参照整理**（L-8 派生）~~ → **完了 (2026-04-30)**: `dot_local/share/chezmoi/dot_keep` を `git rm` で削除。`chezmoi managed` から `.local/share/chezmoi` の自己参照が消滅
