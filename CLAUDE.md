@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 chezmoi init --apply kkiyama117
 ```
-初回のみ `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` が走り、Manjaro 上では `rustup`, `mise`, `paru`, および `ttf-plemoljp-bin / fcitx5 / neovim / wezterm / ripgrep / pueue / zoxide` 等の paru パッケージを導入する。Manjaro 以外では即 `exit 0`。
+初回のみ `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` が走り、Manjaro 上では `rustup`, `mise`, `paru`, および `ttf-plemoljp-bin / fcitx5 / neovim / wezterm / ripgrep / pueue / zoxide` 等の paru パッケージを導入する。Manjaro 以外では即 `exit 0`。後にnix経由に置き変える.
 
 ### Bitwarden セッション
 `apply` 時に pre-source hook (`.executable_password_manager.sh`) が `bw` の存在を確認し、テンプレ展開でマスターパスワードが要求される。連続作業時は事前にアンロックしておく:

@@ -63,7 +63,7 @@ Some files`./.local/share/initializer/` folder run by chezmoi and `.config/chezm
 
 ### Meta
 - chezmoi (own config + run-once script)
-- claude (Claude Code config; `~/.claude` is a symlink to `~/.config/claude`)
+- claude (Claude Code Root config; `~/.claude` is a symlink to `~/.config/claude`)
 
 ## Initialize Xrdp
 
