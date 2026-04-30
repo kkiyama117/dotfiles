@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30 (F-4 を nix 移行方針に変更)
+最終更新: 2026-04-30 (F-3.next #1 replace-id de-dup を実装)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -19,12 +19,19 @@
 - [x] dispatcher を `setsid` で hook 親 (claude) から分離し、hook は即 exit 0
 - [x] `docs/manage_claude.md` §5.7 と `docs/claude_tmux_cheatsheet.md` §5 にクリックアクション表を追記
 
-#### F-3.next (follow-up, 未着手)
-- [ ] 同一 `session_id` の通知が積み重なった場合の **`replace-id` ベース de-dup**。state ファイル or libnotify hint で session→notif_id を覚えて上書き
-- [ ] **bare terminal fallback** — tmux 外で起動された Claude セッションを左クリックした時に `wmctrl` (X11) / `swaymsg` (Wayland) で cwd を持つ window を focus、または `transcript_path` を `$EDITOR` で開く
+#### F-3.next (follow-up)
+- [x] 同一 `session_id` の通知が積み重なった場合の **`replace-id` ベース de-dup** (実装済み, 2026-04-30)
+  - state file: `${XDG_RUNTIME_DIR:-/tmp}/claude-notify/sessions/<sid>.id` (1 行 = 直近の notif_id)
+  - dispatcher 起動時に prev_id を読んで `notify-send --replace-id` を渡し、wired 側で同 popup を in-place 更新
+  - session_id が空なら旧挙動 (replace-id 渡さず新規 popup)
+  - state file の TTL / セッション終了時 cleanup は別 follow-up (古い id の replace は wired が黙って無視するので無害)
+  - smoke test: 同 session で 3 連発 → popup 1 個に集約 / 別 session 同時発火 → 2 個独立
+- [ ] **bare terminal fallback** (部分実装済み: `xdotool` (X11) / `swaymsg` (Wayland) で kitty/ghostty/wezterm/Alacritty を window-class で focus する処理は dispatch.sh に実装済み 〜L88)
+  - 残: cwd ベースで「該当 Claude プロセスが居る window だけ」を選んで focus、または `transcript_path` を `$EDITOR` で開くアクションを追加
 - [ ] **セッション消失時の自動再オープン** — kill されたあと残った popup を左クリック → `tmux_claude_new` 相当のロジックで tmux session を再生成 + `claude --resume <session_id>` で claude を復元
 - [ ] **右クリックの拡張アクション** — 単純 close 以外に「transcript を開く」など二重アクションを検討 (要 wired/notify-send の追加 action 設計)
 - [ ] **dispatcher を 1 本の常駐 helper daemon に集約** — D-Bus signal を直接 listen する案 (ブレストの案 B)。多重 popup 時の状態管理が綺麗になる代わりに systemd unit が増える
+- [ ] **state file cleanup** — F-3.next #1 の副作用。`${XDG_RUNTIME_DIR}/claude-notify/sessions/*.id` が session 終了後も残る。`/run/user/$UID` は再起動で消えるが、長時間稼働ではファイル数が増える。`atime` ベースで古い state を削除する `claude-notify-cleanup.sh` を `systemd --user` の oneshot timer で回す案など
 
 ### S-1. シェルコマンド発見系3層 (zsh補完 / tldr / navi) の役割整理と統合 🆕
 - 背景: 現在 zsh autocomplete + tealdeer + navi の3つを併用しているが、明示的な役割分担とキー動線、chezmoi での管理粒度が未整理。冗長なストック (例: navi に tldr 相当を貯める) と新規マシンでの再現性低下を防ぐため、A→B→C の段階で進める。フェーズ A は本コミット前後で着手、B/C は後続。
