@@ -16,6 +16,27 @@
 
 set -euo pipefail
 
+# When invoked from `display-popup -E`, stderr is hidden once the popup closes.
+# Log everything to /tmp/tmux-claude-new.log so failures are debuggable, and on
+# error surface the message via tmux display-message which the user can read.
+log_file="/tmp/tmux-claude-new.log"
+{
+  echo "=== $(date -Iseconds) $$ ==="
+  echo "argv: $*"
+  echo "cwd: $PWD"
+  echo "TMUX: ${TMUX:-(unset)}"
+} >> "$log_file" 2>/dev/null || true
+
+die() {
+  local msg="tmux-claude-new: $*"
+  echo "$msg" >&2
+  echo "$msg" >> "$log_file" 2>/dev/null || true
+  if [ -n "${TMUX:-}" ]; then
+    tmux display-message "$msg" 2>/dev/null || true
+  fi
+  exit 1
+}
+
 branch=""
 from_root=0
 no_claude=0
@@ -46,29 +67,23 @@ while (( $# )); do
       exit 0
       ;;
     *)
-      echo "tmux-claude-new: unknown arg: $1" >&2
-      exit 1
+      die "unknown arg: $1"
       ;;
   esac
 done
 
 if [ -z "$branch" ]; then
-  echo "usage: tmux-claude-new.sh <branch> [--from-root [<session-id>]] [--no-claude]" >&2
-  exit 1
+  die "usage: tmux-claude-new.sh <branch> [--from-root [<session-id>]] [--no-claude]"
 fi
 
 if (( from_root )) && (( no_claude )); then
-  echo "tmux-claude-new: --from-root and --no-claude are mutually exclusive" >&2
-  exit 1
+  die "--from-root and --no-claude are mutually exclusive"
 fi
 
 safe="${branch//\//-}"
 session="claude-${safe}"
 
-repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-  echo "tmux-claude-new: not inside a git repo" >&2
-  exit 1
-}
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || die "not inside a git repo (cwd=$PWD)"
 
 # Resolve target worktree.
 # If <branch> is already registered in any worktree, reuse it. This handles
@@ -90,10 +105,7 @@ else
       git worktree add -b "$branch" "$worktree" "origin/$branch"
     else
       git worktree add -b "$branch" "$worktree" HEAD
-    fi || {
-      echo "tmux-claude-new: failed to create worktree at $worktree" >&2
-      exit 1
-    }
+    fi || die "failed to create worktree at $worktree"
   fi
 fi
 
@@ -101,29 +113,17 @@ fi
 session_id=""
 if (( from_root )); then
   main_repo=$(git worktree list --porcelain | awk '/^worktree / {print $2; exit}')
-  if [ -z "$main_repo" ]; then
-    echo "tmux-claude-new: failed to resolve main worktree path" >&2
-    exit 1
-  fi
+  [ -n "$main_repo" ] || die "failed to resolve main worktree path"
   encoded=$(printf '%s' "$main_repo" | tr '/.' '-')
   sessions_dir="$HOME/.claude/projects/$encoded"
 
-  if [ ! -d "$sessions_dir" ]; then
-    echo "tmux-claude-new: no claude sessions at $sessions_dir" >&2
-    exit 1
-  fi
+  [ -d "$sessions_dir" ] || die "no claude sessions at $sessions_dir"
 
   if [ -n "$explicit_session" ]; then
-    if [ ! -f "$sessions_dir/$explicit_session.jsonl" ]; then
-      echo "tmux-claude-new: session id not found: $explicit_session" >&2
-      exit 1
-    fi
+    [ -f "$sessions_dir/$explicit_session.jsonl" ] || die "session id not found: $explicit_session"
     session_id="$explicit_session"
   else
-    if ! command -v fzf >/dev/null 2>&1; then
-      echo "tmux-claude-new: fzf required for --from-root without an id" >&2
-      exit 1
-    fi
+    command -v fzf >/dev/null 2>&1 || die "fzf required for --from-root without an id"
     pick=$(ls -t "$sessions_dir"/*.jsonl 2>/dev/null | \
       fzf --prompt='root session> ' \
           --preview 'head -50 {}' \
@@ -147,15 +147,23 @@ if [ -d "$worktree_sessions_dir" ]; then
   fi
 fi
 
-# Ensure session exists
-if ! tmux has-session -t "$session" 2>/dev/null; then
-  tmux new-session -d -s "$session" -c "$worktree"
+# Ensure session exists. -A makes new-session idempotent: attach (here, just keep)
+# if a session of that name already exists, otherwise create it. Combined with -d
+# we always end up with the session present and detached.
+tmux new-session -A -d -s "$session" -c "$worktree" 2>>"$log_file" \
+  || die "failed to create or attach session $session"
+
+# If we just created a fresh session (single pane), set up panes.
+pane_count=$(tmux list-panes -t "$session" -F '.' 2>/dev/null | wc -l)
+if [ "$pane_count" -le 1 ]; then
   if (( no_claude )); then
-    tmux select-pane -t "${session}.0" -T work
+    # Cosmetic title only; failures here must not abort the switch.
+    tmux select-pane -t "$session" -T work 2>/dev/null || true
   else
-    tmux split-window -h -t "$session" -c "$worktree"
-    tmux select-pane -t "${session}.0" -T work
-    tmux select-pane -t "${session}.1" -T claude
+    tmux split-window -h -t "$session" -c "$worktree" 2>>"$log_file" \
+      || die "failed to split window in $session"
+    tmux select-pane -t "${session}.0" -T work 2>/dev/null || true
+    tmux select-pane -t "${session}.1" -T claude 2>/dev/null || true
     if [ -n "$session_id" ]; then
       claude_cmd="claude --resume $session_id --fork-session"
     elif (( worktree_has_history )); then
@@ -163,13 +171,16 @@ if ! tmux has-session -t "$session" 2>/dev/null; then
     else
       claude_cmd="claude"
     fi
-    tmux send-keys -t "${session}.1" "$claude_cmd" Enter
+    tmux send-keys -t "${session}.1" "$claude_cmd" Enter 2>>"$log_file" \
+      || die "failed to send claude command"
   fi
 fi
 
 # Attach or switch
 if [ -n "${TMUX:-}" ]; then
-  tmux switch-client -t "$session"
+  tmux switch-client -t "$session" 2>>"$log_file" \
+    || die "switch-client to $session failed"
+  echo "switched to $session" >> "$log_file"
 else
   tmux attach-session -t "$session"
 fi
