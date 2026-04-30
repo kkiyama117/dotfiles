@@ -185,7 +185,7 @@ tmux_claude_new <branch>   # ~/.config/tmux/scripts/tmux-claude-new.sh の薄ラ
 | プラグイン | 役割 | 関連設定 |
 |---|---|---|
 | `tmux-plugins/tmux-resurrect` | `prefix + Ctrl-s` で session 状態 (pane 内容含む) を保存 / `prefix + Ctrl-r` で復元 | `@resurrect-capture-pane-contents 'on'`, `@resurrect-strategy-nvim 'session'` |
-| `tmux-plugins/tmux-continuum` | 15 分間隔で自動保存 + tmux 起動時に自動復元 | `@continuum-save-interval '15'`, `@continuum-restore 'on'` |
+| `tmux-plugins/tmux-continuum` | 15 分間隔で自動保存のみ。起動時の自動復元は無効化 (default session と復元結果が混在するため)。復元は `prefix + Ctrl-R` で手動実行 | `@continuum-save-interval '15'` (auto-restore は plugins.conf でコメントアウト) |
 | `tmux-plugins/tmux-yank` | コピーモードのバッファをシステムクリップボードへ | — |
 
 TPM 自体は `~/.config/tmux/plugins/tpm/` (XDG パス) に配置。新規マシンでは `chezmoi run_once` 内で `tpm-bootstrap.sh` が走り自動インストールされる。手動実行も同コマンドで可能。

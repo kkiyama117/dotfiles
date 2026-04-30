@@ -128,8 +128,9 @@
 - [ ] **8-step manual smoke の実機通し** — 実 Claude session を 2 つ立てて UI の `⚡ / ⏸ / ✓` 遷移と `prefix + C → s/N/k` を体感確認 ([`docs/manage_claude.md`](manage_claude.md) 末尾節)。auto mode の非 tty 環境では UI 確認不能だったので残置。失敗時は spec §9 の合格条件と差分を本ファイルに追記
 - [x] **LOW-1: spec §8 の `logger -t claude-cockpit-state` 呼び出しを実装** (実装済み, 2026-04-30) — `claude-cockpit-state.sh` の `mkdir` 失敗 / atomic `mv` 失敗 / tmp write 失敗の 3 経路に `command -v logger >/dev/null 2>&1 && logger -t claude-cockpit-state "<reason>: <path>"` を仕込み済み。`exit 0` の絶対契約は不変
 - [x] **LOW-2: `next-ready.sh` の display-message に `-d 1000` を明示** (実装済み, 2026-04-30) — cache_dir 不在時 / done pane なしの 2 経路を `tmux display-message -d 1000 "no ready claude pane"` に変更。spec §6.4 文面と一致
-- [ ] **次回 `tmux kill-server` 後の status-right 確定** — 今回 tmux-continuum の restore 干渉で一度 stale 状態になり `chezmoi apply --force` で修復。次回 tmux 再起動時に status.conf 新版が確実に反映されることを確認 (このフォローアップは observation のみで PR 不要)
+- [ ] **次回 `tmux kill-server` 後の status-right 確定** — 今回 tmux-continuum の restore 干渉で一度 stale 状態になり `chezmoi apply --force` で修復。次回 tmux 再起動時に status.conf 新版が確実に反映されることを確認 (このフォローアップは observation のみで PR 不要)。**2026-04-30: `@continuum-restore` を無効化したので auto-restore 干渉そのものは消えた前提での再観察**
 - [ ] **`tmux kill-server` 経由の prune 統合テスト** — server 再起動時の `run -b '~/.config/tmux/scripts/cockpit/prune.sh'` が orphan cache を実際に消すかを実環境で 1 度確認
+- [x] **`@continuum-restore` 無効化** (2026-04-30) — `dot_config/tmux/conf/plugins.conf:15` をコメントアウト。default session と復元 session が共存して window が混在する事故を回避。復元は `prefix + Ctrl-R` (tmux-resurrect) で手動。`docs/manage_claude.md` §5.6 の TPM プラグイン表も更新済み
 
 - 注意:
   - hook ordering: cockpit-state.sh は **既存 observer の後ろに append** してある (spec §Notes 通り)。state hook は数 ms で完了するため observer / notify-hook の latency に影響しない
