@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30 (F-4 を nix 移行方針に変更)
+最終更新: 2026-04-30 (F-5 cockpit state tracking 残課題を追加)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -96,6 +96,38 @@
   - Manjaro 上で nix を使う場合、`systemd-nix` 起動順や `XDG_DATA_DIRS` への nix profile の追加が必要 (.desktop / fonts 等を nix から拾わせる場合)。
   - `wired-notify` のバージョン差で `ron` 設定の互換性が崩れる可能性 — nix で pin したバージョンと現行 `dot_config/wired/wired.ron` の妥当性を移行時に確認する。
   - paru / nix の二重管理になる過渡期は、どのパッケージがどちら経由で入っているかを明示するメモを `docs/` に置く (例: `docs/package_management.md`)。
+
+### F-5. Claude cockpit state tracking 残課題 🆕 (v1 完了 / follow-up あり)
+- 背景: 2026-04-30 に [`superpowers/plans/2026-04-30-claude-cockpit-state-tracking.md`](superpowers/plans/2026-04-30-claude-cockpit-state-tracking.md) を Subagent-Driven で完走 (15 commits, `8c0526e`〜`eec2fe9`)。Claude hook → atomic state file → tmux summary / 階層 fzf switcher / next-ready jump の pipeline が live で稼働中 (summary.sh が `⚡ N ⏸ M ✓ K ` を実出力している)。Final review で HIGH 1 件 + MEDIUM 2 件は別 commit で修正済み。残りは spec の LOW 2 件と、auto mode 非 tty 環境では検証できなかった 8-step manual smoke。
+- 該当範囲:
+  - `dot_local/bin/executable_claude-cockpit-state.sh` (LOW-1 logger 追加)
+  - `dot_config/tmux/scripts/cockpit/executable_next-ready.sh` (LOW-2 display-message duration 明示化)
+  - `docs/manage_claude.md` 末尾の "Cockpit State Tracking — Smoke Tests" 節 (manual 検証手順)
+
+#### v1 (実装済み, 2026-04-30)
+- [x] `claude-cockpit-state.sh` hook entry (UserPromptSubmit/PreToolUse → working / Notification → waiting / Stop → done) を atomic write (tmp + mv) で実装
+- [x] `dot_config/claude/settings.json` の `hooks` 配列 4 つに append (既存 `observe.sh` / `claude-notify-hook.sh` は保持)
+- [x] `cockpit/summary.sh` で status-right を `⚡ N ⏸ M ✓ K ` 形式に置換 (5 秒間隔の pgrep 廃止)
+- [x] `cockpit/switcher.sh` (session/window/pane 階層 fzf, Enter=switch / Ctrl-X=kill / Ctrl-R=reload, claude-* 限定で worktree-aware kill)
+- [x] `cockpit/next-ready.sh` (inbox 順 = session asc / window idx asc / pane idx asc で done pane 循環ジャンプ)
+- [x] `cockpit/prune.sh` (orphan cache 掃除) を tmux server-start に `run -b` で組み込み + switcher 起動時にも実行
+- [x] `claude-kill-session.sh` 末尾に cache 削除を追記 + optional `$1` で session-name 引数を受け、switcher Ctrl-X が選択 session を正しく kill するよう修正 (final-review HIGH `6365159`)
+- [x] `claude_table.s` を `cockpit/switcher.sh` に再配線、新規 `claude_table.N` で next-ready ジャンプ
+- [x] 旧 `claude-status-count.sh` / `claude-pick-session.sh` を削除
+- [x] `docs/manage_claude.md` §5.2 / §5.3 / §5.5 + `docs/keybinds.md` §2.2 を新スクリプト群に合わせて更新 (final-review MEDIUM `eec2fe9`)
+- [x] `docs/manage_claude.md` 末尾に 8-step smoke test 節を追加
+
+#### F-5.next (follow-up, 未着手)
+- [ ] **8-step manual smoke の実機通し** — 実 Claude session を 2 つ立てて UI の `⚡ / ⏸ / ✓` 遷移と `prefix + C → s/N/k` を体感確認 ([`docs/manage_claude.md`](manage_claude.md) 末尾節)。auto mode の非 tty 環境では UI 確認不能だったので残置。失敗時は spec §9 の合格条件と差分を本ファイルに追記
+- [ ] **LOW-1: spec §8 の `logger -t claude-cockpit-state` 呼び出しを実装** — 現状 `claude-cockpit-state.sh` の `mkdir`/`mv` 失敗が完全 silent。Claude を絶対ブロックしない契約は維持しつつ、`command -v logger >/dev/null 2>&1 && logger -t claude-cockpit-state "..."` で diagnosability を上げる (spec §8 文面通り)
+- [ ] **LOW-2: `next-ready.sh` の display-message に `-d 1000` を明示** — spec §6.4 で「1 秒間表示」と明記しているが、現状は tmux の `display-time` 既定値依存。`tmux display-message -d 1000 "no ready claude pane"` に変更して spec 文面と動作を一致させる
+- [ ] **次回 `tmux kill-server` 後の status-right 確定** — 今回 tmux-continuum の restore 干渉で一度 stale 状態になり `chezmoi apply --force` で修復。次回 tmux 再起動時に status.conf 新版が確実に反映されることを確認 (このフォローアップは observation のみで PR 不要)
+- [ ] **`tmux kill-server` 経由の prune 統合テスト** — server 再起動時の `run -b '~/.config/tmux/scripts/cockpit/prune.sh'` が orphan cache を実際に消すかを実環境で 1 度確認
+
+- 注意:
+  - hook ordering: cockpit-state.sh は **既存 observer の後ろに append** してある (spec §Notes 通り)。state hook は数 ms で完了するため observer / notify-hook の latency に影響しない
+  - cache layout (`panes/<S>_<P>.status`) は上流 `tmux-agent-status` と同形式 — 将来上流に乗り換える場合は `~/.cache/claude-cockpit/panes` → `~/.cache/tmux-agent-status/panes` の symlink で状態を継承可能
+  - SIGKILL で Claude が強制停止された場合 Stop hook が発火しないため `working` のまま残るが、prune.sh が tmux 側で消えた pane の cache を回収する設計
 
 ---
 
