@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30
+最終更新: 2026-04-30 (F-4 を nix 移行方針に変更)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -62,16 +62,23 @@
   - tealdeer の初回 cache fetch はネットワーク必須 → 新規マシン bootstrap で `run_onchange` が走るタイミングと bw_session unlock のタイミング順序に注意
   - navi の widget が zsh の line editor フックに割り込むため、`fzf-tab` / `zsh-autosuggestions` / `zsh-vi-mode` 等の widget と衝突する可能性。フェーズ B で `bindkey -L` 出力を取って差分管理する
 
-### F-4. wired-notify を chezmoi run_once で管理対象化 🆕
-- 背景: 通知用 daemon `wired-notify` のバイナリが何らかの理由で OS から消えていた (`/usr/bin/wired` 不在 → `wired.service` が `status=203/EXEC` で 140+ 回 restart loop)。設定 (`dot_config/wired/wired.ron`) と systemd unit (`dot_config/systemd/user/wired.service`) は chezmoi 管理下にあるが、**パッケージ本体は `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の paru パッケージ列に含まれていない** ため、新規マシンや AUR クリーンアップ後に同じ事態が再発する。今回 (2026-04-29) は `paru -S wired-notify` で手動復旧済み。
-- 該当: `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` (line 65-81 付近の `PACKAGES` ヒアドキュメント)
+### F-4. wired-notify を nix で管理対象化 🆕 (方針更新: 2026-04-30)
+- 背景: 通知用 daemon `wired-notify` のバイナリが何らかの理由で OS から消えていた (`/usr/bin/wired` 不在 → `wired.service` が `status=203/EXEC` で 140+ 回 restart loop)。設定 (`dot_config/wired/wired.ron`) と systemd unit (`dot_config/systemd/user/wired.service`) は chezmoi 管理下にあるが、**パッケージ本体は宣言的に管理されていない**ため、新規マシンや AUR クリーンアップ後に同じ事態が再発する。今回 (2026-04-29) は `paru -S wired-notify` で手動復旧済み。
+- 方針: `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の `paru` ヒアドキュメントへ追加するのではなく、**今後は `nix` (Home Manager 等) でパッケージ/プログラム全体を宣言的に管理する方向**へ移行する。F-4 は nix 移行の一部として処理する。
+- 該当 (移行先):
+  - 新設予定の nix 設定 (例: `nix/` ディレクトリ または Home Manager の `home.packages`)
+  - 既存 `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の `PACKAGES` は段階的に nix へ巻き取り
 - 対応:
-  - [ ] `PACKAGES` に `wired-notify` を追加 (Manjaro/Arch では AUR; `paru -S` で取得)
-  - [ ] 追加後にクリーンな環境で `chezmoi init --apply kkiyama117` を試して再現性を確認 (任意 / 過剰なら省略)
-  - [ ] `README.md` 「初期セットアップで入るパッケージ」相当の節があれば併せて更新
+  - [ ] nix (flakes + Home Manager 想定) のルート設定を chezmoi 管理下に追加
+  - [ ] `wired-notify` を nix の packages に登録 (nixpkgs に存在しなければ overlay / flake input で対応)
+  - [ ] `dot_config/systemd/user/wired.service` の `ExecStart` パスを nix profile 経由 (`~/.nix-profile/bin/wired` 等) に揃えるか確認
+  - [ ] 既存 `paru` PACKAGES のうち nix で代替可能なものをリストアップし、移行範囲を決める (一気に全移行は過剰)
+  - [ ] クリーンな環境で `chezmoi init --apply kkiyama117` → nix 適用 の流れを試して再現性を確認
+  - [ ] `README.md` / `CLAUDE.md` の「Bootstrap (新規マシン)」節を nix ベースの手順に更新
 - 注意:
-  - `wired-notify` は AUR パッケージのため `paru` 経由必須 (`pacman -S` 単独では入らない)。
-  - 再インストール後は `systemctl --user start wired.service` を一度叩く必要があるかもしれない (今回は手動 start で復活)。
+  - Manjaro 上で nix を使う場合、`systemd-nix` 起動順や `XDG_DATA_DIRS` への nix profile の追加が必要 (.desktop / fonts 等を nix から拾わせる場合)。
+  - `wired-notify` のバージョン差で `ron` 設定の互換性が崩れる可能性 — nix で pin したバージョンと現行 `dot_config/wired/wired.ron` の妥当性を移行時に確認する。
+  - paru / nix の二重管理になる過渡期は、どのパッケージがどちら経由で入っているかを明示するメモを `docs/` に置く (例: `docs/package_management.md`)。
 
 ---
 

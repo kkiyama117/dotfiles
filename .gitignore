@@ -21,3 +21,4 @@ dot_local/state/syncthing
 
 # Git worktrees
 .worktrees/
+.vscode/*
