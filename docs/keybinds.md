@@ -374,6 +374,14 @@ prefix を 1 度押した後、以下のキーが各テーブルで効く。
 | `^[[5~` `^[[6~` | history-beginning-search-backward/forward (PgUp/PgDn) | `manjaro.zsh:17-18` |
 | `^[Oc` `^[Od` `^[[1;5C` `^[[1;5D` | forward/backward-word (Ctrl+Arrow) | `manjaro.zsh:21-24` |
 | `^[[Z` | undo (Shift+Tab) | `manjaro.zsh:26` |
+| `^G` | navi widget (cheat 検索 → 行に挿入) | `dot_config/zsh/rc/integrations/navi.zsh:14` |
+
+> ⚠️ `^G` は §3.2 で `send-break`、§1 SKK で `abort` でもある。
+> SKK Hiragana / 変換中は SKK が先に消費するため zsh まで届かない。
+> Latin モード (起動時の既定) でのみ navi widget が発動する。
+> tldr (tealdeer) は zle widget を持たず、コマンド名 `tldr` / `tld` / `tldrf` で起動する
+> (`Alt+H` は `run-help` 既存使用のため割り当てない)。詳細は
+> [`shell_discovery.md`](shell_discovery.md) §4 を参照。
 
 ---
 

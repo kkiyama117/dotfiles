@@ -43,13 +43,16 @@
   - [x] 「navi に tldr 相当 (公式コマンドの基本用法) を蓄積しない」運用ルールを明記
   - [x] `docs/keybinds.md` への参照を貼り、後続フェーズでキーバインド統一案を反映できる余地を残す
 
-- フェーズ B (後で = chezmoi に設定一式を取り込み):
-  - [ ] `dot_config/tealdeer/config.toml` を chezmoi 管理下に追加
-  - [ ] tealdeer の cache 更新を週次相当で走らせる仕組みを選定 (`run_onchange` / cron / pueue のいずれか) — config 変更時にも cache 引き直せるよう `run_onchange` 寄りで検討
-  - [ ] `dot_config/navi/` にチートシート (`*.cheat`) と config を配置 (private なものは `private_*` プレフィックス検討)
-  - [ ] `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の `PACKAGES` に `tealdeer` / `navi` を追加 (既存の有無を確認)
-  - [ ] zsh 側のキーバインド / widget を `rc/functions/` 配下に整理し、Sheldon 経由で `zsh-defer` ロード
-  - [ ] tldr / navi の起動キーを統一 (案: tldr=Alt+H, navi=Ctrl+G) — 既存 zsh keybind / `zsh-vi-mode` との衝突を実機確認
+- フェーズ B (大半完了, 2026-04-30):
+  - [x] `dot_config/tealdeer/config.toml` を chezmoi 管理下に追加 (`chezmoi add` で取り込み済み)
+  - [x] tealdeer の cache 更新方式: **`config.toml` 内の `auto_update = true` + `auto_update_interval_hours = 24`** で自然に週次未満の頻度で更新されるため、`run_onchange` / cron / pueue は採用しない判断
+  - [ ] `dot_config/navi/` にチートシート (`*.cheat`) を配置 (config.yaml は既に管理下、cheat 棚卸しはフェーズ C 寄りなので保留)
+  - [x] `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の `PACKAGES` に `tealdeer` / `navi` を追加 (実機ファイル確認: lines 73, 76 で既に追加済み。todos.md だけが古かった)
+  - [x] zsh 側の widget / alias を `rc/integrations/{navi,tealdeer}.zsh` に整理し、Sheldon `[plugins.software_integrations]` 経由で `zsh-defer` ロード
+  - [x] tldr / navi の起動キーを実機検証して確定:
+    - tldr: `Alt+H` は zsh `run-help` で使用中のため割り当てなし。コマンド名 `tldr` / `tld` / `tldrf` (skim/fzf 連携) で起動
+    - navi: 既定の `Ctrl+G` を採用 (zsh `send-break` を上書き)。SKK Hiragana / 変換中は SKK が `^G` を `abort` で消費するため、Latin モード時のみ widget 発動。fallback として `nv` / `navi` / `navit` alias を提供
+    - 詳細: [`shell_discovery.md`](shell_discovery.md) §4 / [`keybinds.md`](keybinds.md) §3.4 末尾
 
 - フェーズ C (後で = navi cheat 棚卸し):
   - [ ] 既存 `dot_config/zsh/rc/aliases.zsh` 等の自作 alias / 関数のうち、引数を取りパラメタライズ可能なものを抽出

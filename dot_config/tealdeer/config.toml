@@ -1,0 +1,10 @@
+[display]
+use_paper=true
+
+[style]
+background = { rgb = { r = 255, g = 255, b = 255 } }
+
+[updates]
+auto_update = true
+auto_update_interval_hours = 24
+

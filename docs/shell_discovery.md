@@ -57,16 +57,22 @@
 3-4. **キーバインドは [`keybinds.md`](keybinds.md) で一元管理**
    - 新規バインド前に SKK → tmux → zsh の順で衝突確認
 
-## 4. キーバインド統一案 (フェーズ B で確定予定)
+## 4. キーバインド (フェーズ B 実機確認結果)
 
-| 動作 | 案 | 衝突確認対象 |
-|------|----|--------------|
+| 動作 | 採用 | 備考 |
+|------|------|------|
 | zsh 補完候補 | `Tab` (既定) | fzf-tab と一体運用 |
-| tldr 起動 | `Alt+H` (案) | SKK 非消費、tmux 非消費を要確認 |
-| navi 起動 | `Ctrl+G` (案) | zsh-vi-mode / fzf widget との衝突要確認 |
+| tldr 起動 | コマンド名 (`tldr` / `tld` / `tldrf`) | `Alt+H` は zsh `run-help` で使用中のため割り当てなし。`tldrf` は skim/fzf 連携 |
+| navi widget | `Ctrl+G` (navi デフォルト) | `^G` は §1 SKK の `abort` と zsh `send-break` と衝突するが、**SKK Latin モード時のみ** zsh まで届くため実用上は同居可。Hiragana / 変換中は SKK が先に消費 |
+| navi 起動 (コマンド) | `nv` / `navi` / `navit` (`navi --tldr`) | キーバインドが SKK で消費されたときの fallback |
 
-> 確定はフェーズ B で行う。本ドキュメントは案の根拠を残すための場所であり、
-> 実バインド変更は `keybinds.md` 側に書かれてから有効。
+> フェーズ A 時点では「`Alt+H` / `Ctrl+G`」を案として出していたが、実機の
+> [`keybinds.md`](keybinds.md) §3.3 / §3.2 を当たった結果:
+> - `Alt+H` = `run-help` (既存) → tldr に割り当てない
+> - `Ctrl+G` = `send-break` (zsh) / `abort` (SKK) → navi widget でこれを上書き
+>   する形で採用 (上記の通り SKK 飲み込み制約あり)
+>
+> 詳細表は [`keybinds.md`](keybinds.md) §3.4 末尾を参照。
 
 ## 5. 段階導入 (todos.md `S-1` と同期)
 
