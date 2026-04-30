@@ -22,6 +22,12 @@
 [push]
   default=current
 
+; worktree shortcuts (used by /branch-out flow + manual ops)
+[alias]
+  wt = worktree
+  wtl = worktree list
+  wta = worktree add -b
+
 ; cred
 {{ if eq .chezmoi.os "windows" }}
 [gpg]

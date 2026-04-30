@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # usage: tmux-claude-new.sh <branch> [--from-root [<session-id>]] [--no-claude]
+#                           [--worktree-base <dir>] [--prompt <text>]
 # - resolves main repo path; session name = basename of main worktree
 # - window name = sanitized branch name; idempotent via `tmux new-window -S`
 # - 2-pane (left: shell, right: claude) inside the window
@@ -8,6 +9,16 @@
 #     --from-root    : `claude --resume <id> --fork-session` (id from main repo's
 #                       claude session history; fzf picker if <session-id> omitted)
 #     --no-claude    : 1-pane shell window, skips claude entirely
+#     --worktree-base <dir>
+#                    : place new worktrees under <dir>/<repo>/<branch> instead
+#                      of the default sibling `${main_repo}-${branch}` layout.
+#                      Ignored if a worktree for the branch already exists.
+#                      Recommended: ~/.local/share/worktrees (XDG-centralized).
+#     --prompt <text>
+#                    : seed the freshly-spawned claude session with <text>
+#                      as the initial message (passed as a positional arg to
+#                      claude; safely shell-quoted before send-keys). No-op
+#                      when --no-claude.
 # - tags the window with `@claude-managed=yes` so claude-kill-session.sh can
 #   safely act window-scoped without the old `claude-*` session-name prefix
 # - attaches or switch-clients to the window
@@ -41,6 +52,8 @@ branch=""
 from_root=0
 no_claude=0
 explicit_session=""
+worktree_base=""
+initial_prompt=""
 
 if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
   branch="$1"
@@ -58,16 +71,30 @@ while (( $# )); do
       fi
       ;;
     --no-claude) no_claude=1; shift ;;
+    --worktree-base)
+      shift
+      (( $# )) || die "--worktree-base requires a directory argument"
+      worktree_base="$1"
+      shift
+      ;;
+    --prompt)
+      shift
+      (( $# )) || die "--prompt requires a text argument"
+      initial_prompt="$1"
+      shift
+      ;;
     -h|--help)
       echo "usage: tmux-claude-new.sh <branch> [--from-root [<session-id>]] [--no-claude]"
+      echo "                          [--worktree-base <dir>] [--prompt <text>]"
       exit 0
       ;;
     *) die "unknown arg: $1" ;;
   esac
 done
 
-[ -z "$branch" ] && die "usage: tmux-claude-new.sh <branch> [--from-root [<session-id>]] [--no-claude]"
+[ -z "$branch" ] && die "usage: tmux-claude-new.sh <branch> [--from-root [<session-id>]] [--no-claude] [--worktree-base <dir>] [--prompt <text>]"
 (( from_root )) && (( no_claude )) && die "--from-root and --no-claude are mutually exclusive"
+(( no_claude )) && [ -n "$initial_prompt" ] && die "--prompt is incompatible with --no-claude"
 
 safe="$(sanitize "$branch")"
 window_name="$safe"
@@ -89,7 +116,13 @@ existing_worktree=$(git worktree list --porcelain | awk -v b="refs/heads/$branch
 if [ -n "$existing_worktree" ]; then
   worktree="$existing_worktree"
 else
-  worktree="${main_repo}-${safe}"
+  if [ -n "$worktree_base" ]; then
+    worktree="${worktree_base}/${repo_basename}/${safe}"
+    mkdir -p "$(dirname "$worktree")" 2>>"$log_file" \
+      || die "failed to mkdir worktree parent: $(dirname "$worktree")"
+  else
+    worktree="${main_repo}-${safe}"
+  fi
   if [ ! -d "$worktree" ]; then
     if git show-ref --verify --quiet "refs/heads/$branch"; then
       git worktree add "$worktree" "$branch"
@@ -168,6 +201,11 @@ if [ "$pane_count" -le 1 ]; then
       claude_cmd="claude --continue --fork-session"
     else
       claude_cmd="claude"
+    fi
+    if [ -n "$initial_prompt" ]; then
+      # printf %q produces bash-quoted output; safe to feed to interactive
+      # shell via send-keys for typical text (incl. UTF-8 / Japanese).
+      claude_cmd+=" $(printf %q "$initial_prompt")"
     fi
     tmux send-keys -t "${session}:${window_name}.1" "$claude_cmd" Enter 2>>"$log_file" \
       || die "failed to send claude command"

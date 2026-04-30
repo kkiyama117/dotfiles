@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30 (F-3.next #5 state file cleanup 実装)
+最終更新: 2026-05-01 (F-7 branch-out worktree spawner 実装)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -150,6 +150,26 @@
   - 既存 `claude-*` session には介入しない (自然消滅させる migration)
   - tmux-continuum の resurrect で旧 session 名が部分復活する可能性あり (要 follow-up)
   - 異 repo + 同 basename の collision は v1 では非対応 (spec §3.4 / Q1)
+
+### F-7. /branch-out worktree spawner (実装済み 2026-05-01)
+- 背景: ユーザの依頼を受けて現セッションの Claude が**深く考えず** branch 名のみ生成し、新規 git worktree + tmux window + fresh Claude セッションへハンドオフして "深く考えるのは新セッション" と役割分担する spawn 動線。F-6 の repo-session + branch-window scheme と整合。参考にした命名規則: Qiita (syukan3) の `worktrees/{type}-<name>` prefix 案、ChristopherA gist の bare-repo + worktree 並置案 (今回は bare 化までは踏み込まず命名のみ採用)。
+- 配置と命名:
+  - worktree path: `${XDG_DATA_HOME:-$HOME/.local/share}/worktrees/<repo>/<sanitized-branch>` (XDG 中央集約)
+  - branch 名: `<type>/<kebab-summary>` (`feat`/`fix`/`refactor`/`docs`/`chore`)
+  - tmux window 名: branch 名そのまま (F-6 命名と整合、`/` は sanitize で `-` 置換)
+- 実装:
+  - [x] `dot_config/tmux/scripts/executable_tmux-claude-new.sh` に `--worktree-base <dir>` / `--prompt <text>` の 2 flag 追加 (既存 sibling 配置 `${main_repo}-${safe}` は flag 未指定時のデフォルトとして温存。`mkdir -p` で worktree 親を idempotent 作成、`printf %q` で prompt を bash-quote → tmux send-keys → 対話シェル)
+  - [x] `dot_config/claude/commands/branch-out.md` を新規作成。slash command 本体は (a) `$ARGUMENTS` から `<type>/<kebab>` を1秒で導出 → (b) `tmux-claude-new.sh '<branch>' --worktree-base ... --prompt '<msg>'` を 1 回叩く → (c) 1 行報告。**現セッションの Claude が依頼内容を分析・実装することを明示的に禁止**
+  - [x] `dot_config/git/config.tmpl` に `[alias] wt = worktree / wtl = worktree list / wta = worktree add -b` を追加 (Qiita 案準拠、手動 `git wt` 操作の利便)
+- スモーク:
+  - bash -n / `-h` 出力 / path 計算ユニットテスト (`/home/kiyama/.local/share/worktrees/chezmoi/feat-branch-out`) / `printf %q` で日本語・空白・metachars 通過確認 PASS
+  - `chezmoi managed` で 3 ファイル (`branch-out.md` / `git/config` / `tmux-claude-new.sh`) が tracked であることを確認
+  - 実機 e2e (実際に `/branch-out` を叩いて新 window へフォーカス) は tty 必要なため未実施 — 次回対話時に手動確認
+- 残課題 / follow-up:
+  - [ ] 既存 sibling 配置 (`${main_repo}-${branch}`) と新規 centralized 配置の **混在運用ルール** をドキュメント化 (F-6 spec §3 への追記候補)
+  - [ ] `claude-pick-branch.sh` (prefix+C n 経由) も `--worktree-base` を受け取れるよう拡張するか、cockpit popup 内で centralized デフォルト化するか判断
+  - [ ] worktree の **掃除** (merged branch の worktree 自動 prune) helper — 現状 `git wt remove` 手動。F-3.next #5 のような systemd timer でやるか手動運用かは未決
+  - [ ] `--prompt` の長文 (~数 KB) における send-keys 遅延 / quoting 限界の実測 — 通常用途では問題なし想定
 
 ---
 
