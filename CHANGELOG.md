@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-04-30 — wired 通知 de-dup (F-3.next #1)
+
+### Changed
+- `dot_local/bin/executable_claude-notify-dispatch.sh`: `CLAUDE_NOTIFY_SESSION_ID` ごとに直近の notification id を `${XDG_RUNTIME_DIR:-/tmp}/claude-notify/sessions/<sid>.id` に永続化し、次回呼び出し時に `notify-send --replace-id` で再利用するように変更。同一 Claude セッションの連続通知は popup を積み上げず in-place 更新され、別セッションの通知は独立 popup として表示される。state file 書き込みは `mktemp + mv -f` で atomic、prev_id の検証は `^[1-9][0-9]*$` の正規表現で行い --replace-id 引数を保護
+- `docs/manage_claude.md` §5.7: WM-level focus が `xdotool` / `swaymsg` で実装済みである旨と de-dup state file の場所・挙動を追記
+- `docs/todos.md` F-3.next: #1 を `[x]` に。#2 (bare terminal fallback) を「部分実装済み」に格下げし、新規 follow-up「state file cleanup」を追加
+
+---
+
 ## 2026-04-29 — kitty 統合 / Claude × tmux チートシート
 
 ### Added

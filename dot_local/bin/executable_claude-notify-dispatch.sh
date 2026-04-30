@@ -13,6 +13,12 @@
 #   CLAUDE_NOTIFY_TITLE / BODY / URGENCY
 #   CLAUDE_NOTIFY_SESSION_ID
 #   CLAUDE_NOTIFY_TMUX_PANE / TMUX_SESSION
+#
+# De-dup (F-3.next #1):
+#   When CLAUDE_NOTIFY_SESSION_ID is set, the latest notif_id is persisted
+#   under "$state_dir/<sid>.id" and replayed as --replace-id on the next
+#   invocation. wired (or any FDO-spec-compliant daemon) then updates the
+#   existing popup in place instead of stacking a new one per session.
 set -euo pipefail
 
 title="${CLAUDE_NOTIFY_TITLE:-Claude Code}"
@@ -24,10 +30,30 @@ tmux_session="${CLAUDE_NOTIFY_TMUX_SESSION:-}"
 
 command -v notify-send >/dev/null 2>&1 || exit 0
 
+# === de-dup state (per session_id) ===
+state_dir="${XDG_RUNTIME_DIR:-/tmp}/claude-notify/sessions"
+state_file=""
+prev_id=""
+if [[ -n "$session_id" ]]; then
+  # Filename-safe sid: keep alnum/_/- only, fall back to "unknown".
+  sid_safe="${session_id//[^a-zA-Z0-9_-]/_}"
+  [[ -z "$sid_safe" ]] && sid_safe="unknown"
+  state_file="$state_dir/$sid_safe.id"
+  mkdir -p "$state_dir" 2>/dev/null || true
+  if [[ -r "$state_file" ]]; then
+    prev_id="$(cat "$state_file" 2>/dev/null || true)"
+    # Reject anything that is not a positive integer — protects --replace-id.
+    [[ "$prev_id" =~ ^[1-9][0-9]*$ ]] || prev_id=""
+  fi
+fi
+
+replace_args=()
+[[ -n "$prev_id" ]] && replace_args=(--replace-id="$prev_id")
+
 # notify-send --print-id --wait stdout:
 #   line 1: notification id (uint32, always)
 #   line 2: action key when ActionInvoked fires (e.g. "default")
-# Close-without-action -> only line 1 is printed.
+# Close-without-action (incl. being replaced by a newer popup) -> only line 1.
 mapfile -t lines < <(
   notify-send \
     --app-name=ClaudeCode \
@@ -37,11 +63,27 @@ mapfile -t lines < <(
     --hint=string:x-claude-session:"${session_id:-unknown}" \
     --print-id \
     --wait \
+    "${replace_args[@]}" \
     -- "$title" "$body" 2>/dev/null
 ) || exit 0
 
 notif_id="${lines[0]:-}"
 action_key="${lines[1]:-}"
+
+# Persist new id for the next dispatcher invocation (atomic replace).
+# Stale state for an ended session is harmless: the next replace-id either
+# updates the lingering popup or is ignored by the daemon if the id is gone.
+# Cleanup at session end is a separate follow-up.
+if [[ -n "$state_file" && "$notif_id" =~ ^[1-9][0-9]*$ ]]; then
+  tmp_file="$(mktemp "$state_dir/.tmp.XXXXXX" 2>/dev/null || true)"
+  if [[ -n "$tmp_file" ]]; then
+    if printf '%s\n' "$notif_id" >"$tmp_file" 2>/dev/null; then
+      mv -f "$tmp_file" "$state_file" 2>/dev/null || rm -f "$tmp_file" 2>/dev/null || true
+    else
+      rm -f "$tmp_file" 2>/dev/null || true
+    fi
+  fi
+fi
 
 # Right-click / closeall / timeout -> nothing more to do.
 [[ "$action_key" != "default" ]] && exit 0
