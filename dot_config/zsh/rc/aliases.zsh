@@ -4,6 +4,8 @@
 
 alias cp='cp -irf' # confirm before overwriting something
 alias df='df -h'                          # human-readable sizes
+# dircolor: `~/.config/dircolors` を編集した後にシェル全体へ再適用する手動再読込用 alias。
+# 通常はシェル起動時に dircolors が一度評価されるため、設定変更時のみ呼ぶ。
 alias dircolor='eval `dircolors -b $XDG_CONFIG_HOME/dircolors`'
 alias free='free -m'                      # show sizes in MB
 alias mkdir='mkdir -p'

@@ -105,9 +105,9 @@
 
 - **API キー lazy export 化**（C-1 派生）: 利用直前にだけ `OPENROUTER_API_KEY` を export するラッパー関数 / direnv 移行の検討。現状 `private_secrets.zsh.tmpl`（0600）で許容範囲
 - **fast-syntax-highlighting の本家移行**（H-3 / H-12 派生）: `auscompgeek/fast-syntax-highlighting` のメンテ状況を再確認し、`zdharma-continuum/fast-syntax-highlighting` への乗り換えを検討
-- **mise `trusted_config_paths` の縮小**（H-4 派生）: `~/programs` 全体ではなくプロジェクト単位に絞る。TODO コメントのみ残置済
-- **`dircolor` alias の整理**（H-10 派生）: `aliases.zsh:7` の手動再読込用 alias は残置中。整理は別タスクで
-- **chezmoi ソース dir 内の自己参照整理**（L-8 派生）: `dot_local/share/chezmoi/dot_keep`
+- ~~**mise `trusted_config_paths` の縮小**（H-4 派生）~~ → **完了 (2026-04-30)**: `~/programs` 全体から `data_manager` / `data_manager2` / `everything-claude-code` の 3 プロジェクト直下のみへ縮小。新規 mise プロジェクト追加時は明示登録する運用に変更
+- ~~**`dircolor` alias の整理**（H-10 派生）~~ → **完了 (2026-04-30)**: `aliases.zsh:7` に用途コメントを追加 (alias 自体は dircolors 設定変更時の手動再読込ヘルパとして必要なので残置)
+- ~~**chezmoi ソース dir 内の自己参照整理**（L-8 派生）~~ → **完了 (2026-04-30)**: `dot_local/share/chezmoi/dot_keep` を `git rm` で削除。`chezmoi managed` から `.local/share/chezmoi` の自己参照が消滅
 - **`bw_lock` 自動化**（F-2 派生）: `precmd` フックで一定時間アイドルなら自動 `bw_lock`。過剰になりやすいため現時点では明示運用に留める
 
 ---

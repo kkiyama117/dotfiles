@@ -13,10 +13,16 @@ always_keep_install = false         # deleted on failure by default
 # (note: this isn't currently implemented but there are plans to add it: https://github.com/jdx/mise/issues/128)
 plugin_autoupdate_last_check_duration = '1 week' # set to 0 to disable updates
 
-# config files with these prefixes will be trusted by default
-# TODO(H-4): `~/programs` は範囲が広い。必要なプロジェクト直下のみ列挙する形に絞る。
+# config files with these prefixes will be trusted by default.
+# 2026-04-30: `~/programs` 全体から、実際に mise config を置いている
+# プロジェクト直下のみへ縮小 (H-4 deferred クローズ)。
+# 新規 mise プロジェクトを追加した際は **このリストに明示登録** する運用に
+# 変更。サブツリー単位の包括信頼 (`~/programs/research` 等) には戻さない —
+# `others/` や `old/` 等の信頼度不明領域を巻き込むのを避けるため。
 trusted_config_paths = [
-    '~/programs',
+    '~/programs/research/data_manager',
+    '~/programs/research/data_manager2',
+    '~/programs/tools/everything-claude-code',
 ]
 
 verbose = false     # set to true to see full installation output, see `MISE_VERBOSE`
