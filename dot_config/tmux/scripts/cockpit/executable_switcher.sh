@@ -18,7 +18,14 @@ cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/claude-cockpit/panes"
 ~/.config/tmux/scripts/cockpit/prune.sh 2>/dev/null || true
 
 state_for_pane() {
-  local s="$1" p="$2" f
+  local s="$1" p="$2" f cmd
+  # Defensive filter: only treat the cached state as authoritative if the
+  # pane is currently running claude. This hides stale state for panes
+  # whose SessionEnd hook didn't fire (SIGKILL / OOM / pane closed
+  # without /exit). The line itself is still rendered by the switcher;
+  # only the badge column goes blank for non-claude panes.
+  cmd=$(tmux display-message -p -t "$p" '#{pane_current_command}' 2>/dev/null) || return 0
+  [ "$cmd" = "claude" ] || return 0
   f="$cache_dir/${s}_${p}.status"
   [ -f "$f" ] && cat "$f" 2>/dev/null || true
 }
