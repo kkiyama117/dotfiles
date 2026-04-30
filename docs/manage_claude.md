@@ -137,7 +137,8 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 | `c` | 現 pane で `claude --continue` を送信 | inline `send-keys` |
 | `n` | git branch を fzf で選び **新規 worktree + 2-pane Claude session** を作成 | `claude-pick-branch.sh` → `tmux-claude-new.sh` |
 | `r` | 現 session 内の `claude` pane を kill → `claude --continue` で再起動 | `claude-respawn-pane.sh` |
-| `s` | `claude-*` 名前の session を fzf で選び switch-client | `claude-pick-session.sh` |
+| `s` | tmux session/window/pane を **階層 fzf** で表示し、cockpit state badge 付きで switch / kill / reload | `cockpit/switcher.sh` |
+| `N` | `done` 状態の pane に **inbox 順 (session asc / window idx asc / pane idx asc)** で循環ジャンプ | `cockpit/next-ready.sh` |
 | `k` | 現 session が `claude-*` なら **session + worktree を一括削除**（`confirm-before` で確認） | `claude-kill-session.sh` |
 
 ### 5.3 ヘルパースクリプト (`dot_config/tmux/scripts/`)
@@ -146,10 +147,13 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 |---|---|
 | `tmux-claude-new.sh <branch> [--from-root [<id>]]` | branch 名から `claude-<safe>` session 名を作り、`<repo-root>-<safe>` に git worktree を生成、左 pane = shell / 右 pane = `claude --continue --fork-session` の 2-pane session を起動。ローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する。`--from-root` を付けると **メイン worktree の Claude セッション履歴**（`~/.claude/projects/<encoded main repo>/`）から fzf で選択（`<id>` 直指定も可）し、`claude --resume <id> --fork-session` で起動する |
 | `claude-pick-branch.sh` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec` |
-| `claude-pick-session.sh` | `claude-*` の session を fzf 選択 → `switch-client` |
+| `cockpit/switcher.sh` | tmux 全 session/window/pane を fzf 階層表示。Enter=switch / Ctrl-X=kill (worktree-aware) / Ctrl-R=reload |
+| `cockpit/next-ready.sh` | inbox 順で `done` 状態の pane に循環ジャンプ |
 | `claude-respawn-pane.sh` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
 | `claude-kill-session.sh` | `claude-*` session 限定で `kill-session` + `git worktree remove --force` |
-| `claude-status-count.sh` | `pgrep -c -x claude` の値で `[claude:N]` を status-right に出力 |
+| `cockpit/summary.sh` | hook 駆動キャッシュ（`~/.cache/claude-cockpit/panes/*.status`）から `⚡ N ⏸ M ✓ K ` 形式で status-right に出力 |
+| `cockpit/prune.sh` | tmux に存在しない pane の cache file を削除（idempotent） |
+| `claude-cockpit-state.sh` | Claude hook entry — UserPromptSubmit/PreToolUse → working、Notification → waiting、Stop → done を atomic write |
 | `claude-branch.sh <path>` | path の git branch を `[branch] ` 形式で status-right に出力 |
 | `tpm-bootstrap.sh` | TPM (`~/.config/tmux/plugins/tpm/`) のクローン + `install_plugins` 実行（idempotent） |
 
@@ -168,7 +172,7 @@ tmux_claude_new <branch>   # ~/.config/tmux/scripts/tmux-claude-new.sh の薄ラ
 `dot_config/tmux/conf/status.conf`:
 
 - **左**: `[<session>:<window>:<pane>]` + `⌘` (prefix 入力中) + `⟨claude_table⟩` (key-table 進入中)
-- **右**: `[claude:N]` (実行中 claude プロセス数) + `[branch]` (現 pane の git branch) + 時刻
+- **右**: `⚡ N ⏸ M ✓ K ` (cockpit state aggregate; hook 駆動キャッシュから生成、空なら非表示) + `[branch]` (現 pane の git branch) + 時刻
 - 5 秒間隔で更新
 
 `dot_config/tmux/conf/claude.conf` で pane-border-format を上書きし、**`pane_current_command == claude` の pane は黄色枠**でハイライト。
