@@ -26,11 +26,38 @@ esac
 # === payload extraction ===
 body="$default_body"
 session_id=""
+cwd=""
 if [[ -n "$payload" ]] && command -v jq >/dev/null 2>&1; then
   parsed_msg="$(printf '%s' "$payload" | jq -r '.message // empty' 2>/dev/null || true)"
   [[ -n "$parsed_msg" ]] && body="$parsed_msg"
   session_id="$(printf '%s' "$payload" | jq -r '.session_id // empty' 2>/dev/null || true)"
+  cwd="$(printf '%s' "$payload" | jq -r '.cwd // empty' 2>/dev/null || true)"
 fi
+[[ -z "$cwd" ]] && cwd="${PWD:-}"
+
+# === git context: project (main-repo basename) + branch ===
+# Mirrors the F-6 tmux scheme (session = main repo basename, window = branch)
+# so the popup title is consistent with the cockpit switcher.
+project=""
+branch=""
+if [[ -n "$cwd" && -d "$cwd" ]] && command -v git >/dev/null 2>&1; then
+  main_repo="$(git -C "$cwd" worktree list --porcelain 2>/dev/null \
+    | awk '/^worktree / {print $2; exit}')"
+  [[ -n "$main_repo" ]] && project="$(basename -- "$main_repo")"
+  branch="$(git -C "$cwd" branch --show-current 2>/dev/null || true)"
+  [[ -z "$branch" ]] && branch="$(git -C "$cwd" rev-parse --short HEAD 2>/dev/null || true)"
+fi
+
+# Compose title suffix: "Claude Code · <project>/<branch>" — fall back gracefully.
+context=""
+if [[ -n "$project" && -n "$branch" ]]; then
+  context=" · ${project}/${branch}"
+elif [[ -n "$project" ]]; then
+  context=" · ${project}"
+elif [[ -n "$branch" ]]; then
+  context=" · ${branch}"
+fi
+title="${title}${context}"
 
 # === tmux context (empty -> bare terminal) ===
 tmux_pane="${TMUX_PANE:-}"
