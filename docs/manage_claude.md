@@ -219,3 +219,18 @@ tmux 外で起動された Claude (素の terminal) は左クリック時 `journ
 - Agent Teams: <https://code.claude.com/docs/en/agent-teams>
 - Common workflows（worktree 含む）: <https://code.claude.com/docs/en/common-workflows>
 - ECC スキル一覧: <https://github.com/affaan-m/everything-claude-code>
+
+## Cockpit State Tracking — Smoke Tests
+
+> 4/30 spec の手動検証手順。chezmoi apply 後・tmux reload 後に通すこと。
+
+1. `tmux-claude-new.sh feature-foo` と `tmux-claude-new.sh feature-bar` で 2 セッション作成
+2. `claude-foo` で `Hello` と送信 → status-right が `⚡ 1 ` に更新（最大 5 秒）
+3. Claude が応答完了し ESC で待機 → status-right が `✓ 1 ` に変わる
+4. もう片方でも送信 → 状態が混在表示される（条件次第で `⚡ 1 ⏸ 1` 等）
+5. `prefix + C` → `N` で done 側 pane にジャンプできる
+6. `prefix + C` → `s` で階層 switcher を開き、`Ctrl-X` で空 pane を kill できる
+7. `prefix + C` → `k` で claude-foo セッション + worktree を削除 → `~/.cache/claude-cockpit/panes/claude-foo_*.status` も消える
+8. `tmux kill-server` → 再起動後、`~/.cache/claude-cockpit/panes/` の残骸が `prune.sh` により消える
+
+合格条件: 1〜8 すべて期待通りになること。
