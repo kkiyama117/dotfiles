@@ -1,0 +1,25 @@
+{{- /*
+Bootstrap helper for F-3.next #5: enable the claude-notify-cleanup
+systemd --user timer. Reruns whenever any of the embedded unit / helper
+hashes change.
+*/ -}}
+{{ if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+# unit hashes (chezmoi rerun trigger — do not edit by hand):
+#   service: {{ include "dot_config/systemd/user/claude-notify-cleanup.service" | sha256sum }}
+#   timer:   {{ include "dot_config/systemd/user/claude-notify-cleanup.timer" | sha256sum }}
+#   helper:  {{ include "dot_local/bin/executable_claude-notify-cleanup.sh" | sha256sum }}
+
+set -euo pipefail
+
+# Skip if user systemd is unreachable (WSL without systemd, plain CI, etc.).
+command -v systemctl >/dev/null 2>&1 || exit 0
+systemctl --user show-environment >/dev/null 2>&1 || exit 0
+
+systemctl --user daemon-reload
+systemctl --user enable --now claude-notify-cleanup.timer
+{{ else -}}
+#!/usr/bin/env bash
+# F-3.next #5 cleanup timer is Linux-only (systemd --user). Nothing to do.
+exit 0
+{{ end -}}

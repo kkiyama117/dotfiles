@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30 (F-6 tmux session/window 階層再構成 plan 着手)
+最終更新: 2026-04-30 (F-3.next #5 state file cleanup 実装)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -31,7 +31,7 @@
 - [ ] **セッション消失時の自動再オープン** — kill されたあと残った popup を左クリック → `tmux_claude_new` 相当のロジックで tmux session を再生成 + `claude --resume <session_id>` で claude を復元
 - [ ] **右クリックの拡張アクション** — 単純 close 以外に「transcript を開く」など二重アクションを検討 (要 wired/notify-send の追加 action 設計)
 - [ ] **dispatcher を 1 本の常駐 helper daemon に集約** — D-Bus signal を直接 listen する案 (ブレストの案 B)。多重 popup 時の状態管理が綺麗になる代わりに systemd unit が増える
-- [ ] **state file cleanup** — F-3.next #1 の副作用。`${XDG_RUNTIME_DIR}/claude-notify/sessions/*.id` が session 終了後も残る。`/run/user/$UID` は再起動で消えるが、長時間稼働ではファイル数が増える。`atime` ベースで古い state を削除する `claude-notify-cleanup.sh` を `systemd --user` の oneshot timer で回す案など
+- [x] **state file cleanup** (実装済み, 2026-04-30) — F-3.next #1 の副作用対応として `dot_local/bin/executable_claude-notify-cleanup.sh` + `dot_config/systemd/user/claude-notify-cleanup.{service,timer}` を追加。`OnCalendar=daily Persistent=true RandomizedDelaySec=15min` で `*.id` を mtime ベース TTL (既定 7 日、`CLAUDE_NOTIFY_CLEANUP_TTL_DAYS` で上書き可) で剪定し、`.tmp.XXXXXX` 残骸 (mktemp 中断時の漏れ) を 60 分超えで併せて削除。base_dir suffix チェックで env 注入耐性、`ProtectSystem=strict` + `ReadWritePaths=%t/claude-notify` で書き換え範囲を runtime dir に限定。`atime` は `noatime` / `relatime` mount で信頼できないため mtime に切替 (dispatcher が atomic `mv -f` で更新する都度 mtime が引かれるので "最後の通知発火時刻" として機能)。bootstrap は `.chezmoiscripts/run_onchange_after_enable-claude-notify-cleanup.sh.tmpl` 経由で `systemctl --user daemon-reload` + `enable --now` を idempotent に実行 (unit / helper の sha256 を埋めて変更検知)。smoke (合成 state dir): stale 2 件 + 古い `.tmp` 1 件のみ削除、fresh 4 件は保持、unexpected base 引数は exit 0 ガード発動を実機 PASS
 
 ### S-1. シェルコマンド発見系3層 (zsh補完 / tldr / navi) の役割整理と統合 🆕
 - 背景: 現在 zsh autocomplete + tealdeer + navi の3つを併用しているが、明示的な役割分担とキー動線、chezmoi での管理粒度が未整理。冗長なストック (例: navi に tldr 相当を貯める) と新規マシンでの再現性低下を防ぐため、A→B→C の段階で進める。フェーズ A は本コミット前後で着手、B/C は後続。

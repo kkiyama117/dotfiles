@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily cleanup of Claude Code notify dispatcher state files
+Documentation=https://github.com/kkiyama117/dotfiles
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=15min
+Unit=claude-notify-cleanup.service
+
+[Install]
+WantedBy=timers.target

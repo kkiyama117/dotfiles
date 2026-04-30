@@ -1,0 +1,15 @@
+[Unit]
+Description=Cleanup Claude Code notify dispatcher state files (F-3.next #5)
+Documentation=https://github.com/kkiyama117/dotfiles
+ConditionPathExists=%t/claude-notify/sessions
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/claude-notify-cleanup.sh
+# Defence in depth: read-only filesystem except for the runtime state dir
+# the helper actually prunes.
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%t/claude-notify
+PrivateTmp=true
+NoNewPrivileges=true
