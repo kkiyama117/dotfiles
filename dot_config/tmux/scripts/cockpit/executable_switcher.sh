@@ -106,8 +106,8 @@ case "$key" in
         # delegate to existing claude-kill-session.sh which removes worktree too
         case "$sname" in
           claude-*)
-            tmux confirm-before -p "kill claude session and worktree? (y/n) " \
-              "run-shell '~/.config/tmux/scripts/claude-kill-session.sh'"
+            tmux confirm-before -p "kill claude session ${sname} and worktree? (y/n) " \
+              "run-shell '~/.config/tmux/scripts/claude-kill-session.sh ${sname}'"
             ;;
           *)
             tmux confirm-before -p "kill session ${sname}? (y/n) " \

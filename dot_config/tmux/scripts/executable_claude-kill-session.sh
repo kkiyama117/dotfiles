@@ -3,7 +3,8 @@
 # Caller (binding) wraps this in confirm-before, so we proceed unconditionally.
 set -euo pipefail
 
-session=$(tmux display-message -p '#S')
+# Accept optional session-name argument; fall back to current session
+session="${1:-$(tmux display-message -p '#S')}"
 
 case "$session" in
   claude-*) ;;
