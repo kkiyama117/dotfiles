@@ -22,13 +22,15 @@ chezmoi init --apply kkiyama117
 初回のみ `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` が走り、Manjaro 上では `rustup`, `mise`, `paru`, および `ttf-plemoljp-bin / fcitx5 / neovim / wezterm / ripgrep / pueue / zoxide` 等の paru パッケージを導入する。Manjaro 以外では即 `exit 0`。後にnix経由に置き変える.
 
 ### Bitwarden セッション
-`apply` 時に pre-source hook (`.executable_password_manager.sh`) が `bw` の存在を確認し、テンプレ展開でマスターパスワードが要求される。連続作業時は事前にアンロックしておく:
+`apply` 時に pre-source hook (`.executable_password_manager.sh`) が `bw` の存在を確認し、テンプレ展開でマスターパスワードが要求される。`rc/functions/bw_session.zsh` で `chezmoi` / `bw` の zsh 関数ラッパが定義されており、`chezmoi apply/diff/update/verify` および `bw <データ系サブコマンド>` 実行時に **tmpfs 上のキャッシュ (`${XDG_RUNTIME_DIR}/bw_session_${UID}`, mode 0600, 再起動でクリア)** から `BW_SESSION` を透過的に復元するため、連続実行で再入力を求められない:
 ```
-bw_session              # `export BW_SESSION=$(bw unlock --raw)` のラッパー (rc/functions/bw_session.zsh)
-# 作業終了時は必ず:
-bw_lock                 # `unset BW_SESSION` のヘルパ
+chezmoi diff            # 初回はマスターパスワード入力 → cache に保存
+chezmoi apply           # 同一マシンの別シェルでも cache 経由で再利用
+bw get item <id>        # data 系サブコマンドも cache から silent restore
 ```
-`BW_SESSION` は Bitwarden ボルト全体へのアクセスキーで、子プロセスに継承されるため長時間 env に残さないこと。
+明示的に解錠したい場合は `bw_session` (cache 優先、なければプロンプト) または `bw_session -f` (強制再解錠)。終了時に確実に破棄したい場合は `bw_lock` で `unset BW_SESSION` + `bw lock` + cache 削除を一括実行する。シェル起動時には何も走らないので、auto-restore による意図しない `bw` 呼び出しは発生しない。
+
+`BW_SESSION` は Bitwarden ボルト全体へのアクセスキーで、子プロセスに継承される。tmpfs cache は再起動で消えるが、長時間放置するマシンでは作業終了時に `bw_lock` を推奨。
 
 ### Xrdp (該当時)
 `/etc/xrdp/startwm.sh` を編集して `$XDG_CONFIG_HOME/zsh/.zprofile` を読み込ませる必要がある。
