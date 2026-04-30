@@ -38,6 +38,16 @@
     "defaultMode": "auto"
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook UserPromptSubmit"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "*",
@@ -45,6 +55,14 @@
           {
             "type": "command",
             "command": "/home/kiyama/.claude/plugins/cache/everything-claude-code/everything-claude-code/1.10.0/skills/continuous-learning-v2/hooks/observe.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook PreToolUse"
           }
         ]
       }
@@ -68,6 +86,14 @@
             "command": "/home/kiyama/.local/bin/claude-notify-hook.sh notification"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook Notification"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -76,6 +102,14 @@
           {
             "type": "command",
             "command": "/home/kiyama/.local/bin/claude-notify-hook.sh stop"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook Stop"
           }
         ]
       }
