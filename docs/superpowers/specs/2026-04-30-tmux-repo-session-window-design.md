@@ -143,7 +143,7 @@ cache layout を変えないので集計ロジック変更なし。ただし「c
 
 ### 4.7 `cockpit/next-ready.sh`
 
-session asc / window idx asc / pane idx asc で `done` pane を inbox 順に巡回する仕様。新形式でも変わらず動作する (session 数が減って window 数が増えるだけ)。
+`waiting` バケット → `done` バケット の優先順で要対応 pane を巡回する仕様 (state-tracking design §6.4 の更新版)。各バケット内では session asc / window idx asc / pane idx asc の inbox 順。F-6 の repo-scoped session でも変わらず動作する (session 数が減って window 数が増えるだけ)。
 
 ### 4.8 `dot_config/tmux/conf/bindings.conf`
 

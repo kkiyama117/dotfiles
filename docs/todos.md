@@ -171,6 +171,41 @@
   - [ ] worktree の **掃除** (merged branch の worktree 自動 prune) helper — 現状 `git wt remove` 手動。F-3.next #5 のような systemd timer でやるか手動運用かは未決
   - [ ] `--prompt` の長文 (~数 KB) における send-keys 遅延 / quoting 限界の実測 — 通常用途では問題なし想定
 
+### F-8. cockpit 状態 file の死蔵対策 🆕 (v1 完了 / 残: eBPF 検討)
+- 背景: claude が `/exit` で終わった、あるいは SIGKILL / OOM / pane クローズで terminal 内 claude プロセスが終了した場合、`${XDG_CACHE_HOME}/claude-cockpit/panes/<S>_<P>.status` が **最後の hook 値で残り続けるバグ**。`cockpit/summary.sh` の `⚡ N ⏸ M ✓ K ` カウントが減らず、`cockpit/next-ready.sh` (prefix+C+N) も幽霊 pane を ready 候補として選んでしまう。F-5 cockpit と F-6 repo-session の組合せで顕在化した。
+- 該当: `dot_local/bin/executable_claude-cockpit-state.sh` / `dot_config/claude/settings.json` / `dot_config/tmux/scripts/cockpit/{summary,next-ready,switcher,prune}.sh` / `docs/superpowers/specs/2026-04-30-claude-cockpit-state-tracking-design.md`
+- 対応 v1 (実装済み):
+  - [x] **A: graceful exit パス** — Claude Code の `SessionEnd` hook (`/exit` / `/clear` / `/logout` 等) を `claude-cockpit-state.sh` に追加し、status file を `rm -f` で削除。`settings.json` にも `SessionEnd` entry を追加
+  - [x] **B: defensive reader-side filter** — `summary.sh` / `next-ready.sh` / `switcher.sh` に `pane_current_command == claude` ガードを追加。SessionEnd が発火しなかった場合（SIGKILL / OOM / pane closed without /exit）でも幽霊カウントを回避
+  - [x] **prune.sh 拡張** — 既存「live でない pane」の削除条件を「live pane で claude を動かしている集合 にいない」に拡張。tmux 起動時 (`tmux.conf:15`) / switcher 起動時 (`switcher.sh:18`) / 任意の手動実行で死蔵 file を回収
+- 残: **実機検証 (chezmoi apply 後に通す)**
+  - [ ] `chezmoi diff` → `chezmoi apply` で `~/.local/bin/claude-cockpit-state.sh` / `~/.config/claude/settings.json` / `~/.config/tmux/scripts/cockpit/*` の差分を反映
+  - [ ] `tmux source-file ~/.tmux.conf` で `bindings.conf` の `prefix + C + N` 説明文を再ロード
+  - [ ] Claude を再起動して `settings.json` の `SessionEnd` hook entry がロードされたことを確認
+  - [ ] **A 検証**: 任意の window で `/exit` → 数秒以内に status-right の `⏸ N` / `✓ N` のカウントが 1 減る
+  - [ ] **B 検証**: claude pane を `prefix + C + k` 等で強制 kill (`/exit` を経由しない経路) → 直後の status-right 更新でカウントが 1 減る
+  - [ ] **prune 検証**: 死蔵 status file を 1 つ手で作って `tmux kill-server` → 再起動後の `~/.cache/claude-cockpit/panes/` に残骸が無い
+  - [ ] **next-ready 検証**: 複数 pane を意図的に `waiting` / `done` にして `prefix + C + N` で `waiting` 優先ジャンプを目視確認
+- 残: **eBPF ベース process death リアルタイム検出 🚧 (検討中)**
+  - 動機: B のフィルタは reader 呼出時にしか効かず、`prune.sh` も tmux 起動 / switcher 起動の bursty なタイミングのみ。`/exit` 以外の経路（SIGKILL / OOM / pane closed）では status file 削除が遅延する。kernel 側の終了イベントを直接観測すれば即時クリーンアップが可能。
+  - アイデア:
+    - `bpftrace` one-liner で `tracepoint:sched:sched_process_exit` に attach し、`comm == "claude"` の exit を捕捉
+    - PID → tmux (session, pane_id) を `/proc/<pid>/environ` の `TMUX_PANE` 経由で解決（exec 時の env なので stale な可能性は低い）
+    - 解決した key に対応する `panes/<S>_<P>.status` を即時 `rm -f`
+    - bcc / cilium-ebpf 版でも同等。systemd --user で daemon 化候補
+  - 懸念:
+    - root 権限または `cap_sys_admin` / `cap_bpf` が必要 — `--user` unit で動かすには capability の取り回しを設計する必要
+    - kernel バージョン依存 (Manjaro 想定なら 6.x で問題ないが、tracepoint vs kprobe の選択は要検証)
+    - claude が node を fork した場合の親子区別 (terminal 内の claude プロセスのみが対象)
+    - v1 の A + B + prune 拡張で実用上のカバレッジは十分高い見込みなので、痛みが顕在化してから着手する
+  - 該当ファイル候補 (将来):
+    - `dot_local/bin/executable_claude-cockpit-watch-bpf.sh` (新規)
+    - `dot_config/systemd/user/claude-cockpit-watch.service` (新規、要 capability 設計)
+    - `.chezmoiscripts/run_onchange_after_enable-claude-cockpit-watch.sh.tmpl` (bootstrap)
+- 注意:
+  - `pane_current_command == claude` の比較は live tmux の `display-message` 結果に依存。`claude` が `node` 等の interpreter 名で表示されるシェルラッパー経由の起動には未対応
+  - `prune.sh` の cleanup 頻度は spec の "tmux 起動時 + switcher 起動時" 粒度のまま。eBPF が入るまではこの粒度で運用
+
 ---
 
 ## デファード（着手判断保留・小粒なフォローアップ）

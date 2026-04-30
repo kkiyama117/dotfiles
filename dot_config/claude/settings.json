@@ -113,6 +113,16 @@
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook SessionEnd"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
