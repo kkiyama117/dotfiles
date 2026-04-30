@@ -65,16 +65,19 @@
   - tealdeer の初回 cache fetch はネットワーク必須 → 新規マシン bootstrap で `run_onchange` が走るタイミングと bw_session unlock のタイミング順序に注意
   - navi の widget が zsh の line editor フックに割り込むため、`fzf-tab` / `zsh-autosuggestions` / `zsh-vi-mode` 等の widget と衝突する可能性。フェーズ B で `bindkey -L` 出力を取って差分管理する
 
-### S-2. navi config.yaml を新版 navi 互換に修正 🆕 (S-1 派生)
-- 背景: S-1 phase C 作業中に、現行 `dot_config/navi/config.yaml` (2024 年版) が手元の navi バイナリで `Error parsing config file: finder: Failed to deserialize finder: sk at line 17 column 3` を出して finder 設定が読み込めないことが判明。実害はフォールバック finder で動くため軽微だが、`cheats.path` を有効化したいので合わせて修正したい。
-- 該当: `dot_config/navi/config.yaml`
+### S-2. navi config.yaml を新版 navi 互換に修正 (完了, 2026-04-30)
+- 背景: S-1 phase C 作業中に、現行 `dot_config/navi/config.yaml` (2024 年版) が手元の navi 2.24.0 で `Error parsing config file: finder: Failed to deserialize finder: sk at line 17 column 3` を出して finder 設定が読み込めないことが判明。
+- 該当: `dot_config/navi/config.yaml` → `dot_config/navi/config.yaml.tmpl` へ rename + 新書式に書き換え
 - 対応:
-  - [ ] 手元の `navi --version` を確認し、対応する config schema を [navi docs](https://github.com/denisidoro/navi/blob/master/docs/config_file.md) と突合
-  - [ ] `finder.command: sk` の deserialize エラーを解消 (新書式 / クォート / セクション削除のいずれか)
-  - [ ] `cheats.path: ~/.config/navi/cheats` を有効化して `dot_config/navi/cheats/*.cheat` がロードされるようにする
-  - [ ] 反映後に `navi info cheats-path` が `~/.config/navi/cheats` を返すことを実機確認
+  - [x] navi 2.24.0 を確認し、`navi --help` の許容値 `[possible values: fzf, skim]` と `info config-example` の出力で新 schema を特定
+  - [x] `finder.command: sk` を `skim` に修正 (deserialize エラー解消、rendered config を `NAVI_CONFIG` 経由で食わせて `Error parsing config file` が出ないことを確認)
+  - [x] `cheats.path` (DEPRECATED) を `cheats.paths` (リスト) に書き替え。chezmoi template `{{ .chezmoi.homeDir }}/.config/navi/cheats` で絶対パスを埋め込む方針に変更 (navi の tilde / `$HOME` 展開は不安定なため)
+  - [x] `client.tealdeer: true` を追加し `navi --tldr` (= `navit` alias) を tealdeer 連携に固定
+  - [x] `dot_config/zsh/rc/integrations/navi.zsh` のコメントを S-2 完了状態に更新
+- 残: 実機で `chezmoi apply` → `~/.config/navi/config.yaml` 反映後に Ctrl+G widget で chezmoi/git cheat が拾えるかをユーザ操作で確認 (auto mode の非 tty 環境では検証困難なため)
 - 注意:
-  - 環境変数 `NAVI_PATH` は手元 navi で効かなかったため使わない (誤導を避けるため `dot_config/zsh/rc/integrations/navi.zsh` でも export しない方針に変更済み)。
+  - 環境変数 `NAVI_PATH` は navi 2.24 で参照されないため使わない (誤導を避けるため `navi.zsh` でも export しない)。
+  - `navi info cheats-path` / `info config-path` は config を反映表示しない仕様 (常にデフォルトを返す) のため、反映確認には `info` 系を使わず実際の cheat ロード動作で判断する。
 
 ### F-4. wired-notify を nix で管理対象化 🆕 (方針更新: 2026-04-30)
 - 背景: 通知用 daemon `wired-notify` のバイナリが何らかの理由で OS から消えていた (`/usr/bin/wired` 不在 → `wired.service` が `status=203/EXEC` で 140+ 回 restart loop)。設定 (`dot_config/wired/wired.ron`) と systemd unit (`dot_config/systemd/user/wired.service`) は chezmoi 管理下にあるが、**パッケージ本体は宣言的に管理されていない**ため、新規マシンや AUR クリーンアップ後に同じ事態が再発する。今回 (2026-04-29) は `paru -S wired-notify` で手動復旧済み。

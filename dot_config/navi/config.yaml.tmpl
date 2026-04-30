@@ -1,0 +1,34 @@
+# navi config — schema for navi 2.x.
+# 旧版 (2024 年頃) で書かれていた `finder.command: sk` / `cheats.path` は
+# 2.24 では非互換 (deserialize error / DEPRECATED)。S-2 で更新。
+#
+# - finder.command の許容値は `fzf` / `skim` のみ (`sk` は不可)
+# - cheats.path (単数 / DEPRECATED) → cheats.paths (リスト) に書き替え
+# - chezmoi template で絶対パスを埋める (navi の tilde 展開は不安定)
+# - 環境変数 NAVI_PATH は 2.24 では参照されないため使わない
+
+style:
+  tag:
+    color: cyan
+    width_percentage: 26
+    min_width: 20
+  comment:
+    color: blue
+    width_percentage: 42
+    min_width: 45
+  snippet:
+    color: white
+
+finder:
+  command: skim
+
+cheats:
+  paths:
+    - {{ .chezmoi.homeDir }}/.config/navi/cheats
+
+client:
+  # `navi --tldr` を tealdeer にフォールバックさせる (S-1 で `navit` alias が依存)
+  tealdeer: true
+
+shell:
+  command: zsh
