@@ -94,7 +94,15 @@ func badge(state string) string {
 
 // stateForPane reads the cache file for (session, paneID) and returns
 // its trimmed content (empty string if missing).
-func stateForPane(session, paneID string) string {
+//
+// F-8 (b3) defensive filter: when paneCmd is anything other than
+// "claude", the cache value is treated as stale and "" is returned so
+// the badge column blanks out. The switcher still renders the row so
+// the user can switch to / kill the pane.
+func stateForPane(session, paneID, paneCmd string) string {
+	if paneCmd != "claude" {
+		return ""
+	}
 	file := filepath.Join(xdg.ClaudeCockpitCacheDir(), session+"_"+paneID+".status")
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -141,10 +149,18 @@ func buildLines(ctx context.Context, runner proc.Runner) ([]string, error) {
 	var lines []string
 	for _, s := range sessions {
 		// Aggregate session state from its panes (server-wide, -s flag).
-		paneListOut, _ := runner.Run(ctx, "tmux", "list-panes", "-t", s, "-s", "-F", "#{pane_id}")
+		// F-8 (b3): include pane_current_command so we can ignore
+		// non-claude panes when computing the session badge.
+		paneListOut, _ := runner.Run(ctx, "tmux",
+			"list-panes", "-t", s, "-s", "-F",
+			"#{pane_id}\t#{pane_current_command}")
 		var paneStates []string
-		for _, p := range splitNonEmpty(string(paneListOut)) {
-			paneStates = append(paneStates, stateForPane(s, p))
+		for _, line := range splitNonEmpty(string(paneListOut)) {
+			parts := strings.SplitN(line, "\t", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			paneStates = append(paneStates, stateForPane(s, parts[0], parts[1]))
 		}
 		sBadge := badge(stateForSessionFromPanes(paneStates))
 		lines = append(lines, fmt.Sprintf("S\t%s\t\t\t%-30s  %s", s, s, sBadge))
@@ -161,17 +177,23 @@ func buildLines(ctx context.Context, runner proc.Runner) ([]string, error) {
 			wIdx, wName := parts[0], parts[1]
 			lines = append(lines, fmt.Sprintf("W\t%s\t%s\t\t  window:%s %s", s, wIdx, wIdx, wName))
 
-			paneOut, err := runner.Run(ctx, "tmux", "list-panes", "-t", s+":"+wIdx, "-F", "#{pane_id}\t#{pane_current_path}")
+			// F-8 (b3): extend per-window list-panes to carry
+			// pane_current_command. Non-claude panes still appear
+			// (so the user can navigate / kill), but their badge
+			// blanks out via stateForPane.
+			paneOut, err := runner.Run(ctx, "tmux",
+				"list-panes", "-t", s+":"+wIdx, "-F",
+				"#{pane_id}\t#{pane_current_path}\t#{pane_current_command}")
 			if err != nil {
 				continue
 			}
 			for _, pline := range splitNonEmpty(string(paneOut)) {
-				pp := strings.SplitN(pline, "\t", 2)
-				if len(pp) != 2 {
+				pp := strings.SplitN(pline, "\t", 3)
+				if len(pp) != 3 {
 					continue
 				}
-				pID, pPath := pp[0], pp[1]
-				pBadge := badge(stateForPane(s, pID))
+				pID, pPath, pCmd := pp[0], pp[1], pp[2]
+				pBadge := badge(stateForPane(s, pID, pCmd))
 				lines = append(lines, fmt.Sprintf("P\t%s\t%s\t%s\t    pane:%s  cwd=%s    %s",
 					s, wIdx, pID, pID, pPath, pBadge))
 			}
