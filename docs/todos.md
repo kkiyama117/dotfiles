@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-05-01 (G-1 Shell → Go 移行 spec 確定)
+最終更新: 2026-05-02 (G-1 Phase 1 実装完了 / B サブシステム 5 binary、smoke 待ち)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -164,12 +164,12 @@
   - `docs/manage_claude.md` の Cockpit/Notify smoke 節 (新 binary 名に追従)
 
 - 移行順序 (Vertical-B-first, 1 PR = 1 binary):
-  - [ ] PR-1: `cockpit-state` (T1) — `internal/{xdg,atomicfile,obslog,proc}` 同時 commit / `programs/claude-tools/` 初期化 / build script 新設 / hook `exit 0` 契約 unit test 化
-  - [ ] PR-2: `cockpit-prune` (T1) — `internal/cockpit.LoadAll` 追加
-  - [ ] PR-3: `cockpit-summary` (T2) — status-right byte-exact 一致 test
-  - [ ] PR-4: `cockpit-next-ready` (T2) — inbox 順 (session asc / window idx asc / pane idx asc) test
-  - [ ] PR-5: `cockpit-switcher` (T3) — fzf stdin pipe + Enter/Ctrl-X/Ctrl-R キーバインド
-  - [ ] **★ B 完走チェックポイント** — 8-step smoke 通し、Go 化継続の go/no-go 判定。撤退する場合は PR-6 以降を中止し shell + Go 共存で安定運用に切替
+  - [x] PR-1: `cockpit-state` (T1) — `internal/{xdg,atomicfile,obslog,proc}` 同時 commit / `programs/claude-tools/` 初期化 / build script 新設 / hook `exit 0` 契約 unit test 化
+  - [x] PR-2: `cockpit-prune` (T1) — `internal/cockpit.LoadAll` 追加
+  - [x] PR-3: `cockpit-summary` (T2) — status-right byte-exact 一致 test
+  - [x] PR-4: `cockpit-next-ready` (T2) — inbox 順 (session asc / window idx asc / pane idx asc) test
+  - [x] PR-5: `cockpit-switcher` (T3) — fzf stdin pipe + Enter/Ctrl-X/Ctrl-R キーバインド
+  - [ ] **★ B 完走チェックポイント** — Phase 1 実装完了、smoke template 作成済み (2026-05-02): [`smoke/2026-05-01-go-cockpit-smoke.md`](superpowers/smoke/2026-05-01-go-cockpit-smoke.md). 実機 smoke は merge → chezmoi apply 後に実施し、その時点で `[x]` に更新。
   - [ ] PR-6: `notify-cleanup` (T1) — mtime TTL を `time.Time` で / `base_dir` suffix チェック (env 注入耐性) test
   - [ ] PR-7: `notify-sound` (T1) — `exec.Command("paplay",...)`
   - [ ] PR-8: `notify-hook` (T4) — env 受け渡し + `syscall.SysProcAttr.Setsid: true`
