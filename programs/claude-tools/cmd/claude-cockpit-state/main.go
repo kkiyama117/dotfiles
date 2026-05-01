@@ -48,7 +48,7 @@ func run(ctx context.Context, runner proc.Runner, args []string, tmuxPane string
 	}
 	event := args[2]
 
-	status, ok := eventToStatus(event)
+	action, payload, ok := eventToAction(event)
 	if !ok {
 		return nil
 	}
@@ -67,23 +67,58 @@ func run(ctx context.Context, runner proc.Runner, args []string, tmuxPane string
 		return nil
 	}
 
-	if err := cockpit.WriteStatus(session, tmuxPane, cockpit.Status(status)); err != nil {
-		logger.Error("write status failed",
-			"session", session, "pane", tmuxPane, "status", status, "err", err)
+	switch action {
+	case actionWrite:
+		if err := cockpit.WriteStatus(session, tmuxPane, cockpit.Status(payload)); err != nil {
+			logger.Error("write status failed",
+				"session", session, "pane", tmuxPane, "status", payload, "err", err)
+		}
+	case actionRemove:
+		// SessionEnd graceful exit: drop the cache file so summary /
+		// next-ready / switcher stop counting this pane as claude.
+		if err := cockpit.RemoveStatus(session, tmuxPane); err != nil {
+			logger.Error("remove status failed",
+				"session", session, "pane", tmuxPane, "err", err)
+		}
 	}
 	return nil
 }
 
-// eventToStatus maps Claude hook events to cockpit Status string literals.
-// Returns ("", false) for events we ignore (e.g., SubagentStop).
-func eventToStatus(event string) (string, bool) {
+// hookAction discriminates the side effect performed by run().
+type hookAction int
+
+const (
+	actionNone hookAction = iota
+	actionWrite
+	actionRemove
+)
+
+// eventToAction maps Claude hook event names to (action, payload) tuples.
+// payload is the cockpit.Status literal for actionWrite, "" for actionRemove.
+// Returns (actionNone, "", false) for events we ignore (e.g., SubagentStop).
+func eventToAction(event string) (hookAction, string, bool) {
 	switch event {
 	case "UserPromptSubmit", "PreToolUse":
-		return "working", true
+		return actionWrite, "working", true
 	case "Notification":
-		return "waiting", true
+		return actionWrite, "waiting", true
 	case "Stop":
-		return "done", true
+		return actionWrite, "done", true
+	case "SessionEnd":
+		// Graceful exit (/exit, /clear, /logout). Remove the cache file
+		// so the cockpit summary stops counting this pane.
+		return actionRemove, "", true
 	}
-	return "", false
+	return actionNone, "", false
+}
+
+// eventToStatus is the thin write-only view of eventToAction kept for the
+// existing TestEventToStatus contract: SessionEnd reports as ignored here
+// because it is not a write event.
+func eventToStatus(event string) (string, bool) {
+	action, payload, ok := eventToAction(event)
+	if !ok || action != actionWrite {
+		return "", false
+	}
+	return payload, true
 }

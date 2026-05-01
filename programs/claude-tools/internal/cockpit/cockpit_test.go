@@ -96,6 +96,35 @@ func TestLoadAll_emptyWhenDirMissing(t *testing.T) {
 	}
 }
 
+func TestRemoveStatus_existing(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+
+	if err := WriteStatus("sess", "%1", StatusWorking); err != nil {
+		t.Fatalf("WriteStatus: %v", err)
+	}
+	if _, err := os.Stat(CachePath("sess", "%1")); err != nil {
+		t.Fatalf("precondition: file should exist: %v", err)
+	}
+
+	if err := RemoveStatus("sess", "%1"); err != nil {
+		t.Fatalf("RemoveStatus: %v", err)
+	}
+	if _, err := os.Stat(CachePath("sess", "%1")); !os.IsNotExist(err) {
+		t.Errorf("file still exists after RemoveStatus (Stat err = %v)", err)
+	}
+}
+
+func TestRemoveStatus_missingIsIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+
+	// File never written; remove must not be an error.
+	if err := RemoveStatus("never", "%99"); err != nil {
+		t.Errorf("RemoveStatus on missing file should be nil, got %v", err)
+	}
+}
+
 func TestSummary(t *testing.T) {
 	tests := []struct {
 		name   string
