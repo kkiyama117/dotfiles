@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"claude-tools/internal/cockpit"
 	"claude-tools/internal/obslog"
 	"claude-tools/internal/proc"
 	"claude-tools/internal/xdg"
@@ -26,22 +27,18 @@ func main() {
 	}
 }
 
-// prune builds the live tmux pane key set and deletes cached files
-// whose basename (minus .status) is not in the set.
+// prune builds the live *claude* tmux pane key set
+// (cockpit.LoadLiveClaudePanes — F-8 v1 sweep) and deletes cached
+// files whose basename (minus .status) is not in that set. This
+// removes status files for panes that have either disappeared OR
+// are now running zsh / vim / a different command.
 //
 // Returns an error from tmux failure; in that case it does NOT delete
 // any cached files (we can't tell which are orphans without the live set).
 func prune(ctx context.Context, runner proc.Runner) error {
-	out, err := runner.Run(ctx, "tmux", "list-panes", "-a", "-F", "#{session_name}_#{pane_id}")
+	live, err := cockpit.LoadLiveClaudePanes(ctx, runner)
 	if err != nil {
 		return fmt.Errorf("tmux list-panes: %w", err)
-	}
-	live := make(map[string]struct{})
-	for _, line := range strings.Split(string(out), "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			live[line] = struct{}{}
-		}
 	}
 
 	pruneDir(xdg.ClaudeCockpitCacheDir(), live)
@@ -50,6 +47,9 @@ func prune(ctx context.Context, runner proc.Runner) error {
 	return nil
 }
 
+// pruneDir removes .status files in dir whose basename is not in live.
+// Empty live (= no live claude pane) deletes everything; that matches
+// shell prune.sh and the F-8 v1 contract.
 func pruneDir(dir string, live map[string]struct{}) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
