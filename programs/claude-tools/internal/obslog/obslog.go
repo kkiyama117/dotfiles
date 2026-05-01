@@ -2,7 +2,9 @@
 // forwards ERROR level records to `logger -t <progname>` for syslog.
 //
 // Shell parity: shell 時代の
-//   command -v logger >/dev/null 2>&1 && logger -t <prog> "<msg>"
+//
+//	command -v logger >/dev/null 2>&1 && logger -t <prog> "<msg>"
+//
 // と等価の syslog 転送を ERROR 記録時に自動で行う。`logger` コマンド
 // 不在時は静かにスキップする。
 package obslog
