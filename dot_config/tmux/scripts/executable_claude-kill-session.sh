@@ -9,9 +9,14 @@
 #   3. legacy: session name starts with 'claude-' (old flat scheme)
 # If none match, refuse with display-message + exit 1.
 #
-# Worktree resolution: read pane_current_path of the active pane in the window.
-# If it differs from main repo path, attempt git worktree remove.
-# If only a session name is passed (legacy callers), fall back to old behavior.
+# Worktree resolution (in order):
+#   1. window options `@claude-worktree` and `@claude-main-repo` (pinned by
+#      tmux-claude-new.sh at creation, authoritative)
+#   2. `pane_current_path` of the active pane (legacy fallback for windows
+#      that pre-date the tags)
+# If the resolved worktree differs from the main repo path, attempt
+# `git worktree remove --force` BEFORE kill-window so error messages still
+# have a client to display on.
 
 set -euo pipefail
 
@@ -58,32 +63,45 @@ if [ "$managed" != "yes" ] && [ -z "$has_claude" ] && [ -z "$legacy" ]; then
 fi
 
 # --- Worktree resolution ---
-# Resolve the active pane's worktree root (wt_root) and the repo's MAIN
-# worktree (main_repo). The window's worktree should be removed only if it
-# is a non-main worktree (i.e. wt_root != main_repo).
-pane_path=$(tmux display-message -p -t "$target" '#{pane_current_path}' 2>/dev/null || true)
-wt_root=""
-main_repo=""
-if [ -n "$pane_path" ]; then
-  wt_root=$(git -C "$pane_path" rev-parse --show-toplevel 2>/dev/null || true)
-  # First entry in `git worktree list --porcelain` is always the main worktree.
-  main_repo=$(git -C "$pane_path" worktree list --porcelain 2>/dev/null \
-    | awk '/^worktree / {print $2; exit}')
+# Prefer the @claude-worktree / @claude-main-repo tags pinned by
+# tmux-claude-new.sh at window creation. They are authoritative even when
+# pane_current_path has drifted (user `cd`'d out of the worktree, into a
+# different repo, or into a deleted directory). Fall back to deriving from
+# pane_current_path for legacy windows that pre-date the tags.
+wt_root=$(tmux show-options -w -t "$target" -v '@claude-worktree' 2>/dev/null || echo "")
+main_repo=$(tmux show-options -w -t "$target" -v '@claude-main-repo' 2>/dev/null || echo "")
+
+if [ -z "$wt_root" ] || [ -z "$main_repo" ]; then
+  pane_path=$(tmux display-message -p -t "$target" '#{pane_current_path}' 2>/dev/null || true)
+  if [ -n "$pane_path" ] && [ -d "$pane_path" ]; then
+    [ -z "$wt_root" ] && wt_root=$(git -C "$pane_path" rev-parse --show-toplevel 2>/dev/null || true)
+    # First entry in `git worktree list --porcelain` is always the main worktree.
+    [ -z "$main_repo" ] && main_repo=$(git -C "$pane_path" worktree list --porcelain 2>/dev/null \
+      | awk '/^worktree / {print $2; exit}')
+  fi
 fi
 
 # --- Pre-kill: capture pane ids for cache cleanup ---
 pane_ids=$(tmux list-panes -t "$target" -F '#{pane_id}' 2>/dev/null || true)
 
+# --- Worktree remove BEFORE kill-window so error messages still have a client
+# to display on. (kill-window may destroy the session if this is the last
+# window, leaving display-message with no audience.) ---
+# Only when the window's worktree is a non-main worktree.
+if [ -n "$wt_root" ] && [ -n "$main_repo" ] && [ "$wt_root" != "$main_repo" ]; then
+  if [ -d "$wt_root" ]; then
+    if ! err_msg=$(git -C "$main_repo" worktree remove "$wt_root" --force 2>&1); then
+      tmux display-message "kept worktree $wt_root: ${err_msg}"
+    fi
+  fi
+  # Defensive: prune stale .git/worktrees/<name>/ admin dirs even when the
+  # working tree was already gone (e.g., user removed it manually).
+  git -C "$main_repo" worktree prune 2>/dev/null || true
+fi
+
 # --- Kill the window. tmux destroys the session automatically if it was the
 # last window. ---
 tmux kill-window -t "$target"
-
-# --- Worktree remove (only when the killed window's pane was in a non-main
-# worktree). ---
-if [ -n "$wt_root" ] && [ -n "$main_repo" ] && [ "$wt_root" != "$main_repo" ] && [ -d "$wt_root" ]; then
-  git -C "$main_repo" worktree remove "$wt_root" --force 2>/dev/null \
-    || tmux display-message "kept worktree $wt_root (remove manually)"
-fi
 
 # --- Cockpit: drop cached state for the killed panes ---
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude-cockpit"

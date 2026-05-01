@@ -181,9 +181,13 @@ fi
 tmux new-window -S -t "${session}:" -n "$window_name" -c "$worktree" 2>>"$log_file" \
   || die "failed to create or attach window $session:$window_name"
 
-# Mark window as claude-managed. Used by claude-kill-session.sh as a fallback
-# when no claude pane is currently running (e.g., user manually closed it).
+# Mark window as claude-managed and pin the worktree paths. claude-kill-session.sh
+# reads these instead of trusting pane_current_path, which can drift if the user
+# `cd`s elsewhere inside a pane (and would otherwise risk removing the wrong
+# worktree).
 tmux set-option -w -t "${session}:${window_name}" -o '@claude-managed' yes 2>/dev/null || true
+tmux set-option -w -t "${session}:${window_name}" -o '@claude-worktree' "$worktree" 2>/dev/null || true
+tmux set-option -w -t "${session}:${window_name}" -o '@claude-main-repo' "$main_repo" 2>/dev/null || true
 
 # Inspect window pane count; only set up panes on a fresh window.
 pane_count=$(tmux list-panes -t "${session}:${window_name}" -F '.' 2>/dev/null | wc -l)
