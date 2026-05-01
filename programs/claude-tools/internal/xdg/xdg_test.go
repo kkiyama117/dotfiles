@@ -50,11 +50,20 @@ func TestCacheDir(t *testing.T) {
 }
 
 func TestClaudeCockpitCacheDir(t *testing.T) {
-	t.Setenv("XDG_CACHE_HOME", "/x/cache")
-	want := "/x/cache/claude-cockpit/panes"
-	if got := ClaudeCockpitCacheDir(); got != want {
-		t.Errorf("ClaudeCockpitCacheDir() = %q, want %q", got, want)
-	}
+	t.Run("XDG_CACHE_HOME set", func(t *testing.T) {
+		t.Setenv("XDG_CACHE_HOME", "/x/cache")
+		want := "/x/cache/claude-cockpit/panes"
+		if got := ClaudeCockpitCacheDir(); got != want {
+			t.Errorf("ClaudeCockpitCacheDir() = %q, want %q", got, want)
+		}
+	})
+	t.Run("both unset returns empty", func(t *testing.T) {
+		t.Setenv("XDG_CACHE_HOME", "")
+		t.Setenv("HOME", "")
+		if got := ClaudeCockpitCacheDir(); got != "" {
+			t.Errorf("ClaudeCockpitCacheDir() = %q, want empty string when CacheDir is empty", got)
+		}
+	})
 }
 
 func TestClaudeNotifyStateDir(t *testing.T) {

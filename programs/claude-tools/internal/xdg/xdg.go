@@ -34,8 +34,15 @@ func CacheDir() string {
 
 // ClaudeCockpitCacheDir is the per-pane status cache directory.
 // Layout matches tmux-agent-status (intentional, for future migration option).
+// Returns "" when CacheDir is empty (HOME and XDG_CACHE_HOME both unset)
+// so the caller surfaces a missing-environment error rather than writing
+// to a relative path under the binary's CWD.
 func ClaudeCockpitCacheDir() string {
-	return filepath.Join(CacheDir(), "claude-cockpit", "panes")
+	base := CacheDir()
+	if base == "" {
+		return ""
+	}
+	return filepath.Join(base, "claude-cockpit", "panes")
 }
 
 // ClaudeNotifyStateDir is the per-session notify replace-id state directory.
