@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-04-30 (F-3.next #5 state file cleanup 実装)
+最終更新: 2026-05-01 (G-1 Shell → Go 移行 spec 確定)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -150,6 +150,42 @@
   - 既存 `claude-*` session には介入しない (自然消滅させる migration)
   - tmux-continuum の resurrect で旧 session 名が部分復活する可能性あり (要 follow-up)
   - 異 repo + 同 basename の collision は v1 では非対応 (spec §3.4 / Q1)
+
+### G-1. Shell → Go 移行 (Claude Tools サブシステム) 🆕 (spec 確定 / 実装未着手)
+- 背景: `dot_local/bin/` + `dot_config/tmux/scripts/cockpit/` に蓄積した shell script 9 本 (~430 行) を **Go** で 1:1 置換する。Rust は将来比較対象として保留。設計は [`superpowers/specs/2026-05-01-shell-to-go-migration-design.md`](superpowers/specs/2026-05-01-shell-to-go-migration-design.md)。実装計画は別途 `superpowers/plans/2026-05-01-shell-to-go-migration.md` を生成予定。
+- 該当範囲:
+  - 新設: `programs/claude-tools/` (Go module, `.chezmoiignore` で配布対象外)
+  - 新設: `.chezmoiscripts/run_onchange_after_build-claude-tools.sh.tmpl` (sha256 ベース変更検知 → `go build -o ~/.local/bin/`)
+  - 新設: `dot_config/mise/config.toml` の `[tools]` に `go = "latest"`
+  - 撤去予定 (各 PR 内で `git rm`):
+    - `dot_local/bin/executable_claude-{cockpit-state,notify-hook,notify-dispatch,notify-sound,notify-cleanup}.sh` (5 本)
+    - `dot_config/tmux/scripts/cockpit/executable_{summary,switcher,next-ready,prune}.sh` (4 本)
+  - 書き換え予定: `dot_config/tmux/conf/status.conf` 等の `.sh` を含むパス参照
+  - `docs/manage_claude.md` の Cockpit/Notify smoke 節 (新 binary 名に追従)
+
+- 移行順序 (Vertical-B-first, 1 PR = 1 binary):
+  - [ ] PR-1: `cockpit-state` (T1) — `internal/{xdg,atomicfile,obslog,proc}` 同時 commit / `programs/claude-tools/` 初期化 / build script 新設 / hook `exit 0` 契約 unit test 化
+  - [ ] PR-2: `cockpit-prune` (T1) — `internal/cockpit.LoadAll` 追加
+  - [ ] PR-3: `cockpit-summary` (T2) — status-right byte-exact 一致 test
+  - [ ] PR-4: `cockpit-next-ready` (T2) — inbox 順 (session asc / window idx asc / pane idx asc) test
+  - [ ] PR-5: `cockpit-switcher` (T3) — fzf stdin pipe + Enter/Ctrl-X/Ctrl-R キーバインド
+  - [ ] **★ B 完走チェックポイント** — 8-step smoke 通し、Go 化継続の go/no-go 判定。撤退する場合は PR-6 以降を中止し shell + Go 共存で安定運用に切替
+  - [ ] PR-6: `notify-cleanup` (T1) — mtime TTL を `time.Time` で / `base_dir` suffix チェック (env 注入耐性) test
+  - [ ] PR-7: `notify-sound` (T1) — `exec.Command("paplay",...)`
+  - [ ] PR-8: `notify-hook` (T4) — env 受け渡し + `syscall.SysProcAttr.Setsid: true`
+  - [ ] PR-9: `notify-dispatch` (T5) — `godbus/dbus/v5` で `org.freedesktop.Notifications` の `ActionInvoked` / `NotificationClosed` listen / popup state machine
+
+- G-1 派生フォローアップ (本 spec の Out-of-Scope, G-1 完了後に着手):
+  - [ ] **G-1.next #1: Rust 版実装の検討** — 学習比較用。Go 版を一巡してから、同じ 9 binary のうち 2〜3 本 (例: `cockpit-state` + `notify-cleanup`) を Rust で書き直して並走比較。判断指標: 実装行数 / バイナリサイズ / 起動時間 / cross-compile 容易性 / dependency tree
+  - [ ] **G-1.next #2: C サブシステム (installer / `.chezmoiscripts/run_*.sh.tmpl`) の Go 化** — chezmoi template 結合の解消方法を別途設計。`chezmoi execute-template` の代替として `text/template` + chezmoi data export を Go 側で読む方式が候補。`tpm-bootstrap.sh` 等の bootstrap script 群も対象。先に G-1 で `programs/claude-tools/` 構造とテストパターンを確立してから着手
+  - [ ] **G-1.next #3: `notify-dispatch` daemon 化** — F-3.next L33 の既存項目と同一テーマ。本 G-1 で 1:1 置換した上で、popup state を全集約する常駐 helper daemon (`claude-notifyd`) に移行する案。systemd --user unit 追加 / Unix socket protocol 設計 / daemon 死亡時の hook fallback を別 spec に切り出す
+  - [ ] **G-1.next #4: F-4 nix 移行と build トリガ統合** — F-4 の nix flakes + Home Manager 設計が固まったら、`run_onchange_after_build-claude-tools.sh.tmpl` を nix overlay 経由 build に振り替える。Go toolchain も nix で pin できるので mise 依存を外せる
+
+- 注意:
+  - cache (`~/.cache/claude-cockpit/panes/<S>_<P>.status`) と notify state (`${XDG_RUNTIME_DIR}/claude-notify/sessions/<sid>.id`) のパス・フォーマットは shell 時代と完全互換 → 過渡期に shell ↔ Go が並存しても state を共有できる、revert 後も runtime 状態が連続
+  - hook 系 (`cockpit-state` / `notify-hook` / `notify-sound`) は **常に exit 0 絶対契約**。`defer func() { recover(); os.Exit(0) }()` で panic も握りつぶす
+  - clean cut per PR (feature flag は YAGNI)。壊れたら `git revert <PR>` で shell 復帰
+  - F-4 (nix 移行) を blocker にしない — G-1 は mise + chezmoi run_onchange の独立完結。F-4 完成後に G-1.next #4 で振替
 
 ---
 
