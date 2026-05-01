@@ -1,0 +1,8 @@
+# build artifacts (binaries are deployed to ~/.local/bin/, never committed)
+/bin/
+/dist/
+
+# go test cache / coverage
+*.test
+*.out
+coverage.txt

@@ -45,3 +45,6 @@ docs/
 
 # tmux-resurrect / continuum 自動保存（生成物 — chezmoi 管理対象外）
 .local/share/tmux/*
+
+# claude-tools Go ソース (バイナリは chezmoi run_onchange で build → ~/.local/bin/)
+programs/
