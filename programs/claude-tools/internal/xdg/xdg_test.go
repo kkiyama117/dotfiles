@@ -40,6 +40,13 @@ func TestCacheDir(t *testing.T) {
 			t.Errorf("CacheDir() = %q, want %q", got, want)
 		}
 	})
+	t.Run("both unset returns empty", func(t *testing.T) {
+		t.Setenv("XDG_CACHE_HOME", "")
+		t.Setenv("HOME", "")
+		if got := CacheDir(); got != "" {
+			t.Errorf("CacheDir() = %q, want empty string when HOME and XDG_CACHE_HOME are both unset", got)
+		}
+	})
 }
 
 func TestClaudeCockpitCacheDir(t *testing.T) {

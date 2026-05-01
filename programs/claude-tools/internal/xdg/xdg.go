@@ -17,12 +17,19 @@ func RuntimeDir() string {
 	return "/tmp"
 }
 
-// CacheDir returns $XDG_CACHE_HOME or "$HOME/.cache" if unset/empty.
+// CacheDir returns $XDG_CACHE_HOME or "$HOME/.cache" if XDG_CACHE_HOME
+// is unset/empty. Returns "" when HOME is also unset/empty so that the
+// caller's write-time error surfaces a missing-environment problem
+// rather than silently writing to a relative path.
 func CacheDir() string {
 	if v := os.Getenv("XDG_CACHE_HOME"); v != "" {
 		return v
 	}
-	return filepath.Join(os.Getenv("HOME"), ".cache")
+	home := os.Getenv("HOME")
+	if home == "" {
+		return ""
+	}
+	return filepath.Join(home, ".cache")
 }
 
 // ClaudeCockpitCacheDir is the per-pane status cache directory.
