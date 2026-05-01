@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Claude Code hook entry for tmux cockpit state tracking.
 # Writes "working" / "waiting" / "done" to a per-pane cache file based on
-# the hook event. Exits 0 unconditionally so Claude is never blocked.
+# the hook event, and removes the file entirely on SessionEnd so the
+# cockpit summary / next-ready don't keep counting a Claude pane that
+# has gracefully exited (e.g. via /exit). Exits 0 unconditionally so
+# Claude is never blocked.
 #
 # Usage:
 #   claude-cockpit-state.sh hook <Event>
@@ -10,7 +13,16 @@
 #   PreToolUse       -> working
 #   Stop             -> done
 #   Notification     -> waiting
+#   SessionEnd       -> remove status file (graceful exit cleanup)
 # Other events: ignored.
+#
+# SessionEnd covers /exit, /clear, /logout and similar in-Claude commands.
+# It does NOT fire when Claude is killed externally (SIGKILL / OOM / pane
+# closed by user without /exit), so reader-side scripts (summary.sh,
+# next-ready.sh, switcher.sh) and prune.sh additionally guard via
+# `pane_current_command == claude` checks. See docs/todos.md for the
+# eBPF-based proposal that would close the remaining gap (process death
+# events fired by the kernel itself).
 #
 # Stdin: claude hook payload (JSON). Currently unused; reserved.
 
@@ -26,6 +38,7 @@ case "$event" in
   UserPromptSubmit|PreToolUse) state="working" ;;
   Notification)                state="waiting" ;;
   Stop)                        state="done" ;;
+  SessionEnd)                  state="__delete__" ;;
   *)                           exit 0 ;;
 esac
 
@@ -46,6 +59,16 @@ if ! mkdir -p "$cache_dir" 2>/dev/null; then
 fi
 
 file="$cache_dir/${tmux_session}_${tmux_pane}.status"
+
+# SessionEnd: remove the status file so the pane stops being counted as
+# claude in summary/next-ready/switcher. rm -f is idempotent and safe even
+# if the file was never created (e.g. claude crashed before its first hook
+# fire).
+if [ "$state" = "__delete__" ]; then
+  rm -f "$file" 2>/dev/null
+  exit 0
+fi
+
 tmp="$file.$$.tmp"
 
 # atomic write: write to tmp, then rename

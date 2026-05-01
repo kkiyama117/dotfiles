@@ -249,7 +249,7 @@ prefix を 1 度押した後、以下のキーが各テーブルで効く。
 | `o` | branch fzf → 新規 worktree (shell-only, claude を起動しない) | `claude-pick-branch.sh --no-claude` → `tmux-claude-new.sh --no-claude` |
 | `r` | 現 session 内の claude pane を kill→再起動 | `claude-respawn-pane.sh` |
 | `s` | tmux session/window/pane 階層 fzf スイッチャ (cockpit) | `cockpit/switcher.sh` |
-| `N` | `done` 状態 pane に inbox 順循環ジャンプ | `cockpit/next-ready.sh` |
+| `N` | 要対応 pane に循環ジャンプ (`waiting` 優先 → `done`、各バケット内は inbox 順) | `cockpit/next-ready.sh` |
 | `k` | 現 window と対応 worktree を削除 (確認あり、最後の window なら session も destroy) | `claude-kill-session.sh` |
 | `?` | このテーブルのヘルプをポップアップ表示 (`list-keys -T claude_table -N`) | inline |
 

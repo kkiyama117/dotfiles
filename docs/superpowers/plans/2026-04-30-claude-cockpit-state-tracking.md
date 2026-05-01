@@ -1134,6 +1134,15 @@ Refs spec 2026-04-30-claude-cockpit-state-tracking-design.md §4.3"
 **Files:**
 - Create: `dot_config/tmux/scripts/cockpit/executable_next-ready.sh`
 
+> **NOTE (superseded behavior)**: The embedded code block below reflects the
+> original `done`-only implementation that landed in commit `2abcf1c`. The
+> filter was later changed to prefer `waiting` (Notification fired) over
+> `done` (Stop fired) so the binding actually surfaces panes that need
+> attention — see the updated `2026-04-30-claude-cockpit-state-tracking-design.md`
+> §6.4 and the live script at `dot_config/tmux/scripts/cockpit/executable_next-ready.sh`
+> for the current behavior. Do **not** copy the code block below verbatim;
+> use the live script as the source of truth.
+
 - [ ] **Step 1: Write the script**
 
 Create `dot_config/tmux/scripts/cockpit/executable_next-ready.sh` with content:

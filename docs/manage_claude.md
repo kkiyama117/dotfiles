@@ -139,7 +139,7 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 | `o` | git branch を fzf で選び **新規 worktree (shell-only)** を作成（claude を起動しない） | `claude-pick-branch.sh --no-claude` → `tmux-claude-new.sh --no-claude` |
 | `r` | 現 session 内の `claude` pane を kill → `claude --continue` で再起動 | `claude-respawn-pane.sh` |
 | `s` | tmux session/window/pane を **階層 fzf** で表示し、cockpit state badge 付きで switch / kill / reload | `cockpit/switcher.sh` |
-| `N` | `done` 状態の pane に **inbox 順 (session asc / window idx asc / pane idx asc)** で循環ジャンプ | `cockpit/next-ready.sh` |
+| `N` | 要対応 pane に循環ジャンプ。優先順は **`waiting`（Notification 発火）→ `done`（Stop 発火）** で、各バケット内は **inbox 順 (session asc / window idx asc / pane idx asc)** | `cockpit/next-ready.sh` |
 | `k` | **現 window と対応 worktree を削除**（`confirm-before` で確認、最後の window なら session も destroy） | `claude-kill-session.sh` |
 
 > `k` の安全判定: window option `@claude-managed=yes` / pane の `claude` プロセス / 旧 `claude-*` session 名 のいずれか 1 つを満たすと実行可。これら 3 条件はすべて OR で評価される。
@@ -151,7 +151,7 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 | `tmux-claude-new.sh <branch> [--from-root [<id>]] [--no-claude]` | session 名は **main worktree の basename**（例: `chezmoi`, `data_manager`）、window 名は **sanitize した branch 名**（例: `feat-foo`、非英数記号は `-` に変換）、各 window 内に左 pane = shell、右 pane = `claude --continue --fork-session` の 2-pane を構成。`tmux new-session -A` + `tmux new-window -A` の組合せで **冪等** に動作（同 branch を 2 度呼んでも既存 window に attach するだけ）。window には `@claude-managed=yes` を user option として set し、`claude-kill-session.sh` がこれを安全判定の 1 条件として参照する。worktree は `<repo-root>-<safe>` に作成する。**branch が既に他 worktree にチェックアウト済みなら**（main repo 含む）`git worktree list` から既存パスを再利用し新規 add は行わない。新規作成時はローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する。worktree に対応する `~/.claude/projects/<encoded>/*.jsonl` が **空なら `--continue` を付けず** 素の `claude` を起動して "Fatal Error" を回避。`--from-root` を付けると **メイン worktree の Claude セッション履歴**（`~/.claude/projects/<encoded main repo>/`）から fzf で選択（`<id>` 直指定も可）し、`claude --resume <id> --fork-session` で起動する。`--no-claude` を付けると **claude を起動せず 1-pane shell session のみ** 作成する（`--from-root` と排他） |
 | `claude-pick-branch.sh [--no-claude]` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec`（追加引数は passthrough） |
 | `cockpit/switcher.sh` | tmux 全 session/window/pane を fzf 階層表示。Enter=switch / Ctrl-X=kill (worktree-aware) / Ctrl-R=reload |
-| `cockpit/next-ready.sh` | inbox 順で `done` 状態の pane に循環ジャンプ |
+| `cockpit/next-ready.sh` | 要対応 pane に循環ジャンプ。`waiting` を優先し、なければ `done` を巡回（各バケット内 inbox 順） |
 | `claude-respawn-pane.sh` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
 | `claude-kill-session.sh` | 現 window が claude-managed なら `kill-window` + 対応 worktree の `git worktree remove --force`。安全判定は `@claude-managed=yes` window option / pane の `claude` プロセス / 旧 `claude-*` session 名 のいずれか 1 つ。session 内に他 window があれば session は残る。 |
 | `cockpit/summary.sh` | hook 駆動キャッシュ（`~/.cache/claude-cockpit/panes/*.status`）から `⚡ N ⏸ M ✓ K ` 形式で status-right に出力 |
@@ -239,7 +239,7 @@ tmux 外で起動された Claude (素の terminal) は左クリック時 `journ
 2. `claude-foo` で `Hello` と送信 → status-right が `⚡ 1 ` に更新（最大 5 秒）
 3. Claude が応答完了し ESC で待機 → status-right が `✓ 1 ` に変わる
 4. もう片方でも送信 → 状態が混在表示される（条件次第で `⚡ 1 ⏸ 1` 等）
-5. `prefix + C` → `N` で done 側 pane にジャンプできる
+5. `prefix + C` → `N` で要対応 pane にジャンプできる（`waiting` がいれば `waiting` 優先、無ければ `done` に巡回）
 6. `prefix + C` → `s` で階層 switcher を開き、`Ctrl-X` で空 pane を kill できる
 7. `prefix + C` → `k` で claude-foo セッション + worktree を削除 → `~/.cache/claude-cockpit/panes/claude-foo_*.status` も消える
 8. `tmux kill-server` → 再起動後、`~/.cache/claude-cockpit/panes/` の残骸が `prune.sh` により消える

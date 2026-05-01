@@ -71,18 +71,32 @@ You need to edit `/etc/xrdp/startwm.sh` to load $XDG_CONFIG_HOME/zsh/zprofile
 
 ## update
 
-When you update some of settings, bitwarden-cli runs and require master password to unlock key.
-Use the `bw_session` / `bw_lock` helpers (defined in `dot_config/zsh/rc/functions/bw_session.zsh`)
-to avoid repeated prompts and to clear the session afterward:
+When you update some of settings, bitwarden-cli runs and require master password to unlock the vault.
+The zsh wrappers in `dot_config/zsh/rc/functions/bw_session.zsh` automatically restore
+`BW_SESSION` from a tmpfs cache (`${XDG_RUNTIME_DIR}/bw_session_${UID}`, mode 0600, cleared on
+reboot) so that you only enter the master password once per boot session, not once per shell:
 
 ```
-bw_session              # wraps `export BW_SESSION=$(bw unlock --raw)`
-chezmoi apply           # or any tool that needs the unlocked vault
-bw_lock                 # `unset BW_SESSION` — always run when you finish
+chezmoi diff            # first run prompts for master password → cached
+chezmoi apply           # subsequent runs (any shell) reuse the cache silently
+bw get item <id>        # data-only `bw` subcommands also restore from cache
 ```
 
-`BW_SESSION` is a vault-wide access key inherited by child processes, so do not leave it
-exported for long-running shells.
+`bw_session` / `bw_lock` helpers remain available for explicit control:
+
+```
+bw_session              # cache-first; prompt only on miss/invalid
+bw_session -f           # force re-unlock (replaces cache)
+bw_lock                 # unset BW_SESSION + `bw lock` + clear cache
+```
+
+`BW_SESSION` is a vault-wide access key inherited by child processes. The tmpfs cache disappears
+on reboot, but on long-running machines run `bw_lock` when you finish to invalidate the session
+server-side as well.
+
+Shell startup does NOT auto-restore from the cache — the cache is only consulted when you
+actually invoke `chezmoi apply/diff/update/verify` or a `bw` data subcommand, so opening a new
+terminal triggers no `bw` call.
 
 ### `upd` (topgrade + chezmoi apply)
 
@@ -91,10 +105,11 @@ exported for long-running shells.
 あり、bw 解錠を要する適用はこの関数で別途行う:
 
 ```
-bw_session              # 事前に解錠しておくと topgrade 中に再入力されない
-upd                     # topgrade -y ... && chezmoi_apply
-bw_lock                 # 終わったら必ず BW_SESSION を破棄
+upd                     # topgrade -y ... && chezmoi apply (cache 経由で BW_SESSION 復元)
+bw_lock                 # 作業終了時の明示破棄 (任意)
 ```
 
-`upd` は topgrade が rc=0 のときだけ chezmoi_apply を実行する。失敗時に chezmoi
-だけ走らせたいなら `chezmoi_apply` を直接呼べばよい。
+`upd` は topgrade が rc=0 のときだけ chezmoi apply を実行する。失敗時に chezmoi
+だけ走らせたいなら直接 `chezmoi apply` を呼べばよい (`chezmoi_apply` 互換シムも残置)。
+2回目以降は cache が効くため事前 `bw_session` は不要だが、cache miss を必ず避けたい
+unattended 実行時は `bw_session` を前置する。
