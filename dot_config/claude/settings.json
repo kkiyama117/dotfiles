@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook UserPromptSubmit"
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state hook UserPromptSubmit"
           }
         ]
       }
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook PreToolUse"
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state hook PreToolUse"
           }
         ]
       }
@@ -91,7 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook Notification"
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state hook Notification"
           }
         ]
       }
@@ -109,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.local/bin/claude-cockpit-state.sh hook Stop"
+            "command": "/home/kiyama/.local/bin/claude-cockpit-state hook Stop"
           }
         ]
       }
