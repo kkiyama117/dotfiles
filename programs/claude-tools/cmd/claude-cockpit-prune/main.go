@@ -20,9 +20,13 @@ import (
 
 const progName = "claude-cockpit-prune"
 
+// logger is package-level so we don't allocate a fresh slog handler on
+// every error site (pruneDir fans out across N entries).
+var logger = obslog.New(progName)
+
 func main() {
 	if err := prune(context.Background(), proc.RealRunner{}); err != nil {
-		obslog.New(progName).Error("prune failed", "err", err)
+		logger.Error("prune failed", "err", err)
 		os.Exit(1)
 	}
 }
@@ -56,7 +60,7 @@ func pruneDir(dir string, live map[string]struct{}) {
 		if os.IsNotExist(err) {
 			return
 		}
-		obslog.New(progName).Error("readdir failed", "dir", dir, "err", err)
+		logger.Error("readdir failed", "dir", dir, "err", err)
 		return
 	}
 	for _, e := range entries {
@@ -72,7 +76,7 @@ func pruneDir(dir string, live map[string]struct{}) {
 			continue
 		}
 		if err := os.Remove(filepath.Join(dir, name)); err != nil {
-			obslog.New(progName).Error("remove failed", "file", name, "err", err)
+			logger.Error("remove failed", "file", name, "err", err)
 		}
 	}
 }

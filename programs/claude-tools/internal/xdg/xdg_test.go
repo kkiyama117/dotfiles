@@ -73,3 +73,44 @@ func TestClaudeNotifyStateDir(t *testing.T) {
 		t.Errorf("ClaudeNotifyStateDir() = %q, want %q", got, want)
 	}
 }
+
+func TestConfigDir(t *testing.T) {
+	t.Run("XDG_CONFIG_HOME set", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "/custom/config")
+		t.Setenv("HOME", "/home/test")
+		if got := ConfigDir(); got != "/custom/config" {
+			t.Errorf("ConfigDir() = %q, want /custom/config", got)
+		}
+	})
+	t.Run("fallback to HOME/.config", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "")
+		t.Setenv("HOME", "/home/test")
+		want := filepath.Join("/home/test", ".config")
+		if got := ConfigDir(); got != want {
+			t.Errorf("ConfigDir() = %q, want %q", got, want)
+		}
+	})
+	t.Run("both unset returns empty", func(t *testing.T) {
+		t.Setenv("XDG_CONFIG_HOME", "")
+		t.Setenv("HOME", "")
+		if got := ConfigDir(); got != "" {
+			t.Errorf("ConfigDir() = %q, want empty string when HOME and XDG_CONFIG_HOME are both unset", got)
+		}
+	})
+}
+
+func TestLocalBinDir(t *testing.T) {
+	t.Run("HOME set", func(t *testing.T) {
+		t.Setenv("HOME", "/home/test")
+		want := filepath.Join("/home/test", ".local", "bin")
+		if got := LocalBinDir(); got != want {
+			t.Errorf("LocalBinDir() = %q, want %q", got, want)
+		}
+	})
+	t.Run("HOME unset returns empty", func(t *testing.T) {
+		t.Setenv("HOME", "")
+		if got := LocalBinDir(); got != "" {
+			t.Errorf("LocalBinDir() = %q, want empty string when HOME is unset", got)
+		}
+	})
+}

@@ -26,18 +26,20 @@ import (
 
 const progName = "claude-cockpit-switcher"
 
+// logger is package-level so dispatchKill / startBackgroundPrune / main
+// share one slog handler.
+var logger = obslog.New(progName)
+
 func main() {
 	if _, err := exec.LookPath("fzf"); err != nil {
 		runTmux("display-message", "fzf required (paru -S fzf)")
 		os.Exit(1)
 	}
 
-	// Fire-and-forget prune so orphans don't show up.
-	_ = exec.Command(filepath.Join(os.Getenv("HOME"), ".local/bin/claude-cockpit-prune")).Start()
+	startBackgroundPrune()
 
 	ctx := context.Background()
 	runner := proc.RealRunner{}
-	logger := obslog.New(progName)
 
 	lines, err := buildLines(ctx, runner)
 	if err != nil {
@@ -277,12 +279,21 @@ func dispatchKill(ctx context.Context, runner proc.Runner, row selectedRow) {
 			if !confirmYesNo(fmt.Sprintf("kill claude window %s:%s and worktree? (y/N) ", row.session, row.window)) {
 				return
 			}
+			cfgDir := xdg.ConfigDir()
+			if cfgDir == "" {
+				logger.Error("XDG_CONFIG_HOME / HOME unset; cannot locate claude-kill-session.sh",
+					"target", row.session+":"+row.window)
+				return
+			}
 			cmd := exec.CommandContext(ctx,
-				filepath.Join(os.Getenv("HOME"), ".config/tmux/scripts/claude-kill-session.sh"),
+				filepath.Join(cfgDir, "tmux", "scripts", "claude-kill-session.sh"),
 				row.session+":"+row.window)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
-			_ = cmd.Run()
+			if err := cmd.Run(); err != nil {
+				logger.Error("claude-kill-session.sh failed",
+					"target", row.session+":"+row.window, "err", err)
+			}
 			return
 		}
 		if !confirmYesNo(fmt.Sprintf("kill window %s:%s? (y/N) ", row.session, row.window)) {
@@ -316,6 +327,23 @@ func confirmYesNo(prompt string) bool {
 // need the proc.Runner abstraction (display-message at startup).
 func runTmux(args ...string) {
 	_ = exec.Command("tmux", args...).Run()
+}
+
+// startBackgroundPrune spawns claude-cockpit-prune as a fire-and-forget
+// child so orphan cache files don't show up in the switcher. Failures
+// (HOME unset, binary not yet installed by chezmoi run_onchange, exec
+// error) are logged at WARN — they're non-fatal because prune is
+// also wired to tmux server-start, so a stale cache will still get
+// swept eventually.
+func startBackgroundPrune() {
+	bin := xdg.LocalBinDir()
+	if bin == "" {
+		logger.Warn("HOME unset; skipping background prune")
+		return
+	}
+	if err := exec.Command(filepath.Join(bin, "claude-cockpit-prune")).Start(); err != nil {
+		logger.Warn("background prune failed to start", "err", err)
+	}
 }
 
 func splitNonEmpty(s string) []string {

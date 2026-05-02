@@ -20,10 +20,14 @@ import (
 
 const progName = "claude-cockpit-summary"
 
+// logger is package-level so we don't allocate a fresh slog handler each
+// time tmux invokes us (status-right re-renders frequently).
+var logger = obslog.New(progName)
+
 func main() {
 	if err := writeSummary(context.Background(), proc.RealRunner{}, os.Stdout); err != nil {
 		// Status-right failure must not poison the bar — emit nothing.
-		obslog.New(progName).Error("write summary failed", "err", err)
+		logger.Error("write summary failed", "err", err)
 		os.Exit(1)
 	}
 }
@@ -41,7 +45,7 @@ func writeSummary(ctx context.Context, runner proc.Runner, w io.Writer) error {
 	live, err := cockpit.LoadLiveClaudePanes(ctx, runner)
 	if err != nil {
 		// Fail-closed: drop the summary rather than show stale counts.
-		obslog.New(progName).Error("live claude lookup failed", "err", err)
+		logger.Error("live claude lookup failed", "err", err)
 		live = map[string]struct{}{}
 	}
 	filtered := cockpit.FilterByLive(states, live)
