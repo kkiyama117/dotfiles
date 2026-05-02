@@ -45,3 +45,7 @@ docs/
 
 # tmux-resurrect / continuum 自動保存（生成物 — chezmoi 管理対象外）
 .local/share/tmux/*
+
+# Containerized test environment — never deploy to ~/
+test/
+.github/workflows/container-smoke.yml
