@@ -59,6 +59,47 @@ func TestRun_sessionLookupFailure(t *testing.T) {
 	}
 }
 
+func TestRun_sessionEndRemovesStatus(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+
+	// Seed: write a working status, then simulate SessionEnd → file gone.
+	cacheDir := dir + "/claude-cockpit/panes"
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	statusFile := cacheDir + "/mysession_%5.status"
+	if err := os.WriteFile(statusFile, []byte("working"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fake := proc.NewFakeRunner()
+	fake.Register("tmux", []string{"display-message", "-p", "-t", "%5", "#{session_name}"},
+		[]byte("mysession\n"), nil)
+
+	if err := run(context.Background(), fake, []string{"prog", "hook", "SessionEnd"}, "%5"); err != nil {
+		t.Errorf("run returned error: %v", err)
+	}
+
+	if _, err := os.Stat(statusFile); !os.IsNotExist(err) {
+		t.Errorf("status file should be removed after SessionEnd (Stat err = %v)", err)
+	}
+}
+
+func TestRun_sessionEndOnMissingFileIsNoOp(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+
+	fake := proc.NewFakeRunner()
+	fake.Register("tmux", []string{"display-message", "-p", "-t", "%9", "#{session_name}"},
+		[]byte("mysession\n"), nil)
+
+	// SessionEnd on a session that never had a hook fire: must not error.
+	if err := run(context.Background(), fake, []string{"prog", "hook", "SessionEnd"}, "%9"); err != nil {
+		t.Errorf("run on missing status file returned error: %v", err)
+	}
+}
+
 func TestRun_writesStatus(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", dir)

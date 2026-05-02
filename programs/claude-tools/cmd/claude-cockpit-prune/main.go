@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"claude-tools/internal/cockpit"
 	"claude-tools/internal/obslog"
 	"claude-tools/internal/proc"
 	"claude-tools/internal/xdg"
@@ -19,29 +20,29 @@ import (
 
 const progName = "claude-cockpit-prune"
 
+// logger is package-level so we don't allocate a fresh slog handler on
+// every error site (pruneDir fans out across N entries).
+var logger = obslog.New(progName)
+
 func main() {
 	if err := prune(context.Background(), proc.RealRunner{}); err != nil {
-		obslog.New(progName).Error("prune failed", "err", err)
+		logger.Error("prune failed", "err", err)
 		os.Exit(1)
 	}
 }
 
-// prune builds the live tmux pane key set and deletes cached files
-// whose basename (minus .status) is not in the set.
+// prune builds the live *claude* tmux pane key set
+// (cockpit.LoadLiveClaudePanes — F-8 v1 sweep) and deletes cached
+// files whose basename (minus .status) is not in that set. This
+// removes status files for panes that have either disappeared OR
+// are now running zsh / vim / a different command.
 //
 // Returns an error from tmux failure; in that case it does NOT delete
 // any cached files (we can't tell which are orphans without the live set).
 func prune(ctx context.Context, runner proc.Runner) error {
-	out, err := runner.Run(ctx, "tmux", "list-panes", "-a", "-F", "#{session_name}_#{pane_id}")
+	live, err := cockpit.LoadLiveClaudePanes(ctx, runner)
 	if err != nil {
 		return fmt.Errorf("tmux list-panes: %w", err)
-	}
-	live := make(map[string]struct{})
-	for _, line := range strings.Split(string(out), "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			live[line] = struct{}{}
-		}
 	}
 
 	pruneDir(xdg.ClaudeCockpitCacheDir(), live)
@@ -50,13 +51,16 @@ func prune(ctx context.Context, runner proc.Runner) error {
 	return nil
 }
 
+// pruneDir removes .status files in dir whose basename is not in live.
+// Empty live (= no live claude pane) deletes everything; that matches
+// shell prune.sh and the F-8 v1 contract.
 func pruneDir(dir string, live map[string]struct{}) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return
 		}
-		obslog.New(progName).Error("readdir failed", "dir", dir, "err", err)
+		logger.Error("readdir failed", "dir", dir, "err", err)
 		return
 	}
 	for _, e := range entries {
@@ -72,7 +76,7 @@ func pruneDir(dir string, live map[string]struct{}) {
 			continue
 		}
 		if err := os.Remove(filepath.Join(dir, name)); err != nil {
-			obslog.New(progName).Error("remove failed", "file", name, "err", err)
+			logger.Error("remove failed", "file", name, "err", err)
 		}
 	}
 }

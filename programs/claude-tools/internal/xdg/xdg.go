@@ -49,3 +49,28 @@ func ClaudeCockpitCacheDir() string {
 func ClaudeNotifyStateDir() string {
 	return filepath.Join(RuntimeDir(), "claude-notify", "sessions")
 }
+
+// ConfigDir returns $XDG_CONFIG_HOME or "$HOME/.config" if XDG_CONFIG_HOME
+// is unset/empty. Returns "" when HOME is also unset/empty so the caller
+// surfaces a missing-environment error rather than building a relative
+// path under the binary's CWD.
+func ConfigDir() string {
+	if v := os.Getenv("XDG_CONFIG_HOME"); v != "" {
+		return v
+	}
+	home := os.Getenv("HOME")
+	if home == "" {
+		return ""
+	}
+	return filepath.Join(home, ".config")
+}
+
+// LocalBinDir returns "$HOME/.local/bin" or "" when HOME is unset/empty.
+// XDG does not specify a user-bin variable, so this is HOME-only by design.
+func LocalBinDir() string {
+	home := os.Getenv("HOME")
+	if home == "" {
+		return ""
+	}
+	return filepath.Join(home, ".local", "bin")
+}

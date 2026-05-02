@@ -26,18 +26,20 @@ import (
 
 const progName = "claude-cockpit-switcher"
 
+// logger is package-level so dispatchKill / startBackgroundPrune / main
+// share one slog handler.
+var logger = obslog.New(progName)
+
 func main() {
 	if _, err := exec.LookPath("fzf"); err != nil {
 		runTmux("display-message", "fzf required (paru -S fzf)")
 		os.Exit(1)
 	}
 
-	// Fire-and-forget prune so orphans don't show up.
-	_ = exec.Command(filepath.Join(os.Getenv("HOME"), ".local/bin/claude-cockpit-prune")).Start()
+	startBackgroundPrune()
 
 	ctx := context.Background()
 	runner := proc.RealRunner{}
-	logger := obslog.New(progName)
 
 	lines, err := buildLines(ctx, runner)
 	if err != nil {
@@ -62,9 +64,16 @@ func main() {
 
 	switch key {
 	case "ctrl-r":
-		bin, _ := os.Executable()
-		_ = syscall.Exec(bin, []string{bin}, os.Environ())
-		os.Exit(0)
+		bin, err := os.Executable()
+		if err != nil {
+			logger.Error("ctrl-r reload: os.Executable failed", "err", err)
+			os.Exit(1)
+		}
+		// syscall.Exec replaces the process on success and never returns;
+		// reaching the next line means it failed.
+		err = syscall.Exec(bin, []string{bin}, os.Environ())
+		logger.Error("ctrl-r reload: syscall.Exec failed", "bin", bin, "err", err)
+		os.Exit(1)
 	case "ctrl-x":
 		dispatchKill(ctx, runner, row)
 	default:
@@ -94,7 +103,15 @@ func badge(state string) string {
 
 // stateForPane reads the cache file for (session, paneID) and returns
 // its trimmed content (empty string if missing).
-func stateForPane(session, paneID string) string {
+//
+// F-8 (b3) defensive filter: when paneCmd is anything other than
+// "claude", the cache value is treated as stale and "" is returned so
+// the badge column blanks out. The switcher still renders the row so
+// the user can switch to / kill the pane.
+func stateForPane(session, paneID, paneCmd string) string {
+	if paneCmd != "claude" {
+		return ""
+	}
 	file := filepath.Join(xdg.ClaudeCockpitCacheDir(), session+"_"+paneID+".status")
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -141,10 +158,18 @@ func buildLines(ctx context.Context, runner proc.Runner) ([]string, error) {
 	var lines []string
 	for _, s := range sessions {
 		// Aggregate session state from its panes (server-wide, -s flag).
-		paneListOut, _ := runner.Run(ctx, "tmux", "list-panes", "-t", s, "-s", "-F", "#{pane_id}")
+		// F-8 (b3): include pane_current_command so we can ignore
+		// non-claude panes when computing the session badge.
+		paneListOut, _ := runner.Run(ctx, "tmux",
+			"list-panes", "-t", s, "-s", "-F",
+			"#{pane_id}\t#{pane_current_command}")
 		var paneStates []string
-		for _, p := range splitNonEmpty(string(paneListOut)) {
-			paneStates = append(paneStates, stateForPane(s, p))
+		for _, line := range splitNonEmpty(string(paneListOut)) {
+			parts := strings.SplitN(line, "\t", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			paneStates = append(paneStates, stateForPane(s, parts[0], parts[1]))
 		}
 		sBadge := badge(stateForSessionFromPanes(paneStates))
 		lines = append(lines, fmt.Sprintf("S\t%s\t\t\t%-30s  %s", s, s, sBadge))
@@ -161,17 +186,23 @@ func buildLines(ctx context.Context, runner proc.Runner) ([]string, error) {
 			wIdx, wName := parts[0], parts[1]
 			lines = append(lines, fmt.Sprintf("W\t%s\t%s\t\t  window:%s %s", s, wIdx, wIdx, wName))
 
-			paneOut, err := runner.Run(ctx, "tmux", "list-panes", "-t", s+":"+wIdx, "-F", "#{pane_id}\t#{pane_current_path}")
+			// F-8 (b3): extend per-window list-panes to carry
+			// pane_current_command. Non-claude panes still appear
+			// (so the user can navigate / kill), but their badge
+			// blanks out via stateForPane.
+			paneOut, err := runner.Run(ctx, "tmux",
+				"list-panes", "-t", s+":"+wIdx, "-F",
+				"#{pane_id}\t#{pane_current_path}\t#{pane_current_command}")
 			if err != nil {
 				continue
 			}
 			for _, pline := range splitNonEmpty(string(paneOut)) {
-				pp := strings.SplitN(pline, "\t", 2)
-				if len(pp) != 2 {
+				pp := strings.SplitN(pline, "\t", 3)
+				if len(pp) != 3 {
 					continue
 				}
-				pID, pPath := pp[0], pp[1]
-				pBadge := badge(stateForPane(s, pID))
+				pID, pPath, pCmd := pp[0], pp[1], pp[2]
+				pBadge := badge(stateForPane(s, pID, pCmd))
 				lines = append(lines, fmt.Sprintf("P\t%s\t%s\t%s\t    pane:%s  cwd=%s    %s",
 					s, wIdx, pID, pID, pPath, pBadge))
 			}
@@ -255,12 +286,21 @@ func dispatchKill(ctx context.Context, runner proc.Runner, row selectedRow) {
 			if !confirmYesNo(fmt.Sprintf("kill claude window %s:%s and worktree? (y/N) ", row.session, row.window)) {
 				return
 			}
+			cfgDir := xdg.ConfigDir()
+			if cfgDir == "" {
+				logger.Error("XDG_CONFIG_HOME / HOME unset; cannot locate claude-kill-session.sh",
+					"target", row.session+":"+row.window)
+				return
+			}
 			cmd := exec.CommandContext(ctx,
-				filepath.Join(os.Getenv("HOME"), ".config/tmux/scripts/claude-kill-session.sh"),
+				filepath.Join(cfgDir, "tmux", "scripts", "claude-kill-session.sh"),
 				row.session+":"+row.window)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
-			_ = cmd.Run()
+			if err := cmd.Run(); err != nil {
+				logger.Error("claude-kill-session.sh failed",
+					"target", row.session+":"+row.window, "err", err)
+			}
 			return
 		}
 		if !confirmYesNo(fmt.Sprintf("kill window %s:%s? (y/N) ", row.session, row.window)) {
@@ -294,6 +334,23 @@ func confirmYesNo(prompt string) bool {
 // need the proc.Runner abstraction (display-message at startup).
 func runTmux(args ...string) {
 	_ = exec.Command("tmux", args...).Run()
+}
+
+// startBackgroundPrune spawns claude-cockpit-prune as a fire-and-forget
+// child so orphan cache files don't show up in the switcher. Failures
+// (HOME unset, binary not yet installed by chezmoi run_onchange, exec
+// error) are logged at WARN — they're non-fatal because prune is
+// also wired to tmux server-start, so a stale cache will still get
+// swept eventually.
+func startBackgroundPrune() {
+	bin := xdg.LocalBinDir()
+	if bin == "" {
+		logger.Warn("HOME unset; skipping background prune")
+		return
+	}
+	if err := exec.Command(filepath.Join(bin, "claude-cockpit-prune")).Start(); err != nil {
+		logger.Warn("background prune failed to start", "err", err)
+	}
 }
 
 func splitNonEmpty(s string) []string {

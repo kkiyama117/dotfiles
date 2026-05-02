@@ -27,6 +27,7 @@ type doneRow struct {
 type paneRow struct {
 	id    string
 	index int
+	cmd   string // pane_current_command — F-8 (b2) defensive filter
 }
 
 func main() {
@@ -97,21 +98,33 @@ func buildDoneList(ctx context.Context, runner proc.Runner) ([]doneRow, error) {
 		})
 
 		for _, w := range windows {
-			paneOut, err := runner.Run(ctx, "tmux", "list-panes", "-t", s+":"+w, "-F", "#{pane_id}\t#{pane_index}")
+			paneOut, err := runner.Run(ctx, "tmux",
+				"list-panes", "-t", s+":"+w, "-F",
+				"#{pane_id}\t#{pane_index}\t#{pane_current_command}")
 			if err != nil {
 				continue
 			}
 			var panes []paneRow
 			for _, line := range splitNonEmpty(string(paneOut)) {
-				parts := strings.SplitN(line, "\t", 2)
-				if len(parts) != 2 {
+				parts := strings.SplitN(line, "\t", 3)
+				if len(parts) != 3 {
 					continue
 				}
-				panes = append(panes, paneRow{id: parts[0], index: atoiOrZero(parts[1])})
+				panes = append(panes, paneRow{
+					id:    parts[0],
+					index: atoiOrZero(parts[1]),
+					cmd:   parts[2],
+				})
 			}
 			sort.SliceStable(panes, func(i, j int) bool { return panes[i].index < panes[j].index })
 
 			for _, p := range panes {
+				// F-8 (b2) defensive filter: skip panes whose
+				// current command is not claude (graceful exit
+				// or kill leaving a stale cache file).
+				if p.cmd != "claude" {
+					continue
+				}
 				file := filepath.Join(cacheDir, s+"_"+p.id+".status")
 				data, err := os.ReadFile(file)
 				if err != nil {

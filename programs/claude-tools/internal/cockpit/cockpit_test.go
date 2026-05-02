@@ -1,9 +1,13 @@
 package cockpit
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"claude-tools/internal/proc"
 )
 
 func TestStatusParse(t *testing.T) {
@@ -93,6 +97,136 @@ func TestLoadAll_emptyWhenDirMissing(t *testing.T) {
 	}
 	if len(states) != 0 {
 		t.Errorf("expected 0 states, got %d", len(states))
+	}
+}
+
+func TestRemoveStatus_existing(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+
+	if err := WriteStatus("sess", "%1", StatusWorking); err != nil {
+		t.Fatalf("WriteStatus: %v", err)
+	}
+	if _, err := os.Stat(CachePath("sess", "%1")); err != nil {
+		t.Fatalf("precondition: file should exist: %v", err)
+	}
+
+	if err := RemoveStatus("sess", "%1"); err != nil {
+		t.Fatalf("RemoveStatus: %v", err)
+	}
+	if _, err := os.Stat(CachePath("sess", "%1")); !os.IsNotExist(err) {
+		t.Errorf("file still exists after RemoveStatus (Stat err = %v)", err)
+	}
+}
+
+func TestRemoveStatus_missingIsIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+
+	// File never written; remove must not be an error.
+	if err := RemoveStatus("never", "%99"); err != nil {
+		t.Errorf("RemoveStatus on missing file should be nil, got %v", err)
+	}
+}
+
+func TestLoadLiveClaudePanes_filtersByCommand(t *testing.T) {
+	fake := proc.NewFakeRunner()
+	fake.Register("tmux",
+		[]string{"list-panes", "-a", "-F", "#{session_name}_#{pane_id}\t#{pane_current_command}"},
+		[]byte("alpha_%1\tclaude\nalpha_%2\tzsh\nbeta_%3\tclaude\nbeta_%4\tvim\n"), nil)
+
+	live, err := LoadLiveClaudePanes(context.Background(), fake)
+	if err != nil {
+		t.Fatalf("LoadLiveClaudePanes: %v", err)
+	}
+	if len(live) != 2 {
+		t.Fatalf("got %d entries, want 2: %v", len(live), live)
+	}
+	for _, want := range []string{"alpha_%1", "beta_%3"} {
+		if _, ok := live[want]; !ok {
+			t.Errorf("missing %q in live set: %v", want, live)
+		}
+	}
+	for _, unwanted := range []string{"alpha_%2", "beta_%4"} {
+		if _, ok := live[unwanted]; ok {
+			t.Errorf("non-claude pane %q leaked into live set", unwanted)
+		}
+	}
+}
+
+func TestLoadLiveClaudePanes_emptyOutput(t *testing.T) {
+	fake := proc.NewFakeRunner()
+	fake.Register("tmux",
+		[]string{"list-panes", "-a", "-F", "#{session_name}_#{pane_id}\t#{pane_current_command}"},
+		[]byte(""), nil)
+
+	live, err := LoadLiveClaudePanes(context.Background(), fake)
+	if err != nil {
+		t.Fatalf("LoadLiveClaudePanes: %v", err)
+	}
+	if len(live) != 0 {
+		t.Errorf("got %d entries, want 0", len(live))
+	}
+}
+
+func TestLoadLiveClaudePanes_tmuxFailure(t *testing.T) {
+	fake := proc.NewFakeRunner()
+	// tmux not registered -> error.
+	_, err := LoadLiveClaudePanes(context.Background(), fake)
+	if err == nil {
+		t.Error("expected error when tmux fails")
+	}
+}
+
+func TestLoadLiveClaudePanes_explicitTmuxError(t *testing.T) {
+	fake := proc.NewFakeRunner()
+	fake.Register("tmux",
+		[]string{"list-panes", "-a", "-F", "#{session_name}_#{pane_id}\t#{pane_current_command}"},
+		nil, errors.New("tmux: no server"))
+
+	_, err := LoadLiveClaudePanes(context.Background(), fake)
+	if err == nil {
+		t.Error("expected error to propagate tmux failure")
+	}
+}
+
+func TestFilterByLive_keepsMatchingOnly(t *testing.T) {
+	states := []PaneState{
+		{Session: "a", PaneID: "%1", Status: StatusWorking},
+		{Session: "a", PaneID: "%2", Status: StatusDone},
+		{Session: "b", PaneID: "%3", Status: StatusWaiting},
+	}
+	live := map[string]struct{}{
+		"a_%1": {},
+		"b_%3": {},
+	}
+	got := FilterByLive(states, live)
+	if len(got) != 2 {
+		t.Fatalf("got %d, want 2: %+v", len(got), got)
+	}
+	if got[0].PaneID != "%1" || got[1].PaneID != "%3" {
+		t.Errorf("wrong order or contents: %+v", got)
+	}
+}
+
+func TestFilterByLive_emptyLive(t *testing.T) {
+	states := []PaneState{
+		{Session: "a", PaneID: "%1", Status: StatusWorking},
+	}
+	got := FilterByLive(states, map[string]struct{}{})
+	if len(got) != 0 {
+		t.Errorf("expected empty result for empty live set, got %+v", got)
+	}
+}
+
+func TestFilterByLive_nilLiveTreatsAsEmpty(t *testing.T) {
+	// Defensive contract: nil live map is treated as "no live claude
+	// panes" (= filter everything out). Callers that want unfiltered
+	// behavior must explicitly skip FilterByLive.
+	states := []PaneState{{Session: "a", PaneID: "%1", Status: StatusWorking}}
+	got := FilterByLive(states, nil)
+	if len(got) != 0 {
+		t.Errorf("expected empty result for nil live set, got %+v", got)
 	}
 }
 

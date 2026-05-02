@@ -62,6 +62,18 @@ func WriteStatus(session, paneID string, s Status) error {
 	return atomicfile.Write(CachePath(session, paneID), []byte(string(s)), 0644)
 }
 
+// RemoveStatus removes the cache file for the given (session, pane).
+// Missing file is treated as success (idempotent / safe to call when the
+// file was never created — e.g. claude crashed before the first hook
+// fire). Used for the SessionEnd graceful-exit cleanup path.
+func RemoveStatus(session, paneID string) error {
+	err := os.Remove(CachePath(session, paneID))
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("remove status: %w", err)
+	}
+	return nil
+}
+
 // LoadAll scans the cache dir and returns parsed pane states.
 // Files with corrupt content / unparseable filenames are silently skipped.
 // Missing directory returns empty slice (not an error).
