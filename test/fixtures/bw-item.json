@@ -12,7 +12,7 @@
     { "name": "user_name",       "value": "Test User",            "type": 0 },
     { "name": "user_signingkey", "value": "TESTSIGNINGKEY00",     "type": 0 },
     { "name": "main_token",      "value": "TEST_GITHUB_TOKEN",    "type": 0 },
-    { "name": "CODEX",           "value": "sk-test-CODEX",        "type": 1 },
+    { "name": "CODEX",           "value": "FAKE_CODEX_KEY_PLACEHOLDER", "type": 1 },
     { "name": "email",           "value": "test@example.com",     "type": 0 }
   ]
 }

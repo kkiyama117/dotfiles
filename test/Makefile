@@ -23,10 +23,10 @@ build:
 	$(RUNTIME) build -t $(IMG) -f $(HERE)Dockerfile $(HERE)
 
 test: build
-	$(RUNTIME) run --rm -v $(REPO_ROOT):/work:ro $(IMG)
+	$(RUNTIME) run --rm -v "$(REPO_ROOT):/work:ro" $(IMG)
 
 shell: build
-	$(RUNTIME) run --rm -it -v $(REPO_ROOT):/work:ro --entrypoint bash $(IMG)
+	$(RUNTIME) run --rm -it -v "$(REPO_ROOT):/work:ro" --entrypoint bash $(IMG)
 
 selftest:
 	$(HERE)tests/test-fake-bw.sh

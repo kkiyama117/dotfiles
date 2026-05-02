@@ -17,15 +17,14 @@ case "$cmd" in
     printf '%s\n' "FAKE_SESSION_TOKEN"
     ;;
   get)
+    # All `bw get <sub> <id>` shapes return the same fixture; warn on unknown sub
+    # so future templates that pass a new shape get a visible breadcrumb.
     sub="${1:-}"
     case "$sub" in
-      item|password|username|notes|totp|uri)
-        cat "$FIXTURE"
-        ;;
-      *)
-        cat "$FIXTURE"
-        ;;
+      item|password|username|notes|totp|uri) ;;
+      *) echo "[fake-bw] unhandled get subcommand: ${sub:-<none>}" >&2 ;;
     esac
+    cat "$FIXTURE"
     ;;
   list)
     printf '['
