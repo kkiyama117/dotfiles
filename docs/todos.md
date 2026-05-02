@@ -256,6 +256,17 @@
   - clean cut per PR (feature flag は YAGNI)。壊れたら `git revert <PR>` で shell 復帰
   - F-4 (nix 移行) を blocker にしない — G-1 は mise + chezmoi run_onchange の独立完結。F-4 完成後に G-1.next #4 で振替
 
+### G-2. Shell → Go 移行 Phase 3 (C subsystem / tmux scripts) 🆕
+
+- 背景: Phase 1 (B / cockpit binaries) と Phase 2 (A / notify binaries) を経て、`dot_config/tmux/scripts/` 配下の tmux 補助 shell 5 本 (`claude-branch.sh` / `claude-respawn-pane.sh` / `claude-kill-session.sh` / `tmux-claude-new.sh` / `claude-pick-branch.sh`) を Go 化する。設計: [`superpowers/specs/2026-05-02-tmux-scripts-go-migration-design.md`](superpowers/specs/2026-05-02-tmux-scripts-go-migration-design.md) / 計画: [`superpowers/plans/2026-05-02-tmux-scripts-go-migration.md`](superpowers/plans/2026-05-02-tmux-scripts-go-migration.md)。新規 internal package `internal/gitwt` (worktree/branch ops) と `internal/tmux` (session/window mutation) を順次追加。
+
+- 移行順序 (1 PR = 1 binary):
+  - [x] PR-C-1: `claude-branch` (2026-05-02) — `internal/gitwt.CurrentBranch` skeleton 追加 / `cmd/claude-branch` で `formatBranch` を testable core に切り出し / status-right 安全のため常時 exit 0 / `defer recover()` で panic 握りつぶし。unit test 6 本 (gitwt 2 / claude-branch 4) PASS、`go test -race ./...` 全パッケージ PASS、`go build ./cmd/claude-branch` OK、`chezmoi diff` で `dot_config/tmux/conf/status.conf:11` の 1 行差分のみ確認。実機 tmux source-file 目視は user 手動 smoke にデファ ([`smoke/2026-05-02-go-tmux-scripts-smoke.md`](superpowers/smoke/2026-05-02-go-tmux-scripts-smoke.md))
+  - [ ] PR-C-2: `claude-respawn-pane` — `internal/tmux` skeleton 同時追加
+  - [ ] PR-C-3: `claude-kill-session` — `gitwt.ListPorcelain` 拡張
+  - [ ] PR-C-4: `claude-tmux-new` — `gitwt` worktree mutation API 追加
+  - [ ] PR-C-5: `claude-pick-branch` — Phase 3 完走チェックポイント
+
 ---
 
 ## デファード（着手判断保留・小粒なフォローアップ）
