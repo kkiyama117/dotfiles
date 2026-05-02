@@ -1,0 +1,81 @@
+# C subsystem (tmux scripts) Go migration smoke log
+
+## C-1: claude-branch — 2026-05-02
+
+- [x] go test -race ./cmd/claude-branch/... ./internal/gitwt/... — PASS
+- [x] go test -race ./... — PASS (全パッケージ)
+- [x] go build ./cmd/claude-branch — OK
+- [x] chezmoi diff — status.conf 1 行差分のみ確認
+- [ ] (manual) chezmoi apply → tmux source-file → status-right `[<branch>] ` 目視
+
+## C-2: claude-respawn-pane — 2026-05-02
+
+- [x] go test -race ./cmd/claude-respawn-pane/... ./internal/tmux/... — PASS
+- [x] go test -race ./... — PASS (全パッケージ)
+- [x] chezmoi diff — bindings.conf 1 行差分のみ確認
+- [ ] (manual) 2-pane window: claude pane respawn 確認
+- [ ] (manual) 1-pane window: current pane fallback 確認
+
+## C-3: claude-kill-session — 2026-05-02
+
+- [x] go test -race ./cmd/claude-kill-session/... ./internal/tmux/... ./internal/gitwt/... — PASS
+- [x] go test -race ./... — PASS (22 パッケージ全 PASS、新規 cmd/claude-kill-session 含む)
+- [x] go vet ./... — clean
+- [x] go build ./cmd/claude-kill-session — OK (ELF x86-64 statically linked)
+- [x] chezmoi diff `~/.config/tmux/conf/bindings.conf` — L86 が `~/.local/bin/claude-kill-session` に切替わっていることを確認
+- [x] 旧 `dot_config/tmux/scripts/executable_claude-kill-session.sh` を `git rm` で撤去
+- [ ] (manual) managed=yes window: kill + worktree remove + cache cleanup OK
+- [ ] (manual) non-claude window: refuse + display-message OK
+- [ ] (manual) fallback (pane_current_path): test 用に @claude-* tag を unset した window で確認
+
+## ★ C 中間チェックポイント (PR-C-3 完走後) — 2026-05-02
+
+- [ ] (manual) Step CK.1: C-1〜C-3 通し smoke (status-right `[<branch>] ` / `prefix + C → r` / `prefix + C → x`)
+
+## C-3 後の go/no-go: GO (2026-05-02)
+
+automated 層 (unit + race + vet + build + chezmoi diff) は全 GREEN。実機 tmux 目視 smoke は user 手動にデファ。
+
+## C-4: claude-tmux-new — 2026-05-02
+
+- [x] go test -race ./cmd/claude-tmux-new/... ./internal/tmux/... ./internal/gitwt/... — PASS
+- [x] go test -race ./... — PASS (23 パッケージ全 PASS、新規 cmd/claude-tmux-new 含む)
+- [x] go vet ./... — clean
+- [x] go build ./cmd/claude-tmux-new — OK (ELF x86-64 statically linked)
+- [x] 旧 `dot_config/tmux/scripts/executable_tmux-claude-new.sh` を `git rm` で撤去 (binary は claude- prefix 統一のため `claude-tmux-new` にリネーム)
+- [ ] (manual) new branch + worktree + 2-pane + claude OK
+- [ ] (manual) --no-claude (1-pane shell) OK
+- [ ] (manual) --prompt with single quotes (ShellQuote round-trip) OK
+- [ ] (manual) --from-root with explicit id OK
+- [ ] (manual) --from-root without id (fzf) OK
+- [ ] (manual) --worktree-base custom dir OK
+
+## C-5: claude-pick-branch — 2026-05-02
+
+- [x] go test -race ./cmd/claude-pick-branch/... ./internal/gitwt/... — PASS
+- [x] go test -race ./... — PASS (24 パッケージ全 PASS、新規 cmd/claude-pick-branch 含む)
+- [x] go vet ./... — clean
+- [x] go build ./cmd/claude-pick-branch — OK
+- [x] `dot_config/tmux/conf/bindings.conf` L61/L66 を `~/.local/bin/claude-pick-branch` に書き換え
+- [x] 旧 `dot_config/tmux/scripts/executable_claude-pick-branch.sh` を `git rm` で撤去
+- [ ] (manual) prefix + C → n: fzf "claude branch> " → claude-tmux-new 起動 OK
+- [ ] (manual) prefix + C → o: fzf "worktree branch> " → --no-claude 経路 (1-pane shell) OK
+- [ ] (manual) fzf cancel (Esc) で no-op (popup 閉じるだけ) OK
+
+## C 完走 — 2026-05-02
+
+automated 層チェック:
+
+- [x] `go test -race -cover ./...` — 24 パッケージ全 PASS
+- [x] coverage: `internal/cockpit` 92.0% / `internal/notify` 89.7% / `internal/notifyd` 82.4% / `internal/obslog` 83.3% / `internal/proc` 100% / `internal/xdg` 100% (≥80% target 到達)
+- [x] coverage shortfall (acceptance §11 の 80% 目標未達): `internal/gitwt` 74.6% / `internal/tmux` 72.1% / `internal/atomicfile` 52.4%。残差は `gitwt.Remove` (exec.CommandContext 直叩きで stderr 捕捉が必要、design trade-off) と `tmux.AttachSessionExec` (`syscall.Exec` で TTY 移譲) — いずれも CI 不可能な path のため follow-up 化
+- [x] `git ls-files | rg "tmux/scripts/(executable_(claude-(branch|kill-session|pick-branch|respawn-pane))|executable_tmux-claude-new)\.sh"` → 0 件 (旧 shell 5 本完全撤去)
+- [x] `rg "\.config/tmux/scripts/.*\.sh" dot_config/tmux/ .chezmoiscripts/` → `tpm-bootstrap.sh` のみ (3 件、いずれも D subsystem 繰延の TPM bootstrap 経路)
+- [x] cmd binaries: 5 本 (`claude-branch`, `claude-respawn-pane`, `claude-kill-session`, `claude-tmux-new`, `claude-pick-branch`) build 確認
+
+manual 領域 (user 手動 smoke へデファ):
+
+- [ ] (manual) chezmoi apply で `~/.local/bin/claude-{branch,respawn-pane,kill-session,tmux-new,pick-branch}` 5 binary 配備
+- [ ] (manual) tmux source-file 後に `prefix + C → n` / `o` / `r` / `x` が全部新 binary 経由で動作
+- [ ] (manual) status-right `[<branch>] ` 表示 (C-1)
+- [ ] (manual) 全 C-1〜C-5 manual 行通し
