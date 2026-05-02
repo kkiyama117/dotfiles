@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "kkiyama117-flow-tools",
+  "description": "Personal Claude Code plugins for kkiyama117 — workflow automation built on top of the chezmoi-managed claude-tools Go binaries.",
+  "owner": {
+    "name": "kkiyama117",
+    "email": "k.kiyama117@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "kkiyama117-flow-tools",
+      "description": "Personal slash commands for tmux + worktree spawn workflows. Wraps the claude-tools Go binaries (claude-tmux-new, claude-cockpit-*, claude-notify-*).",
+      "author": {
+        "name": "kkiyama117",
+        "email": "k.kiyama117@gmail.com"
+      },
+      "category": "productivity",
+      "source": "./plugins/kkiyama117-flow-tools"
+    }
+  ]
+}
