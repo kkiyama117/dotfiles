@@ -72,6 +72,25 @@ func (c *Client) SendKeys(ctx context.Context, target string, keys ...string) er
 	return nil
 }
 
+// KillWindow runs `tmux kill-window -t <target>`.
+func (c *Client) KillWindow(ctx context.Context, target string) error {
+	if _, err := c.runner.Run(ctx, "tmux", "kill-window", "-t", target); err != nil {
+		return fmt.Errorf("tmux kill-window -t %q: %w", target, err)
+	}
+	return nil
+}
+
+// ShowWindowOption returns the value of a tmux window option, or
+// ("", nil) when the option is unset (show-options -v exits non-zero
+// in that case; we deliberately swallow the error to model "unset").
+func (c *Client) ShowWindowOption(ctx context.Context, target, key string) (string, error) {
+	out, err := c.runner.Run(ctx, "tmux", "show-options", "-w", "-t", target, "-v", key)
+	if err != nil {
+		return "", nil
+	}
+	return strings.TrimRight(string(out), "\n"), nil
+}
+
 // sanitizeRe matches characters NOT allowed in tmux session/window names.
 var sanitizeRe = regexp.MustCompile(`[^a-zA-Z0-9._-]`)
 

@@ -99,6 +99,31 @@ func TestShellQuote_table(t *testing.T) {
 	}
 }
 
+func TestKillWindow_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"kill-window", "-t", "S:W"}, nil, nil)
+	if err := New(r).KillWindow(context.Background(), "S:W"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestShowWindowOption_returnsValue(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"show-options", "-w", "-t", "S:W", "-v", "@claude-managed"}, []byte("yes\n"), nil)
+	got, err := New(r).ShowWindowOption(context.Background(), "S:W", "@claude-managed")
+	if err != nil || got != "yes" {
+		t.Fatalf("got=%q err=%v", got, err)
+	}
+}
+
+func TestShowWindowOption_unsetReturnsEmpty(t *testing.T) {
+	r := proc.NewFakeRunner() // unregistered → fake returns error
+	got, err := New(r).ShowWindowOption(context.Background(), "S:W", "@missing")
+	if err != nil || got != "" {
+		t.Fatalf("got=%q err=%v want empty nil", got, err)
+	}
+}
+
 // TestShellQuote_roundTrip feeds the quoted form through bash and verifies
 // the original bytes round-trip. Skips if bash is unavailable.
 func TestShellQuote_roundTrip(t *testing.T) {
