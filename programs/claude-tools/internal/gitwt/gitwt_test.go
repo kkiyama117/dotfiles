@@ -158,6 +158,34 @@ func TestAddExistingLocal_argv(t *testing.T) {
 	}
 }
 
+func TestLogOneline_returnsTrimmedOutput(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "log", "--oneline", "main..feat"},
+		[]byte("abc1234 feat: do thing\ndef5678 fix: edge case\n"), nil)
+	got, err := New(r).LogOneline(context.Background(), "/p", "main..feat")
+	want := "abc1234 feat: do thing\ndef5678 fix: edge case"
+	if err != nil || got != want {
+		t.Fatalf("got=%q err=%v want=%q", got, err, want)
+	}
+}
+
+func TestLogOneline_emptyRange(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "log", "--oneline", "main..feat"}, []byte(""), nil)
+	got, err := New(r).LogOneline(context.Background(), "/p", "main..feat")
+	if err != nil || got != "" {
+		t.Fatalf("got=%q err=%v want empty nil", got, err)
+	}
+}
+
+func TestLogOneline_propagatesError(t *testing.T) {
+	r := proc.NewFakeRunner() // unregistered → error
+	_, err := New(r).LogOneline(context.Background(), "/p", "main..feat")
+	if err == nil {
+		t.Fatal("want error from unregistered runner call")
+	}
+}
+
 func TestAddTrackingRemote_argv(t *testing.T) {
 	r := proc.NewFakeRunner()
 	r.Register("git", []string{"-C", "/p", "worktree", "add", "-b", "x", "/wt", "origin/x"}, nil, nil)
