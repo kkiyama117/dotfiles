@@ -1,0 +1,12 @@
+[Unit]
+Description=Claude Code notifyd socket (G-1.next #3)
+Documentation=https://github.com/kkiyama117/dotfiles
+
+[Socket]
+ListenStream=%t/claude-notify/sock
+SocketMode=0600
+DirectoryMode=0700
+Service=claude-notifyd.service
+
+[Install]
+WantedBy=sockets.target

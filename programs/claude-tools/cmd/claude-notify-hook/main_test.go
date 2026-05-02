@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"claude-tools/internal/proc"
 )
@@ -373,5 +378,223 @@ func TestIsExecutable(t *testing.T) {
 	}
 	if isExecutable(dir) {
 		t.Error("directory should report false")
+	}
+}
+
+// --- dialDaemon tests (D4.1 RED → D4.2 GREEN) ---
+
+// withFakeForkDispatch replaces the package-level forkDispatchFn with a
+// counter-based fake for the duration of the test. Returns the call count.
+func withFakeForkDispatch(t *testing.T) *int32 {
+	t.Helper()
+	var calls int32
+	orig := forkDispatchFn
+	forkDispatchFn = func(n notification, getEnv envLookup) {
+		atomic.AddInt32(&calls, 1)
+	}
+	t.Cleanup(func() { forkDispatchFn = orig })
+	return &calls
+}
+
+// TestDialDaemon_SuccessPath verifies that when a Unix socket listener is
+// ready, dialDaemon writes a properly formed JSON frame and returns nil.
+// forkDispatchFn must NOT be invoked when dialDaemon succeeds.
+func TestDialDaemon_SuccessPath(t *testing.T) {
+	dir := t.TempDir()
+	sockPath := filepath.Join(dir, "test.sock")
+
+	ln, err := net.Listen("unix", sockPath)
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+
+	// Received frames accumulate here.
+	type received struct {
+		line string
+		err  error
+	}
+	frameCh := make(chan received, 1)
+
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			frameCh <- received{err: err}
+			return
+		}
+		defer conn.Close()
+		scanner := bufio.NewScanner(conn)
+		if scanner.Scan() {
+			frameCh <- received{line: scanner.Text()}
+		} else {
+			frameCh <- received{err: scanner.Err()}
+		}
+	}()
+
+	n := notification{
+		sessionID:   "sid-test",
+		title:       "Claude Code",
+		body:        "Turn complete",
+		urgency:     "normal",
+		tmuxPane:    "%7",
+		tmuxSession: "dev",
+	}
+
+	ctx := context.Background()
+	err = dialDaemon(ctx, sockPath, 100*time.Millisecond, n)
+	if err != nil {
+		t.Fatalf("dialDaemon returned error: %v", err)
+	}
+
+	select {
+	case got := <-frameCh:
+		if got.err != nil {
+			t.Fatalf("server read error: %v", got.err)
+		}
+		// Validate the JSON frame contains expected fields.
+		var frame map[string]interface{}
+		if err := json.Unmarshal([]byte(got.line), &frame); err != nil {
+			t.Fatalf("frame is not valid JSON: %v (line=%q)", err, got.line)
+		}
+		if v, _ := frame["v"].(float64); v != 1 {
+			t.Errorf("frame v = %v, want 1", frame["v"])
+		}
+		if frame["op"] != "show" {
+			t.Errorf("frame op = %q, want show", frame["op"])
+		}
+		if frame["sid"] != "sid-test" {
+			t.Errorf("frame sid = %q, want sid-test", frame["sid"])
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for server to receive frame")
+	}
+}
+
+// TestDialDaemon_ConnectionRefused verifies that when the socket path does not
+// exist, dialDaemon returns a non-nil error and falls through to forkDispatch.
+func TestDialDaemon_ConnectionRefused(t *testing.T) {
+	dir := t.TempDir()
+	sockPath := filepath.Join(dir, "nonexistent.sock")
+
+	n := notification{
+		sessionID: "sid-refuse",
+		title:     "Claude Code",
+		body:      "Turn complete",
+		urgency:   "normal",
+	}
+
+	ctx := context.Background()
+	start := time.Now()
+	err := dialDaemon(ctx, sockPath, 100*time.Millisecond, n)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("expected error for missing socket, got nil")
+	}
+	// Should fail fast (well under timeout).
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("refused dial took %v, expected fast failure", elapsed)
+	}
+}
+
+// TestDialDaemon_Timeout verifies that when the context is already cancelled
+// before dialling, dialDaemon returns an error immediately (well within 50ms).
+// This exercises the context-cancellation path in the dialler.
+func TestDialDaemon_Timeout(t *testing.T) {
+	dir := t.TempDir()
+	sockPath := filepath.Join(dir, "blocked.sock")
+
+	// Create a listening socket so the path exists and is reachable.
+	ln, err := net.Listen("unix", sockPath)
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+
+	n := notification{
+		sessionID: "sid-timeout",
+		title:     "Claude Code",
+		body:      "Turn complete",
+		urgency:   "normal",
+	}
+
+	// Pre-cancel the context — dial must fail immediately.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	start := time.Now()
+	err = dialDaemon(ctx, sockPath, 100*time.Millisecond, n)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("expected error from cancelled context, got nil")
+	}
+	// Should return within 50ms even on a loaded system.
+	if elapsed > 50*time.Millisecond {
+		t.Errorf("cancelled dial took %v, want ≤50ms", elapsed)
+	}
+}
+
+// TestNotifyHook_DialSuccessSkipsForkDispatch is an integration-level test
+// that drives notifyHookWithDial to verify that a successful daemon dial
+// prevents forkDispatch from being invoked.
+func TestNotifyHook_DialSuccessSkipsForkDispatch(t *testing.T) {
+	dir := t.TempDir()
+	sockPath := filepath.Join(dir, "hook.sock")
+
+	ln, err := net.Listen("unix", sockPath)
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+
+	// Drain the connection so dialDaemon can write and close.
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		buf := make([]byte, 4096)
+		conn.Read(buf) //nolint:errcheck
+	}()
+
+	dispatchCalls := withFakeForkDispatch(t)
+
+	n := notification{
+		sessionID: "sid-hook",
+		title:     "Claude Code",
+		body:      "Turn complete",
+		urgency:   "normal",
+	}
+
+	notifyHookWithDial(context.Background(), n, sockPath, 100*time.Millisecond, os.Getenv)
+
+	if atomic.LoadInt32(dispatchCalls) != 0 {
+		t.Errorf("forkDispatchFn called %d times, want 0 (dial succeeded)", *dispatchCalls)
+	}
+}
+
+// TestNotifyHook_DialFailureFallsBackToDispatch verifies that when the socket
+// is absent, notifyHookWithDial falls through to forkDispatch.
+func TestNotifyHook_DialFailureFallsBackToDispatch(t *testing.T) {
+	dir := t.TempDir()
+	sockPath := filepath.Join(dir, "absent.sock") // does not exist
+
+	dispatchCalls := withFakeForkDispatch(t)
+
+	// Provide a real-looking (but fake) dispatch binary so forkDispatch passes
+	// isExecutable. We override forkDispatchFn, so the binary is never exec'd.
+	n := notification{
+		sessionID: "sid-fallback",
+		title:     "Claude Code",
+		body:      "Turn complete",
+		urgency:   "normal",
+	}
+
+	notifyHookWithDial(context.Background(), n, sockPath, 100*time.Millisecond, os.Getenv)
+
+	if atomic.LoadInt32(dispatchCalls) != 1 {
+		t.Errorf("forkDispatchFn called %d times, want 1 (dial failed → fallback)", *dispatchCalls)
 	}
 }

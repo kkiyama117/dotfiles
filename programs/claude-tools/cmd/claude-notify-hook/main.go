@@ -14,13 +14,18 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
+	"claude-tools/internal/notify"
+	"claude-tools/internal/notifyd"
 	"claude-tools/internal/obslog"
 	"claude-tools/internal/proc"
 )
@@ -81,6 +86,15 @@ type backgroundStarter func(name string, args []string, env []string, setsid boo
 // override this package-level variable.
 var startBackground backgroundStarter = realStartBackground
 
+// forkDispatchFn is the dispatch fallback invoked when daemon dial fails.
+// Tests replace this to observe whether fallback was triggered without
+// actually exec-ing claude-notify-dispatch.
+var forkDispatchFn func(n notification, getEnv envLookup) = forkDispatch
+
+// daemonDialTimeout is the maximum time dialDaemon will wait to connect and
+// write a frame to the daemon socket. Per spec §4.1: 100ms.
+const daemonDialTimeout = 100 * time.Millisecond
+
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -101,7 +115,61 @@ func main() {
 	notif := composeNotification(ctx, event, payload, os.Getenv, runner)
 
 	forkSound(notif, os.Getenv)
-	forkDispatch(notif, os.Getenv)
+	notifyHookWithDial(ctx, notif, notify.SocketPath(), daemonDialTimeout, os.Getenv)
+}
+
+// notifyHookWithDial attempts to send the notification to the claude-notifyd
+// daemon over sockPath. On success it returns without invoking forkDispatch.
+// On any failure (socket absent, timeout, write error) it falls through to
+// forkDispatchFn so that popup delivery is never silently dropped.
+func notifyHookWithDial(ctx context.Context, n notification, sockPath string, timeout time.Duration, getEnv envLookup) {
+	if err := dialDaemon(ctx, sockPath, timeout, n); err != nil {
+		logger.Warn("daemon dial failed, falling back to dispatch", "err", err)
+		forkDispatchFn(n, getEnv)
+	}
+}
+
+// dialDaemon connects to the claude-notifyd Unix socket at sockPath, writes a
+// single JSON frame (spec §4.2 wire format), then closes the connection.
+//
+// timeout caps the total time allowed for the dial + write. Per spec §4.1 the
+// production value is 100ms so the hook exits quickly in all failure modes.
+//
+// Returns non-nil on any error: connection refused, timeout, or write failure.
+func dialDaemon(ctx context.Context, sockPath string, timeout time.Duration, n notification) error {
+	deadline := time.Now().Add(timeout)
+	dialer := net.Dialer{Deadline: deadline}
+	conn, err := dialer.DialContext(ctx, "unix", sockPath)
+	if err != nil {
+		return fmt.Errorf("dial %s: %w", sockPath, err)
+	}
+	defer conn.Close()
+
+	// Enforce deadline on the write too.
+	if err := conn.SetDeadline(deadline); err != nil {
+		return fmt.Errorf("set deadline: %w", err)
+	}
+
+	frame := notifyd.Frame{
+		V:           1,
+		Op:          notifyd.OpShow,
+		SID:         n.sessionID,
+		Title:       n.title,
+		Body:        n.body,
+		Urgency:     n.urgency,
+		TmuxPane:    n.tmuxPane,
+		TmuxSession: n.tmuxSession,
+	}
+	data, err := notifyd.Marshal(frame)
+	if err != nil {
+		return fmt.Errorf("marshal frame: %w", err)
+	}
+	// Write frame bytes followed by newline delimiter (spec §4.2).
+	data = append(data, '\n')
+	if _, err := conn.Write(data); err != nil {
+		return fmt.Errorf("write frame: %w", err)
+	}
+	return nil
 }
 
 // composeNotification builds the full notification from event + payload +

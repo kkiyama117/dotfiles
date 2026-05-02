@@ -1,0 +1,28 @@
+{{- /*
+Bootstrap helper for G-1.next #3: enable the claude-notifyd
+systemd --user socket for socket-activation of the notify daemon.
+Reruns whenever any of the embedded unit / binary hashes change.
+*/ -}}
+{{ if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+# unit hashes (chezmoi rerun trigger — do not edit by hand):
+#   socket:  {{ include "dot_config/systemd/user/claude-notifyd.socket" | sha256sum }}
+#   service: {{ include "dot_config/systemd/user/claude-notifyd.service" | sha256sum }}
+# binary hash (triggers rebuild via build script first):
+#   daemon:  {{ include "programs/claude-tools/cmd/claude-notifyd/main.go" | sha256sum }}
+
+set -euo pipefail
+
+# Skip if user systemd is unreachable (WSL without systemd, plain CI, etc.).
+command -v systemctl >/dev/null 2>&1 || exit 0
+systemctl --user show-environment >/dev/null 2>&1 || exit 0
+
+systemctl --user daemon-reload
+# Enable the socket unit so socket activation is always armed.
+# claude-notifyd.service does NOT need explicit enable; Requires= handles it.
+systemctl --user enable --now claude-notifyd.socket
+{{ else -}}
+#!/usr/bin/env bash
+# G-1.next #3 notifyd socket is Linux-only (systemd --user). Nothing to do.
+exit 0
+{{ end -}}
