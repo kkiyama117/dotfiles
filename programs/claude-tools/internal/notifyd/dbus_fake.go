@@ -60,11 +60,12 @@ type NotifyCall struct {
 
 // FakeBus implements Bus entirely in memory. Thread-safe.
 type FakeBus struct {
-	nextID  atomic.Uint32
-	mu      sync.Mutex
-	calls   []NotifyCall
-	actions chan ActionEvent
-	closed  chan ClosedEvent
+	nextID    atomic.Uint32
+	mu        sync.Mutex
+	calls     []NotifyCall
+	notifyErr error // if non-nil, Notify returns this error
+	actions   chan ActionEvent
+	closed    chan ClosedEvent
 }
 
 // NewFakeBus constructs a FakeBus ready for use in tests.
@@ -75,18 +76,38 @@ func NewFakeBus() *FakeBus {
 	}
 }
 
+// SetNotifyErr configures Notify to return err for all subsequent calls.
+// Pass nil to clear the error (test helper).
+func (f *FakeBus) SetNotifyErr(err error) {
+	f.mu.Lock()
+	f.notifyErr = err
+	f.mu.Unlock()
+}
+
 // Notify records the call and returns the assigned notification id.
 // If replaceID > 0 the same id is echoed back (in-place update path).
 // Otherwise a new auto-incrementing id (starting at 1) is assigned.
+// If SetNotifyErr was called with a non-nil error, that error is returned.
 func (f *FakeBus) Notify(_ context.Context, replaceID uint32, frame Frame) (uint32, error) {
 	f.mu.Lock()
 	f.calls = append(f.calls, NotifyCall{ReplaceID: replaceID, Frame: frame})
+	err := f.notifyErr
 	f.mu.Unlock()
 
+	if err != nil {
+		return 0, err
+	}
 	if replaceID > 0 {
 		return replaceID, nil
 	}
 	return f.nextID.Add(1), nil
+}
+
+// CloseBusChannels closes the Actions and Closed channels to simulate bus
+// shutdown (test helper). Call only once.
+func (f *FakeBus) CloseBusChannels() {
+	close(f.actions)
+	close(f.closed)
 }
 
 // CloseNotification is a no-op on FakeBus.
