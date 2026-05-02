@@ -262,6 +262,7 @@
 
 - 移行順序 (1 PR = 1 binary):
   - [x] PR-C-1: `claude-branch` (2026-05-02) — `internal/gitwt.CurrentBranch` skeleton 追加 / `cmd/claude-branch` で `formatBranch` を testable core に切り出し / status-right 安全のため常時 exit 0 / `defer recover()` で panic 握りつぶし。unit test 6 本 (gitwt 2 / claude-branch 4) PASS、`go test -race ./...` 全パッケージ PASS、`go build ./cmd/claude-branch` OK、`chezmoi diff` で `dot_config/tmux/conf/status.conf:11` の 1 行差分のみ確認。実機 tmux source-file 目視は user 手動 smoke にデファ ([`smoke/2026-05-02-go-tmux-scripts-smoke.md`](superpowers/smoke/2026-05-02-go-tmux-scripts-smoke.md))
+    - [ ] (follow-up after Phase C) cmd/claude-notify-hook の `currentBranch` ローカル実装を internal/gitwt.Client.CurrentBranch に統合 (DRY)
   - [ ] PR-C-2: `claude-respawn-pane` — `internal/tmux` skeleton 同時追加
   - [ ] PR-C-3: `claude-kill-session` — `gitwt.ListPorcelain` 拡張
   - [ ] PR-C-4: `claude-tmux-new` — `gitwt` worktree mutation API 追加

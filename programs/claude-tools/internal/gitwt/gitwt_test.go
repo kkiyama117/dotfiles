@@ -24,3 +24,14 @@ func TestCurrentBranch_returnsEmptyOnDetached(t *testing.T) {
 		t.Fatalf("got=%q err=%v, want empty nil", got, err)
 	}
 }
+
+func TestCurrentBranch_returnsErrorOnGitFailure(t *testing.T) {
+	r := proc.NewFakeRunner() // unregistered call → error
+	got, err := New(r).CurrentBranch(context.Background(), "/tmp/repo")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got != "" {
+		t.Fatalf("got=%q want empty on error", got)
+	}
+}

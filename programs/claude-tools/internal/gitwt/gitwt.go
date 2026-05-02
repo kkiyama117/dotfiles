@@ -11,6 +11,7 @@ import (
 )
 
 // Worktree represents one entry from `git worktree list --porcelain`.
+// Defined in this skeleton; consumed by ListPorcelain in PR-C-3.
 type Worktree struct {
 	Path   string
 	Branch string // "refs/heads/<x>" の <x> 部分。detached は ""
@@ -24,7 +25,8 @@ type Client struct{ runner proc.Runner }
 func New(r proc.Runner) *Client { return &Client{runner: r} }
 
 // CurrentBranch returns the current branch of the working tree at cwd.
-// Returns ("", nil) if HEAD is detached or git fails (caller decides handling).
+// Returns ("", nil) if HEAD is detached (git --show-current outputs empty).
+// Returns ("", err) if the git command itself fails; callers decide handling.
 func (c *Client) CurrentBranch(ctx context.Context, cwd string) (string, error) {
 	out, err := c.runner.Run(ctx, "git", "-C", cwd, "branch", "--show-current")
 	if err != nil {
