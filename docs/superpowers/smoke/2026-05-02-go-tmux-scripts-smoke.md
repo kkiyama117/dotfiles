@@ -61,3 +61,21 @@ automated 層 (unit + race + vet + build + chezmoi diff) は全 GREEN。実機 t
 - [ ] (manual) prefix + C → n: fzf "claude branch> " → claude-tmux-new 起動 OK
 - [ ] (manual) prefix + C → o: fzf "worktree branch> " → --no-claude 経路 (1-pane shell) OK
 - [ ] (manual) fzf cancel (Esc) で no-op (popup 閉じるだけ) OK
+
+## C 完走 — 2026-05-02
+
+automated 層チェック:
+
+- [x] `go test -race -cover ./...` — 24 パッケージ全 PASS
+- [x] coverage: `internal/cockpit` 92.0% / `internal/notify` 89.7% / `internal/notifyd` 82.4% / `internal/obslog` 83.3% / `internal/proc` 100% / `internal/xdg` 100% (≥80% target 到達)
+- [x] coverage shortfall (acceptance §11 の 80% 目標未達): `internal/gitwt` 74.6% / `internal/tmux` 72.1% / `internal/atomicfile` 52.4%。残差は `gitwt.Remove` (exec.CommandContext 直叩きで stderr 捕捉が必要、design trade-off) と `tmux.AttachSessionExec` (`syscall.Exec` で TTY 移譲) — いずれも CI 不可能な path のため follow-up 化
+- [x] `git ls-files | rg "tmux/scripts/(executable_(claude-(branch|kill-session|pick-branch|respawn-pane))|executable_tmux-claude-new)\.sh"` → 0 件 (旧 shell 5 本完全撤去)
+- [x] `rg "\.config/tmux/scripts/.*\.sh" dot_config/tmux/ .chezmoiscripts/` → `tpm-bootstrap.sh` のみ (3 件、いずれも D subsystem 繰延の TPM bootstrap 経路)
+- [x] cmd binaries: 5 本 (`claude-branch`, `claude-respawn-pane`, `claude-kill-session`, `claude-tmux-new`, `claude-pick-branch`) build 確認
+
+manual 領域 (user 手動 smoke へデファ):
+
+- [ ] (manual) chezmoi apply で `~/.local/bin/claude-{branch,respawn-pane,kill-session,tmux-new,pick-branch}` 5 binary 配備
+- [ ] (manual) tmux source-file 後に `prefix + C → n` / `o` / `r` / `x` が全部新 binary 経由で動作
+- [ ] (manual) status-right `[<branch>] ` 表示 (C-1)
+- [ ] (manual) 全 C-1〜C-5 manual 行通し
