@@ -225,7 +225,7 @@
   - [x] PR-4: `cockpit-next-ready` (T2) — inbox 順 (session asc / window idx asc / pane idx asc) test
   - [x] PR-5: `cockpit-switcher` (T3) — fzf stdin pipe + Enter/Ctrl-X/Ctrl-R キーバインド
   - [x] **★ B 完走チェックポイント** — Phase 1 実装完了 + Phase 1.5 F-8 patch (a / b1 / b2 / b3 / c) を `fix/g1-phase15-f8-port` で TDD 実装、実機 smoke (real tmux + sandbox `XDG_CACHE_HOME`) で F-8 死蔵対策の 3 経路 (SessionEnd / live-claude filter / prune sweep) が shell F-8 v1 (commit `b81cb81`) と挙動一致することを確認 (2026-05-02): [`smoke/2026-05-01-go-cockpit-smoke.md`](superpowers/smoke/2026-05-01-go-cockpit-smoke.md)。Step 4-7 の interactive UI (switcher fzf / next-ready jump) のみ merge → `chezmoi apply` 後の手元 tmux で再走して確認することにし、その時点で本タスクを完全クローズする (現状 deferred として明示)。
-  - [ ] PR-6: `notify-cleanup` (T1) — mtime TTL を `time.Time` で / `base_dir` suffix チェック (env 注入耐性) test
+  - [x] PR-6: `notify-cleanup` (T1) — mtime TTL を `time.Time` で / `base_dir` suffix チェック (env 注入耐性) test。`internal/notify.StateDir()` 新設 + `cmd/claude-notify-cleanup/` 実装 (TTL boundary / nonexistent / 不正 base_dir / unrelated file 全 7 unit test PASS)、systemd unit の `ExecStart` を `.sh` 抜きに更新、bootstrap script の helper sha256 行を撤去 (旧 shell 削除に伴う include エラー回避)。合成 smoke (8d/30d 前 .id 削除、3d/1h fresh 保持、90 分 .tmp 削除、unrelated keep) PASS
   - [ ] PR-7: `notify-sound` (T1) — `exec.Command("paplay",...)`
   - [ ] PR-8: `notify-hook` (T4) — env 受け渡し + `syscall.SysProcAttr.Setsid: true`
   - [ ] PR-9: `notify-dispatch` (T5) — `godbus/dbus/v5` で `org.freedesktop.Notifications` の `ActionInvoked` / `NotificationClosed` listen / popup state machine
