@@ -111,7 +111,7 @@ tmux attach -t <session>
 
 このリポジトリ (`chezmoi`) は §3 のワークフローを **キーバインド一発** で実行できる tmux 統合を備える。生の `tmux new-window` / `git worktree add` を毎回打つ代わりに `prefix + C, n` のような二段ショートカットで等価操作が走る。
 
-> **使い方の早見表**は [`docs/claude_tmux_cheatsheet.md`](./claude_tmux_cheatsheet.md) を参照。本節は実装側の仕様・設計判断を記録する。
+> **使い方の早見表**は [`docs/keybinds.md`](./keybinds.md) Part I（クイック操作リファレンス）を参照。本節は実装側の仕様・設計判断を記録する。
 
 ### 5.1 tmux prefix と直下バインド
 
