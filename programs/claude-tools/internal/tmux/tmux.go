@@ -5,6 +5,7 @@ package tmux
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -27,7 +28,7 @@ func (c *Client) Display(ctx context.Context, msg string) {
 func (c *Client) ListPanes(ctx context.Context, target, format string) ([]string, error) {
 	out, err := c.runner.Run(ctx, "tmux", "list-panes", "-t", target, "-F", format)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("tmux list-panes -t %q: %w", target, err)
 	}
 	s := strings.TrimRight(string(out), "\n")
 	if s == "" {
@@ -46,23 +47,29 @@ func (c *Client) DisplayMessageGet(ctx context.Context, target, format string) (
 	args = append(args, format)
 	out, err := c.runner.Run(ctx, "tmux", args...)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("tmux display-message -p %q: %w", format, err)
 	}
 	return strings.TrimRight(string(out), "\n"), nil
 }
 
 // RespawnPaneKill runs `tmux respawn-pane -k -t <target>`.
 func (c *Client) RespawnPaneKill(ctx context.Context, target string) error {
-	_, err := c.runner.Run(ctx, "tmux", "respawn-pane", "-k", "-t", target)
-	return err
+	if _, err := c.runner.Run(ctx, "tmux", "respawn-pane", "-k", "-t", target); err != nil {
+		return fmt.Errorf("tmux respawn-pane -k -t %q: %w", target, err)
+	}
+	return nil
 }
 
 // SendKeys runs `tmux send-keys -t <target> <keys...>`. The caller appends
 // "Enter" / "C-m" etc. as a separate key argument when needed.
 func (c *Client) SendKeys(ctx context.Context, target string, keys ...string) error {
-	args := append([]string{"send-keys", "-t", target}, keys...)
-	_, err := c.runner.Run(ctx, "tmux", args...)
-	return err
+	args := make([]string, 0, 3+len(keys))
+	args = append(args, "send-keys", "-t", target)
+	args = append(args, keys...)
+	if _, err := c.runner.Run(ctx, "tmux", args...); err != nil {
+		return fmt.Errorf("tmux send-keys -t %q: %w", target, err)
+	}
+	return nil
 }
 
 // sanitizeRe matches characters NOT allowed in tmux session/window names.

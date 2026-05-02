@@ -9,9 +9,12 @@ import (
 )
 
 func TestDisplay_argv(t *testing.T) {
+	// Display swallows runner errors, so this test only verifies the
+	// call doesn't panic. argv correctness for Display is covered by
+	// integration smoke (manual tmux verification), not unit tests.
 	r := proc.NewFakeRunner()
 	r.Register("tmux", []string{"display-message", "hello"}, nil, nil)
-	New(r).Display(context.Background(), "hello") // must not panic
+	New(r).Display(context.Background(), "hello")
 }
 
 func TestListPanes_splitsLines(t *testing.T) {
@@ -102,7 +105,7 @@ func TestShellQuote_roundTrip(t *testing.T) {
 	if _, err := exec.LookPath("bash"); err != nil {
 		t.Skip("bash not available")
 	}
-	for _, in := range []string{"hi", "it's", "$X", `a\b`, "テスト 'quote'"} {
+	for _, in := range []string{"hi", "it's", "$X", `a\b`, "テスト 'quote'", `hello "world"`} {
 		quoted := ShellQuote(in)
 		out, err := exec.Command("bash", "-c", "printf '%s' "+quoted).Output()
 		if err != nil {
