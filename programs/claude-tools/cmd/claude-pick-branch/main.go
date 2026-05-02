@@ -32,6 +32,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	claudeTmuxNewBin, err := exec.LookPath("claude-tmux-new")
+	if err != nil {
+		tc.Display(ctx, "claude-pick-branch: claude-tmux-new not found in PATH")
+		fmt.Fprintln(os.Stderr, "claude-pick-branch: claude-tmux-new not found in PATH")
+		os.Exit(1)
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		tc.Display(ctx, "claude-pick-branch: getwd failed")
@@ -57,14 +64,9 @@ func main() {
 		os.Exit(0) // user cancel
 	}
 
-	bin, err := exec.LookPath("claude-tmux-new")
-	if err != nil {
-		tc.Display(ctx, "claude-pick-branch: claude-tmux-new not found in PATH")
-		os.Exit(1)
-	}
 	args := buildExecArgs(pick, passthrough)
-	if err := syscall.Exec(bin, args, os.Environ()); err != nil {
-		logger.Error("syscall.Exec failed", "bin", bin, "err", err)
+	if err := syscall.Exec(claudeTmuxNewBin, args, os.Environ()); err != nil {
+		logger.Error("syscall.Exec failed", "bin", claudeTmuxNewBin, "err", err)
 		os.Exit(1)
 	}
 }
@@ -78,6 +80,10 @@ func buildExecArgs(branch string, passthrough []string) []string {
 }
 
 // promptForFlags chooses the fzf prompt string based on passthrough flags.
+// Only the bare token "--no-claude" is recognized; the "=" form
+// (--no-claude=true) is forwarded verbatim to claude-tmux-new but does not
+// switch the prompt label here. Acceptable because tmux bindings.conf
+// always passes the bare flag.
 func promptForFlags(passthrough []string) string {
 	for _, a := range passthrough {
 		if a == "--no-claude" {
