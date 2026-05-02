@@ -166,6 +166,7 @@ tmux_claude_new feature/x --from-root 8f9e2bd7-7494-4217-9d7c-28e132041998
 - `notify-send --expire-time=0` なので **クリックするまで popup が消えない**
 - 通知 daemon は **wired-notify**（`dot_config/wired/wired.ron` + `systemd --user` で常駐）
 - 音は `pw-play` → `paplay` → `ffplay` の順でフォールバック再生
+- dispatch 経路 (G-1.next #3, 2026-05-02): hook は **`claude-notifyd.socket`** (systemd socket activation) 経由で常駐 daemon に送る。daemon 停止中 / socket dial 100ms timeout 時は `claude-notify-dispatch` fork にフォールバックし、popup 到達を保証する。詳細: [`docs/manage_claude.md`](./manage_claude.md) §5.7。
 
 ---
 

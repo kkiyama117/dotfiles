@@ -113,75 +113,6 @@ func TestSessionHint(t *testing.T) {
 	}
 }
 
-func TestFocusTmux_HappyPath(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	cfg := popupConfig{tmuxPane: "%5", tmuxSession: "dev"}
-	fake.Register("tmux", []string{"has-session", "-t", "dev"}, []byte(""), nil)
-	fake.Register("tmux",
-		[]string{"switch-client", "-t", "dev", ";", "select-pane", "-t", "%5"},
-		[]byte(""), nil)
-	focusTmux(context.Background(), fake, cfg)
-}
-
-func TestFocusTmux_MissingContext(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	focusTmux(context.Background(), fake, popupConfig{tmuxPane: "", tmuxSession: ""})
-}
-
-func TestFocusTmux_SessionGone(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	cfg := popupConfig{tmuxPane: "%5", tmuxSession: "dev"}
-	fake.Register("tmux", []string{"has-session", "-t", "dev"},
-		nil, errors.New("session not found"))
-	focusTmux(context.Background(), fake, cfg)
-}
-
-func TestFocusWM_X11Path(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	fake.Register("xdotool", []string{"search", "--class", "kitty", "windowactivate"},
-		[]byte(""), nil)
-	getEnv := envFromMap(map[string]string{"DISPLAY": ":0"})
-	focusWM(context.Background(), fake, allowLookPath, getEnv)
-}
-
-func TestFocusWM_WaylandPath(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	wantCmd := `[app_id="kitty"] focus, [app_id="com.mitchellh.ghostty"] focus`
-	fake.Register("swaymsg", []string{"-t", "command", wantCmd},
-		[]byte(""), nil)
-	getEnv := envFromMap(map[string]string{"WAYLAND_DISPLAY": "wayland-0"})
-	focusWM(context.Background(), fake, allowLookPath, getEnv)
-}
-
-func TestFocusWM_NoTool(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	getEnv := envFromMap(map[string]string{"DISPLAY": ":0"})
-	focusWM(context.Background(), fake, denyLookPath, getEnv)
-}
-
-func TestFocusWM_NoDisplay(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	getEnv := envFromMap(map[string]string{})
-	focusWM(context.Background(), fake, allowLookPath, getEnv)
-}
-
-func TestCloseNotification(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	fake.Register("gdbus", []string{
-		"call", "--session",
-		"--dest=org.freedesktop.Notifications",
-		"--object-path=/org/freedesktop/Notifications",
-		"--method=org.freedesktop.Notifications.CloseNotification",
-		"42",
-	}, []byte("()"), nil)
-	closeNotification(context.Background(), fake, 42)
-}
-
-func TestCloseNotification_ZeroID(t *testing.T) {
-	fake := proc.NewFakeRunner()
-	closeNotification(context.Background(), fake, 0)
-}
-
 // TestDispatch_HappyPath_DefaultAction verifies the full state machine:
 // load prev id (none) → notify-send → save new id → tmux focus → WM focus → close.
 func TestDispatch_HappyPath_DefaultAction(t *testing.T) {
@@ -307,19 +238,6 @@ func TestEnvOrDefault(t *testing.T) {
 	}
 	if envOrDefault("UNSET_XXXX_KEY", "fallback") != "fallback" {
 		t.Error("unset env should yield fallback")
-	}
-}
-
-// Self-check: terminal class precedence is load-bearing.
-func TestTerminalClassesOrder(t *testing.T) {
-	want := []string{"kitty", "ghostty", "wezterm", "Alacritty"}
-	if len(terminalClasses) != len(want) {
-		t.Fatalf("classes len = %d, want %d", len(terminalClasses), len(want))
-	}
-	for i, c := range want {
-		if terminalClasses[i] != c {
-			t.Errorf("classes[%d] = %q, want %q", i, terminalClasses[i], c)
-		}
 	}
 }
 

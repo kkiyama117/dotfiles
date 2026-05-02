@@ -142,3 +142,59 @@ func TestStateFilePath_UsesSafeSessionID(t *testing.T) {
 		t.Errorf("stateFilePath = %q, want %q", got, want)
 	}
 }
+
+func TestLoadAllReplaceIDs(t *testing.T) {
+	t.Run("returns only valid positive ids", func(t *testing.T) {
+		dir := t.TempDir()
+		// valid: "100\n" — matches ^[1-9][0-9]*$
+		if err := os.WriteFile(filepath.Join(dir, "valid.id"), []byte("100\n"), 0644); err != nil {
+			t.Fatalf("write valid.id: %v", err)
+		}
+		// zero: "0\n" — invalid (leading zero / equals zero)
+		if err := os.WriteFile(filepath.Join(dir, "zero.id"), []byte("0\n"), 0644); err != nil {
+			t.Fatalf("write zero.id: %v", err)
+		}
+		// letters: "abc\n" — invalid
+		if err := os.WriteFile(filepath.Join(dir, "letters.id"), []byte("abc\n"), 0644); err != nil {
+			t.Fatalf("write letters.id: %v", err)
+		}
+		// no .id suffix: must be ignored entirely
+		if err := os.WriteFile(filepath.Join(dir, "ignore.txt"), []byte("999\n"), 0644); err != nil {
+			t.Fatalf("write ignore.txt: %v", err)
+		}
+
+		got, err := LoadAllReplaceIDs(dir)
+		if err != nil {
+			t.Fatalf("LoadAllReplaceIDs: unexpected error: %v", err)
+		}
+		if len(got) != 1 {
+			t.Fatalf("LoadAllReplaceIDs: got %d entries, want 1; map=%v", len(got), got)
+		}
+		if got["valid"] != 100 {
+			t.Errorf("got[\"valid\"] = %d, want 100", got["valid"])
+		}
+	})
+
+	t.Run("empty dir returns empty map nil error", func(t *testing.T) {
+		dir := t.TempDir()
+		got, err := LoadAllReplaceIDs(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(got) != 0 {
+			t.Errorf("expected empty map, got %v", got)
+		}
+	})
+
+	t.Run("missing dir returns empty map nil error", func(t *testing.T) {
+		dir := t.TempDir()
+		missing := filepath.Join(dir, "does-not-exist")
+		got, err := LoadAllReplaceIDs(missing)
+		if err != nil {
+			t.Fatalf("missing dir should not error, got: %v", err)
+		}
+		if len(got) != 0 {
+			t.Errorf("expected empty map for missing dir, got %v", got)
+		}
+	})
+}

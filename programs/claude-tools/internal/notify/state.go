@@ -72,6 +72,32 @@ func LoadReplaceID(stateDir, sid string) uint32 {
 	return uint32(n)
 }
 
+// LoadAllReplaceIDs reads all valid replace-ids from stateDir and returns
+// them as a map of sid→notifID. Only files with the ".id" suffix are
+// considered. Invalid or zero ids are silently dropped. A missing directory
+// is treated as "no state" and returns an empty map without error.
+func LoadAllReplaceIDs(stateDir string) (map[string]uint32, error) {
+	entries, err := os.ReadDir(stateDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return map[string]uint32{}, nil
+		}
+		return nil, fmt.Errorf("read state dir: %w", err)
+	}
+	result := make(map[string]uint32, len(entries))
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasSuffix(name, ".id") {
+			continue
+		}
+		sid := strings.TrimSuffix(name, ".id")
+		if id := LoadReplaceID(stateDir, sid); id > 0 {
+			result[sid] = id
+		}
+	}
+	return result, nil
+}
+
 // SaveReplaceID atomically writes id under sid's state file. mkdir -p
 // the state dir first (idempotent). No-op for empty sid or id==0.
 //

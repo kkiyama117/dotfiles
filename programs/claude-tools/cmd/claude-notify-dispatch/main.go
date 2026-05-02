@@ -23,7 +23,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -107,9 +106,14 @@ func dispatch(
 		return
 	}
 
-	focusTmux(ctx, runner, cfg)
-	focusWM(ctx, runner, lookPath, getEnv)
-	closeNotification(ctx, runner, notifID)
+	popupCtx := notify.PopupContext{
+		SessionID:   cfg.sessionID,
+		TmuxPane:    cfg.tmuxPane,
+		TmuxSession: cfg.tmuxSession,
+	}
+	notify.FocusTmux(ctx, runner, popupCtx)
+	notify.FocusWM(ctx, runner, lookPath, getEnv)
+	notify.CloseNotification(ctx, runner, notifID)
 }
 
 // showPopup invokes notify-send --print-id --wait. stdout layout:
@@ -181,78 +185,3 @@ func parsePopupOutput(out []byte) (uint32, string) {
 	return id, action
 }
 
-// focusTmux runs `tmux switch-client -t <session> ; select-pane -t <pane>`
-// when both context vars are present and the session exists.
-func focusTmux(ctx context.Context, runner proc.Runner, cfg popupConfig) {
-	if cfg.tmuxPane == "" || cfg.tmuxSession == "" {
-		logger.Info("focus skipped: no tmux context",
-			"pane", cfg.tmuxPane, "session", cfg.tmuxSession, "sid", cfg.sessionID)
-		return
-	}
-	if _, err := runner.Run(ctx, "tmux", "has-session", "-t", cfg.tmuxSession); err != nil {
-		logger.Info("focus skipped: tmux session gone",
-			"session", cfg.tmuxSession, "sid", cfg.sessionID)
-		return
-	}
-	if _, err := runner.Run(ctx, "tmux",
-		"switch-client", "-t", cfg.tmuxSession,
-		";", "select-pane", "-t", cfg.tmuxPane,
-	); err != nil {
-		logger.Warn("tmux focus failed", "err", err, "sid", cfg.sessionID)
-		return
-	}
-	logger.Info("focus tmux ok",
-		"session", cfg.tmuxSession, "pane", cfg.tmuxPane, "sid", cfg.sessionID)
-}
-
-// terminalClasses are the X11 WM_CLASS / Wayland app_id values for
-// the supported terminals, in priority order. xdotool / swaymsg search
-// each in turn until one activates.
-var terminalClasses = []string{"kitty", "ghostty", "wezterm", "Alacritty"}
-
-// focusWM raises the originating terminal window via xdotool (X11) or
-// swaymsg (Wayland). No-op when neither is available, neither display
-// env var is set, or when the search returns no window.
-func focusWM(
-	ctx context.Context,
-	runner proc.Runner,
-	lookPath func(string) (string, error),
-	getEnv func(string) string,
-) {
-	if getEnv("DISPLAY") != "" {
-		if _, err := lookPath("xdotool"); err == nil {
-			for _, cls := range terminalClasses {
-				if _, err := runner.Run(ctx, "xdotool", "search", "--class", cls, "windowactivate"); err == nil {
-					logger.Info("focus wm: xdotool", "class", cls)
-					return
-				}
-			}
-		}
-	}
-	if getEnv("WAYLAND_DISPLAY") != "" {
-		if _, err := lookPath("swaymsg"); err == nil {
-			cmd := `[app_id="kitty"] focus, [app_id="com.mitchellh.ghostty"] focus`
-			if _, err := runner.Run(ctx, "swaymsg", "-t", "command", cmd); err == nil {
-				logger.Info("focus wm: swaymsg")
-				return
-			}
-		}
-	}
-	logger.Info("focus wm: no tool available")
-}
-
-// closeNotification asks the notification daemon to dismiss popup id.
-// Best-effort: errors are logged and swallowed.
-func closeNotification(ctx context.Context, runner proc.Runner, id uint32) {
-	if id == 0 {
-		return
-	}
-	if _, err := runner.Run(ctx, "gdbus", "call", "--session",
-		"--dest=org.freedesktop.Notifications",
-		"--object-path=/org/freedesktop/Notifications",
-		"--method=org.freedesktop.Notifications.CloseNotification",
-		fmt.Sprintf("%d", id),
-	); err != nil {
-		logger.Warn("CloseNotification failed", "err", err, "id", id)
-	}
-}
