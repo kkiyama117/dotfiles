@@ -8,25 +8,28 @@ import (
 	"claude-tools/internal/proc"
 )
 
-func TestEventToStatus(t *testing.T) {
+func TestEventToAction(t *testing.T) {
 	tests := []struct {
-		event string
-		want  string
-		ok    bool
+		event       string
+		wantAction  hookAction
+		wantPayload string
+		wantOK      bool
 	}{
-		{"UserPromptSubmit", "working", true},
-		{"PreToolUse", "working", true},
-		{"Notification", "waiting", true},
-		{"Stop", "done", true},
-		{"SubagentStop", "", false},
-		{"", "", false},
-		{"unknown", "", false},
+		{"UserPromptSubmit", actionWrite, "working", true},
+		{"PreToolUse", actionWrite, "working", true},
+		{"Notification", actionWrite, "waiting", true},
+		{"Stop", actionWrite, "done", true},
+		{"SessionEnd", actionRemove, "", true},
+		{"SubagentStop", actionNone, "", false},
+		{"", actionNone, "", false},
+		{"unknown", actionNone, "", false},
 	}
 	for _, tt := range tests {
-		got, ok := eventToStatus(tt.event)
-		if got != tt.want || ok != tt.ok {
-			t.Errorf("eventToStatus(%q) = (%q, %v), want (%q, %v)",
-				tt.event, got, ok, tt.want, tt.ok)
+		gotAction, gotPayload, gotOK := eventToAction(tt.event)
+		if gotAction != tt.wantAction || gotPayload != tt.wantPayload || gotOK != tt.wantOK {
+			t.Errorf("eventToAction(%q) = (%v, %q, %v), want (%v, %q, %v)",
+				tt.event, gotAction, gotPayload, gotOK,
+				tt.wantAction, tt.wantPayload, tt.wantOK)
 		}
 	}
 }
