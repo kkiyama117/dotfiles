@@ -178,3 +178,57 @@ func (c *Client) AddFromHead(ctx context.Context, cwd, path, branch string) erro
 	}
 	return nil
 }
+
+// MergeOpts controls Merge behavior.
+type MergeOpts struct {
+	Squash bool // --squash (stages changes; caller commits separately)
+	NoFF   bool // --no-ff (force a merge commit even when fast-forward is possible)
+}
+
+// Fetch runs `git -C <cwd> fetch <remote>`. Combined stdout+stderr returned
+// for error display. Uses exec directly because proc.Runner.Run drops stderr.
+func (c *Client) Fetch(ctx context.Context, cwd, remote string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", cwd, "fetch", remote)
+	out, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(out)), err
+}
+
+// Rebase runs `git -C <cwd> rebase <onto>`. Combined output returned on error
+// (conflict messages need to surface to the user verbatim).
+func (c *Client) Rebase(ctx context.Context, cwd, onto string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", cwd, "rebase", onto)
+	out, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(out)), err
+}
+
+// Merge runs `git -C <cwd> merge [opts] <source>`. Combined output on error.
+func (c *Client) Merge(ctx context.Context, cwd, source string, opts MergeOpts) (string, error) {
+	args := []string{"-C", cwd, "merge"}
+	if opts.Squash {
+		args = append(args, "--squash")
+	}
+	if opts.NoFF {
+		args = append(args, "--no-ff")
+	}
+	args = append(args, source)
+	cmd := exec.CommandContext(ctx, "git", args...)
+	out, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(out)), err
+}
+
+// Commit runs `git -C <cwd> commit -m <msg>`. Combined output on error.
+// Used by the squash-merge path where Merge stages changes but does not commit.
+func (c *Client) Commit(ctx context.Context, cwd, msg string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", cwd, "commit", "-m", msg)
+	out, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(out)), err
+}
+
+// LogOneline returns `git -C <cwd> log --oneline <range>` output.
+func (c *Client) LogOneline(ctx context.Context, cwd, rev string) (string, error) {
+	out, err := c.runner.Run(ctx, "git", "-C", cwd, "log", "--oneline", rev)
+	if err != nil {
+		return "", fmt.Errorf("git log %s: %w", rev, err)
+	}
+	return strings.TrimRight(string(out), "\n"), nil
+}

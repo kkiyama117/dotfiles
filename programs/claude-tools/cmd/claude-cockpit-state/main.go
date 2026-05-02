@@ -111,14 +111,3 @@ func eventToAction(event string) (hookAction, string, bool) {
 	}
 	return actionNone, "", false
 }
-
-// eventToStatus is the thin write-only view of eventToAction kept for the
-// existing TestEventToStatus contract: SessionEnd reports as ignored here
-// because it is not a write event.
-func eventToStatus(event string) (string, bool) {
-	action, payload, ok := eventToAction(event)
-	if !ok || action != actionWrite {
-		return "", false
-	}
-	return payload, true
-}

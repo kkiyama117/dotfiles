@@ -1,0 +1,15 @@
+{
+  "name": "kkiyama117-flow-tools",
+  "description": "Personal /branch-* slash commands for git worktree + tmux window flow: /branch-out (spawn fresh session), /branch-finish (teardown), /branch-merge (rebase + merge into target). Wraps the claude-tools Go binaries (claude-tmux-new, claude-kill-session, claude-branch-merge).",
+  "author": {
+    "name": "kkiyama117",
+    "email": "k.kiyama117@gmail.com"
+  },
+  "keywords": [
+    "tmux",
+    "git-worktree",
+    "branch-flow",
+    "spawn",
+    "merge"
+  ]
+}
