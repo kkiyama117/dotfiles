@@ -1,0 +1,8 @@
+{
+  "name": "kkiyama117-flow-tools",
+  "description": "Personal slash commands for tmux + worktree spawn workflows. Wraps the claude-tools Go binaries (claude-tmux-new, claude-cockpit-*, claude-notify-*).",
+  "author": {
+    "name": "kkiyama117",
+    "email": "k.kiyama117@gmail.com"
+  }
+}
