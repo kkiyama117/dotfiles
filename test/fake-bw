@@ -1,0 +1,41 @@
+#!/bin/sh
+# Minimal `bw` CLI shim used inside the chezmoi test container.
+# Returns canned JSON from $FAKE_BW_FIXTURE so chezmoi templates that call
+# `bitwarden`/`bitwardenFields` work without a real Bitwarden vault.
+set -eu
+
+FIXTURE="${FAKE_BW_FIXTURE:-/home/tester/fixtures/bw-item.json}"
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  status)
+    printf '{"status":"unlocked","userEmail":"test@example.com"}\n'
+    ;;
+  unlock)
+    printf '%s\n' "FAKE_SESSION_TOKEN"
+    ;;
+  get)
+    # All `bw get <sub> <id>` shapes return the same fixture; warn on unknown sub
+    # so future templates that pass a new shape get a visible breadcrumb.
+    sub="${1:-}"
+    case "$sub" in
+      item|password|username|notes|totp|uri) ;;
+      *) echo "[fake-bw] unhandled get subcommand: ${sub:-<none>}" >&2 ;;
+    esac
+    cat "$FIXTURE"
+    ;;
+  list)
+    printf '['
+    cat "$FIXTURE"
+    printf ']\n'
+    ;;
+  lock|sync|login|logout|config)
+    printf '{}\n'
+    ;;
+  *)
+    echo "[fake-bw] unhandled subcommand: ${cmd:-<none>}" >&2
+    printf '{}\n'
+    ;;
+esac
