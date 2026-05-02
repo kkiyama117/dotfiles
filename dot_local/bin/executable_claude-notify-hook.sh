@@ -67,7 +67,7 @@ if [[ -n "$tmux_pane" ]] && command -v tmux >/dev/null 2>&1; then
 fi
 
 # === fire & forget: sound ===
-sound_bin="${CLAUDE_NOTIFY_SOUND_BIN:-$HOME/.local/bin/claude-notify-sound.sh}"
+sound_bin="${CLAUDE_NOTIFY_SOUND_BIN:-$HOME/.local/bin/claude-notify-sound}"
 if [[ -x "$sound_bin" ]]; then
   "$sound_bin" "$sound" >/dev/null 2>&1 &
   disown 2>/dev/null || true
