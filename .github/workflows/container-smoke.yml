@@ -1,0 +1,25 @@
+name: container-smoke
+
+on:
+  pull_request:
+    paths:
+      - '**.tmpl'
+      - 'test/**'
+      - '.chezmoi*'
+      - '.github/workflows/container-smoke.yml'
+  push:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build image
+        run: docker build -t chezmoi-test:ci -f test/Dockerfile test/
+
+      - name: Run smoke test
+        run: docker run --rm -v "${{ github.workspace }}:/work:ro" chezmoi-test:ci

@@ -1,0 +1,18 @@
+{
+  "object": "item",
+  "id": "test-bw-item",
+  "name": "TEST_ITEM",
+  "notes": "TEST_NOTES",
+  "login": {
+    "username": "TEST_USERNAME",
+    "password": "TEST_PASSWORD",
+    "totp": "000000"
+  },
+  "fields": [
+    { "name": "user_name",       "value": "Test User",            "type": 0 },
+    { "name": "user_signingkey", "value": "TESTSIGNINGKEY00",     "type": 0 },
+    { "name": "main_token",      "value": "TEST_GITHUB_TOKEN",    "type": 0 },
+    { "name": "CODEX",           "value": "FAKE_CODEX_KEY_PLACEHOLDER", "type": 1 },
+    { "name": "email",           "value": "test@example.com",     "type": 0 }
+  ]
+}

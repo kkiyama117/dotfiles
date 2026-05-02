@@ -48,3 +48,7 @@ docs/
 
 # claude-tools Go ソース (バイナリは chezmoi run_onchange で build → ~/.local/bin/)
 programs/
+
+# Containerized test environment — never deploy to ~/
+test/
+.github/workflows/container-smoke.yml
