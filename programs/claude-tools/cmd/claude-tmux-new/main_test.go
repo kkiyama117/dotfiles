@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -31,6 +32,15 @@ func TestParseArgs_table(t *testing.T) {
 		}
 		if err == nil && !reflect.DeepEqual(got, c.want) {
 			t.Errorf("%s: got %+v want %+v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestParseArgs_helpReturnsHelpSentinel(t *testing.T) {
+	for _, flag := range []string{"-h", "--help"} {
+		_, err := parseArgs([]string{flag})
+		if !errors.Is(err, errHelpRequested) {
+			t.Errorf("flag %q: got err=%v, want errHelpRequested", flag, err)
 		}
 	}
 }

@@ -135,7 +135,7 @@ func (c *Client) HasLocalRef(ctx context.Context, cwd, branch string) bool {
 	return err == nil
 }
 
-// HasRemoteRef is the same for refs/remotes/origin/<branch>.
+// HasRemoteRef returns true when refs/remotes/origin/<branch> exists.
 func (c *Client) HasRemoteRef(ctx context.Context, cwd, branch string) bool {
 	_, err := c.runner.Run(ctx, "git", "-C", cwd, "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+branch)
 	return err == nil

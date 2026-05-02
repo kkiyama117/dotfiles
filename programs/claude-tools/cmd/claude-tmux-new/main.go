@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,6 +25,14 @@ const progName = "claude-tmux-new"
 
 var logger = obslog.New(progName)
 
+// errHelpRequested signals that -h or --help was passed; main() prints
+// the usage message to stdout and exits 0.
+var errHelpRequested = fmt.Errorf("help requested")
+
+func usageString() string {
+	return "usage: claude-tmux-new <branch> [--from-root [<session-id>]] [--no-claude] [--worktree-base <dir>] [--prompt <text>]"
+}
+
 type options struct {
 	branch          string
 	fromRoot        bool
@@ -35,6 +44,10 @@ type options struct {
 
 func main() {
 	opts, err := parseArgs(os.Args[1:])
+	if errors.Is(err, errHelpRequested) {
+		fmt.Println(usageString())
+		os.Exit(0)
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "claude-tmux-new:", err)
 		os.Exit(1)
@@ -49,7 +62,10 @@ func main() {
 func parseArgs(argv []string) (options, error) {
 	var o options
 	if len(argv) == 0 || strings.HasPrefix(argv[0], "-") {
-		return options{}, fmt.Errorf("usage: claude-tmux-new <branch> [--from-root [<session-id>]] [--no-claude] [--worktree-base <dir>] [--prompt <text>]")
+		if len(argv) > 0 && (argv[0] == "-h" || argv[0] == "--help") {
+			return options{}, errHelpRequested
+		}
+		return options{}, fmt.Errorf("%s", usageString())
 	}
 	o.branch = argv[0]
 	i := 1
@@ -80,7 +96,7 @@ func parseArgs(argv []string) (options, error) {
 			o.initialPrompt = argv[i]
 			i++
 		case "-h", "--help":
-			return options{}, fmt.Errorf("usage: claude-tmux-new <branch> [--from-root [<session-id>]] [--no-claude] [--worktree-base <dir>] [--prompt <text>]")
+			return options{}, errHelpRequested
 		default:
 			return options{}, fmt.Errorf("unknown arg: %s", argv[i])
 		}
@@ -206,6 +222,7 @@ func setupNewWindow(ctx context.Context, tc *tmux.Client, target, worktree, sess
 	}
 	if err := tc.SplitWindowH(ctx, target, worktree); err != nil {
 		logger.Error("split-window failed", "target", target, "err", err)
+		tc.Display(ctx, fmt.Sprintf("claude-tmux-new: split-window failed: %s", err))
 		return
 	}
 	tc.SelectPaneTitle(ctx, target+".0", "work")
@@ -235,11 +252,24 @@ func buildClaudeCommand(sessionID string, hasHistory bool, prompt string) string
 	return cmd
 }
 
+// claudeProjectsDir returns ~/.claude/projects/<encoded path>. Returns
+// empty string if HOME is unset (caller treats as "no history available").
+func claudeProjectsDir(path string) string {
+	home := os.Getenv("HOME")
+	if home == "" {
+		return ""
+	}
+	encoded := strings.NewReplacer("/", "-", ".", "-").Replace(path)
+	return filepath.Join(home, ".claude", "projects", encoded)
+}
+
 // claudeWorktreeHistoryExists checks whether `~/.claude/projects/<encoded>/`
 // has any *.jsonl files for the given worktree path.
 func claudeWorktreeHistoryExists(worktree string) bool {
-	encoded := strings.NewReplacer("/", "-", ".", "-").Replace(worktree)
-	dir := filepath.Join(os.Getenv("HOME"), ".claude", "projects", encoded)
+	dir := claudeProjectsDir(worktree)
+	if dir == "" {
+		return false
+	}
 	matches, _ := filepath.Glob(filepath.Join(dir, "*.jsonl"))
 	return len(matches) > 0
 }
@@ -247,8 +277,10 @@ func claudeWorktreeHistoryExists(worktree string) bool {
 // pickRootSession resolves the root session id either from the explicit
 // argument or via fzf.
 func pickRootSession(mainRepo, explicitID string) (string, error) {
-	encoded := strings.NewReplacer("/", "-", ".", "-").Replace(mainRepo)
-	dir := filepath.Join(os.Getenv("HOME"), ".claude", "projects", encoded)
+	dir := claudeProjectsDir(mainRepo)
+	if dir == "" {
+		return "", fmt.Errorf("HOME not set; cannot resolve claude session history")
+	}
 	if !dirExists(dir) {
 		return "", fmt.Errorf("no claude sessions at %s", dir)
 	}
