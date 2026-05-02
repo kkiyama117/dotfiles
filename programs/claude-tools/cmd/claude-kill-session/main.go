@@ -41,8 +41,8 @@ func main() {
 	target := session + ":" + window
 
 	managed, _ := tc.ShowWindowOption(ctx, target, "@claude-managed")
-	panesOut, _ := r.Run(ctx, "tmux", "list-panes", "-t", target, "-F", "#{pane_current_command}")
-	if !isClaudeManaged(managed, string(panesOut), session) {
+	panes, _ := tc.ListPanes(ctx, target, "#{pane_current_command}")
+	if !isClaudeManaged(managed, panes, session) {
 		tc.Display(ctx, fmt.Sprintf("claude-kill-session: refusing on non-claude window (%s)", target))
 		os.Exit(1)
 	}
@@ -69,8 +69,7 @@ func main() {
 	}
 
 	// Pane id capture for cache cleanup
-	paneIDsOut, _ := r.Run(ctx, "tmux", "list-panes", "-t", target, "-F", "#{pane_id}")
-	paneIDs := strings.Fields(string(paneIDsOut))
+	paneIDs, _ := tc.ListPanes(ctx, target, "#{pane_id}")
 
 	// Worktree remove BEFORE kill-window (so error display still has a client).
 	if wtRoot != "" && mainRepo != "" && wtRoot != mainRepo {
@@ -85,6 +84,8 @@ func main() {
 
 	if err := tc.KillWindow(ctx, target); err != nil {
 		logger.Error("kill-window failed", "target", target, "err", err)
+		tc.Display(ctx, fmt.Sprintf("claude-kill-session: kill-window failed: %s", err))
+		os.Exit(1)
 	}
 
 	// Cockpit cache cleanup
@@ -124,12 +125,12 @@ func resolveTarget(ctx context.Context, tc *tmux.Client, explicit string) (strin
 // isClaudeManaged implements the 3-stage OR safety check.
 //
 //	managed == "yes" OR any pane runs 'claude' OR session starts with 'claude-'
-func isClaudeManaged(managedOpt, panesOut, session string) bool {
+func isClaudeManaged(managedOpt string, panes []string, session string) bool {
 	if managedOpt == "yes" {
 		return true
 	}
-	for _, line := range strings.Split(strings.TrimRight(panesOut, "\n"), "\n") {
-		if strings.TrimSpace(line) == "claude" {
+	for _, p := range panes {
+		if strings.TrimSpace(p) == "claude" {
 			return true
 		}
 	}

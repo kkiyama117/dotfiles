@@ -6,15 +6,15 @@ func TestIsClaudeManaged_table(t *testing.T) {
 	cases := []struct {
 		name    string
 		managed string
-		panes   string
+		panes   []string
 		session string
 		want    bool
 	}{
-		{"managed=yes", "yes", "", "", true},
-		{"claude pane present", "", "zsh\nclaude\n", "", true},
-		{"legacy session", "", "zsh\nvim\n", "claude-old", true},
-		{"all NG", "", "zsh\nvim\n", "dev", false},
-		{"managed empty + claude in panes mid", "", "zsh\nclaude\nvim\n", "dev", true},
+		{"managed=yes", "yes", nil, "", true},
+		{"claude pane present", "", []string{"zsh", "claude"}, "", true},
+		{"legacy session", "", []string{"zsh", "vim"}, "claude-old", true},
+		{"all NG", "", []string{"zsh", "vim"}, "dev", false},
+		{"managed empty + claude in panes mid", "", []string{"zsh", "claude", "vim"}, "dev", true},
 	}
 	for _, c := range cases {
 		if got := isClaudeManaged(c.managed, c.panes, c.session); got != c.want {

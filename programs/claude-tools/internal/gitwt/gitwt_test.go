@@ -72,6 +72,9 @@ func TestParsePorcelain_table(t *testing.T) {
 		{"branch slash in name", "worktree /a\nHEAD a1\nbranch refs/heads/feat/sub-x\n", []Worktree{
 			{Path: "/a", Branch: "feat/sub-x", HEAD: "a1"},
 		}},
+		{"path only (no HEAD or branch)", "worktree /minimal\n", []Worktree{
+			{Path: "/minimal", Branch: "", HEAD: ""},
+		}},
 	}
 	for _, c := range cases {
 		got := parsePorcelain([]byte(c.in))

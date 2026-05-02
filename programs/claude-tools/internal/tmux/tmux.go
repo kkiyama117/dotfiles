@@ -80,15 +80,15 @@ func (c *Client) KillWindow(ctx context.Context, target string) error {
 	return nil
 }
 
-// ShowWindowOption returns the value of a tmux window option, or
-// ("", nil) when the option is unset (show-options -v exits non-zero
-// in that case; we deliberately swallow the error to model "unset").
-func (c *Client) ShowWindowOption(ctx context.Context, target, key string) (string, error) {
+// ShowWindowOption returns the value of a tmux window option and whether
+// it was set. show-options -v exits non-zero when the option is unset,
+// which is also when tmux itself fails to start; we treat both as "unset".
+func (c *Client) ShowWindowOption(ctx context.Context, target, key string) (string, bool) {
 	out, err := c.runner.Run(ctx, "tmux", "show-options", "-w", "-t", target, "-v", key)
 	if err != nil {
-		return "", nil
+		return "", false
 	}
-	return strings.TrimRight(string(out), "\n"), nil
+	return strings.TrimRight(string(out), "\n"), true
 }
 
 // sanitizeRe matches characters NOT allowed in tmux session/window names.
