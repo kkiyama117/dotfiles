@@ -132,40 +132,43 @@ prefix は **`C-b`** (tmux デフォルト)。`dot_config/tmux/conf/options.conf
 
 `prefix + C` を押すと status-left に `⟨claude_table⟩` が表示され、次のキー入力 1 つで以下が走る (`bindings.conf` の `bind -T claude_table ...` 群):
 
-| キー | 動作 | 実装スクリプト |
+| キー | 動作 | 実装バイナリ |
 |---|---|---|
 | `c` | 現 pane で `claude --continue` を送信 | inline `send-keys` |
-| `n` | git branch を fzf で選び **新規 worktree + 2-pane Claude session** を作成 | `claude-pick-branch.sh` → `tmux-claude-new.sh` |
-| `o` | git branch を fzf で選び **新規 worktree (shell-only)** を作成（claude を起動しない） | `claude-pick-branch.sh --no-claude` → `tmux-claude-new.sh --no-claude` |
-| `r` | 現 session 内の `claude` pane を kill → `claude --continue` で再起動 | `claude-respawn-pane.sh` |
-| `s` | tmux session/window/pane を **階層 fzf** で表示し、cockpit state badge 付きで switch / kill / reload | `cockpit/switcher.sh` |
-| `N` | 要対応 pane に循環ジャンプ。優先順は **`waiting`（Notification 発火）→ `done`（Stop 発火）** で、各バケット内は **inbox 順 (session asc / window idx asc / pane idx asc)** | `cockpit/next-ready.sh` |
-| `k` | **現 window と対応 worktree を削除**（`confirm-before` で確認、最後の window なら session も destroy） | `claude-kill-session.sh` |
+| `n` | git branch を fzf で選び **新規 worktree + 2-pane Claude session** を作成 | `claude-pick-branch` → `claude-tmux-new` |
+| `o` | git branch を fzf で選び **新規 worktree (shell-only)** を作成（claude を起動しない） | `claude-pick-branch --no-claude` → `claude-tmux-new --no-claude` |
+| `r` | 現 session 内の `claude` pane を kill → `claude --continue` で再起動 | `claude-respawn-pane` |
+| `s` | tmux session/window/pane を **階層 fzf** で表示し、cockpit state badge 付きで switch / kill / reload | `claude-cockpit-switcher` |
+| `N` | 要対応 pane に循環ジャンプ。優先順は **`waiting`（Notification 発火）→ `done`（Stop 発火）** で、各バケット内は **inbox 順 (session asc / window idx asc / pane idx asc)** | `claude-cockpit-next-ready` |
+| `k` | **現 window と対応 worktree を削除**（`confirm-before` で確認、最後の window なら session も destroy） | `claude-kill-session` |
 
 > `k` の安全判定: window option `@claude-managed=yes` / pane の `claude` プロセス / 旧 `claude-*` session 名 のいずれか 1 つを満たすと実行可。これら 3 条件はすべて OR で評価される。
 
-### 5.3 ヘルパースクリプト (`dot_config/tmux/scripts/`)
+### 5.3 ヘルパーバイナリ (`~/.local/bin/`、ソース: `programs/claude-tools/cmd/`)
 
-| スクリプト | 役割 |
+`tpm-bootstrap.sh` 以外はすべて Go バイナリ化済み (G-1 / G-2 完了)。`programs/claude-tools/.chezmoiscripts/run_onchange_after_build-claude-tools.sh.tmpl` が `chezmoi apply` 時に再ビルドする。
+
+| バイナリ | 役割 |
 |---|---|
-| `tmux-claude-new.sh <branch> [--from-root [<id>]] [--no-claude]` | session 名は **main worktree の basename**（例: `chezmoi`, `data_manager`）、window 名は **sanitize した branch 名**（例: `feat-foo`、非英数記号は `-` に変換）、各 window 内に左 pane = shell、右 pane = `claude --continue --fork-session` の 2-pane を構成。`tmux new-session -A` + `tmux new-window -A` の組合せで **冪等** に動作（同 branch を 2 度呼んでも既存 window に attach するだけ）。window には `@claude-managed=yes` を user option として set し、`claude-kill-session.sh` がこれを安全判定の 1 条件として参照する。worktree は `<repo-root>-<safe>` に作成する。**branch が既に他 worktree にチェックアウト済みなら**（main repo 含む）`git worktree list` から既存パスを再利用し新規 add は行わない。新規作成時はローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する。worktree に対応する `~/.claude/projects/<encoded>/*.jsonl` が **空なら `--continue` を付けず** 素の `claude` を起動して "Fatal Error" を回避。`--from-root` を付けると **メイン worktree の Claude セッション履歴**（`~/.claude/projects/<encoded main repo>/`）から fzf で選択（`<id>` 直指定も可）し、`claude --resume <id> --fork-session` で起動する。`--no-claude` を付けると **claude を起動せず 1-pane shell session のみ** 作成する（`--from-root` と排他） |
-| `claude-pick-branch.sh [--no-claude]` | fzf で branch を選択 → `tmux-claude-new.sh` を `exec`（追加引数は passthrough） |
-| `cockpit/switcher.sh` | tmux 全 session/window/pane を fzf 階層表示。Enter=switch / Ctrl-X=kill (worktree-aware) / Ctrl-R=reload |
-| `cockpit/next-ready.sh` | 要対応 pane に循環ジャンプ。`waiting` を優先し、なければ `done` を巡回（各バケット内 inbox 順） |
-| `claude-respawn-pane.sh` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
-| `claude-kill-session.sh` | 現 window が claude-managed なら `kill-window` + 対応 worktree の `git worktree remove --force`。安全判定は `@claude-managed=yes` window option / pane の `claude` プロセス / 旧 `claude-*` session 名 のいずれか 1 つ。session 内に他 window があれば session は残る。 |
-| `cockpit/summary.sh` | hook 駆動キャッシュ（`~/.cache/claude-cockpit/panes/*.status`）から `⚡ N ⏸ M ✓ K ` 形式で status-right に出力 |
-| `cockpit/prune.sh` | tmux に存在しない pane の cache file を削除（idempotent） |
-| `claude-cockpit-state.sh` | Claude hook entry — UserPromptSubmit/PreToolUse → working、Notification → waiting、Stop → done を atomic write |
-| `claude-branch.sh <path>` | path の git branch を `[branch] ` 形式で status-right に出力 |
-| `tpm-bootstrap.sh` | TPM (`~/.config/tmux/plugins/tpm/`) のクローン + `install_plugins` 実行（idempotent） |
+| `claude-tmux-new <branch> [--from-root [<id>]] [--no-claude] [--worktree-base <dir>] [--prompt <text>]` | session 名は **main worktree の basename**（例: `chezmoi`, `data_manager`）、window 名は **sanitize した branch 名**（例: `feat-foo`、非英数記号は `-` に変換）、各 window 内に左 pane = shell、右 pane = `claude --continue --fork-session` の 2-pane を構成。`tmux new-session -A` + `tmux new-window -A` の組合せで **冪等** に動作（同 branch を 2 度呼んでも既存 window に attach するだけ）。window には `@claude-managed=yes` を user option として set し、`claude-kill-session` がこれを安全判定の 1 条件として参照する。worktree は `<repo-root>-<safe>` または `--worktree-base <dir>` 配下の `<repo>/<safe>` に作成する。**branch が既に他 worktree にチェックアウト済みなら**（main repo 含む）`git worktree list` から既存パスを再利用し新規 add は行わない。新規作成時はローカル → `origin/<branch>` → 現在の HEAD の順に解決し、未存在なら HEAD 起点で **新規ブランチを自動作成** する。worktree に対応する `~/.claude/projects/<encoded>/*.jsonl` が **空なら `--continue` を付けず** 素の `claude` を起動して "Fatal Error" を回避。`--from-root` を付けると **メイン worktree の Claude セッション履歴**（`~/.claude/projects/<encoded main repo>/`）から fzf で選択（`<id>` 直指定も可）し、`claude --resume <id> --fork-session` で起動する。`--no-claude` を付けると **claude を起動せず 1-pane shell session のみ** 作成する（`--from-root` と排他）。`--prompt <text>` を付けると右 pane の `claude` 起動コマンドに POSIX 単引用された initial prompt を append する (`/branch-out` slash command が利用) |
+| `claude-pick-branch [--no-claude]` | fzf で branch を選択 → `claude-tmux-new` を `syscall.Exec`（追加引数は passthrough） |
+| `claude-cockpit-switcher` | tmux 全 session/window/pane を fzf 階層表示。Enter=switch / Ctrl-X=kill (worktree-aware) / Ctrl-R=reload |
+| `claude-cockpit-next-ready` | 要対応 pane に循環ジャンプ。`waiting` を優先し、なければ `done` を巡回（各バケット内 inbox 順） |
+| `claude-respawn-pane` | session 内で `pane_current_command == claude` の pane を見つけて `respawn-pane -k` |
+| `claude-kill-session [<target>]` | 現 window が claude-managed なら `kill-window` + 対応 worktree の `git worktree remove --force`。安全判定は `@claude-managed=yes` window option / pane の `claude` プロセス / 旧 `claude-*` session 名 のいずれか 1 つ。session 内に他 window があれば session は残る。`<target>` 指定時はそちらを kill 対象にする（switcher Ctrl-X 用） |
+| `claude-branch-merge <target> [--squash] [--no-rebase] [--fetch]` | 現 worktree の branch を `target` (= `main` / `develop` / 任意) に統合。target worktree を `git worktree list` で検索 → 現 worktree で `git rebase target` → target worktree で `git merge` (or `--squash` + 自動 commit message)。`/branch-merge` slash command が利用 |
+| `claude-cockpit-summary` | hook 駆動キャッシュ（`~/.cache/claude-cockpit/panes/*.status`）から `⚡ N ⏸ M ✓ K ` 形式で status-right に出力 |
+| `claude-cockpit-prune` | tmux に存在しない pane の cache file を削除（idempotent） |
+| `claude-cockpit-state hook <event>` | Claude hook entry — UserPromptSubmit/PreToolUse → working、Notification → waiting、Stop → done を atomic write |
+| `claude-branch <path>` | path の git branch を `[branch] ` 形式で status-right に出力 |
+| `dot_config/tmux/scripts/executable_tpm-bootstrap.sh` | TPM (`~/.config/tmux/plugins/tpm/`) のクローン + `install_plugins` 実行（idempotent）。tmux 自体の管理対象なので Go 化スコープ外 |
 
 ### 5.4 zsh ラッパー
 
 シェル直叩き用に zsh 関数を 1 つ用意 (`dot_config/zsh/rc/my_plugins/tmux.zsh`):
 
 ```zsh
-tmux_claude_new <branch>   # ~/.config/tmux/scripts/tmux-claude-new.sh の薄ラッパー
+tmux_claude_new <branch>   # ~/.local/bin/claude-tmux-new の薄ラッパー
 ```
 
 `prefix + C, n` の popup と同じロジックを通常のシェルからも呼べる。
@@ -190,7 +193,7 @@ tmux_claude_new <branch>   # ~/.config/tmux/scripts/tmux-claude-new.sh の薄ラ
 | `tmux-plugins/tmux-continuum` | 15 分間隔で自動保存のみ。起動時の自動復元は無効化 (default session と復元結果が混在するため)。復元は `prefix + Ctrl-R` で手動実行 | `@continuum-save-interval '15'` (auto-restore は plugins.conf でコメントアウト) |
 | `tmux-plugins/tmux-yank` | コピーモードのバッファをシステムクリップボードへ | — |
 
-TPM 自体は `~/.config/tmux/plugins/tpm/` (XDG パス) に配置。新規マシンでは `chezmoi run_once` 内で `tpm-bootstrap.sh` が走り自動インストールされる。手動実行も同コマンドで可能。
+TPM 自体は `~/.config/tmux/plugins/tpm/` (XDG パス) に配置。新規マシンでは `chezmoi run_once` 内で `tpm-bootstrap.sh` が走り自動インストールされる（このスクリプトは tmux 自体の管理対象なので Go 化対象外）。手動実行も同コマンドで可能。
 
 ### 5.7 デスクトップ通知 + サウンド
 
@@ -232,7 +235,7 @@ Claude Code ─┐ (event)
 
 | ボタン | 動作 |
 |---|---|
-| 左クリック | 発火元の tmux session/pane に focus を戻し、popup は自動で消える (`claude-notify-dispatch.sh` が `--action=default=Focus` を介して受信 → `tmux switch-client` + `select-pane` → `gdbus CloseNotification`) |
+| 左クリック | 発火元の tmux session/pane に focus を戻し、popup は自動で消える (`claude-notify-dispatch` が `--action=default=Focus` を介して受信 → `tmux switch-client` + `select-pane` → `gdbus CloseNotification`) |
 | 中クリック | 滞留した popup を一括 close (`notification_closeall`) |
 | 右クリック | この popup だけ close (`notification_close`)。focus 等の副作用なし |
 
@@ -247,7 +250,46 @@ tmux 外で起動された Claude (素の terminal) は左クリック時 `journ
 - `notify-send --expire-time=0` で **自動消去せず居残る**（ユーザがクリックして dismiss するまで表示）
 - `pw-play` → `paplay` → `ffplay` の順でフォールバック再生
 - 通知 daemon は **wired-notify** (`dot_config/wired/wired.ron` + `dot_config/systemd/user/wired.service`)。`--expire-time=0` を尊重して popup が永続化される
-- フック登録は `dot_config/claude/settings.json` の `hooks.Notification` / `hooks.Stop` 双方とも新設 orchestrator (`claude-notify-hook.sh`) を呼び出し、内部で `claude-notify-sound.sh` (sound 専用 worker) と `claude-notify-dispatch.sh` (popup + click action ハンドラ) を fork する 3 ファイル構成
+- フック登録は `dot_config/claude/settings.json` の `hooks.Notification` / `hooks.Stop` 双方とも orchestrator (`claude-notify-hook`) を呼び出し、内部で `claude-notify-sound` (sound 専用 worker) と `claude-notify-dispatch` (popup + click action ハンドラ) を fork する 3 binary 構成 (G-1.next #3 以降は常駐 daemon `claude-notifyd` が Unix socket 経由で popup を集約し、dispatch fork は fallback)
+
+### 5.8 Slash commands & プラグイン (`kkiyama117-flow-tools`)
+
+自作 slash command は専用プラグイン `kkiyama117-flow-tools` に集約している (`programs/claude-plugins/plugins/kkiyama117-flow-tools/`)。プラグインソース構成:
+
+```
+programs/claude-plugins/
+├── .claude-plugin/marketplace.json   # marketplace 定義 (1 plugin)
+└── plugins/kkiyama117-flow-tools/
+    ├── .claude-plugin/plugin.json    # プラグインメタ
+    └── commands/
+        ├── branch-out.md             # /branch-out
+        ├── branch-finish.md          # /branch-finish
+        └── branch-merge.md           # /branch-merge
+```
+
+| Slash command | 引数 | 内部呼出 | 対称性 |
+|---|---|---|---|
+| `/branch-out <task>` | 自然文 (1〜複数行) | ブランチ名を 1 秒で導出 → `claude-tmux-new <branch> --worktree-base ... --prompt <task>` を 1 回叩いて新規 worktree + tmux window + 子 Claude セッションを spawn | spawn |
+| `/branch-finish` | なし | `claude-kill-session` を 1 回叩いて現 worktree + tmux window を破棄 (内部 `git worktree remove --force` のため uncommitted は消える) | teardown |
+| `/branch-merge <target> [squash] [no-rebase] [fetch]` | target branch 名 + 任意キーワード | `claude-branch-merge <target> [--squash] [--no-rebase] [--fetch]` を 1 回叩いて (1) target worktree 検索 → (2) 現 worktree で `git rebase target` → (3) target worktree で `git merge` (squash 時は `--squash` + 自動 commit message) を実行 | integrate |
+
+**インストール / 更新 (ローカル開発時)**:
+
+```bash
+# 初回のみ marketplace 登録 (chezmoi source dir を local marketplace として参照)
+claude plugin marketplace add /home/kiyama/.local/share/chezmoi/programs/claude-plugins
+
+# プラグイン有効化 (settings.json 経由で永続化済みなので普通は不要)
+claude plugin install kkiyama117-flow-tools@kkiyama117-flow-tools
+
+# プラグインソース変更後 (commit 必須 — version は git HEAD でキー化)
+git commit -am "..."
+claude plugin update kkiyama117-flow-tools@kkiyama117-flow-tools
+```
+
+`extraKnownMarketplaces` は `dot_config/claude/settings.json` で git URL (`https://github.com/kkiyama117/dotfiles.git`, `subdirectory: programs/claude-plugins`) としても登録済みなので、push & merge 後は他マシンから自動取得される。
+
+`hooks` (Notification/Stop/UserPromptSubmit/PreToolUse/SessionEnd) は **プラグインに含めず settings.json に直書き** している (b 案)。クロスマシンで揃える必要があるため。
 
 ## 6. 公式ドキュメント
 
@@ -260,13 +302,13 @@ tmux 外で起動された Claude (素の terminal) は左クリック時 `journ
 
 > 4/30 spec の手動検証手順。chezmoi apply 後・tmux reload 後に通すこと。
 
-1. `tmux-claude-new.sh feature-foo` と `tmux-claude-new.sh feature-bar` で 2 セッション作成
+1. `claude-tmux-new feature-foo` と `claude-tmux-new feature-bar` で 2 セッション作成
 2. `claude-foo` で `Hello` と送信 → status-right が `⚡ 1 ` に更新（最大 5 秒）
 3. Claude が応答完了し ESC で待機 → status-right が `✓ 1 ` に変わる
 4. もう片方でも送信 → 状態が混在表示される（条件次第で `⚡ 1 ⏸ 1` 等）
 5. `prefix + C` → `N` で要対応 pane にジャンプできる（`waiting` がいれば `waiting` 優先、無ければ `done` に巡回）
 6. `prefix + C` → `s` で階層 switcher を開き、`Ctrl-X` で空 pane を kill できる
 7. `prefix + C` → `k` で claude-foo セッション + worktree を削除 → `~/.cache/claude-cockpit/panes/claude-foo_*.status` も消える
-8. `tmux kill-server` → 再起動後、`~/.cache/claude-cockpit/panes/` の残骸が `prune.sh` により消える
+8. `tmux kill-server` → 再起動後、`~/.cache/claude-cockpit/panes/` の残骸が `claude-cockpit-prune` により消える
 
 合格条件: 1〜8 すべて期待通りになること。
