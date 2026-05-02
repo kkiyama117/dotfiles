@@ -42,6 +42,24 @@
 
 なし — F-8 (a)/(b1)/(c) の Go 実装が shell F-8 v1 (commit `b81cb81`) の挙動と一致することを実 tmux server 相手に確認した。Step 4-7 の interactive UI は worktree からの build では tmux popup binding を hot-reload できないため defer。
 
+## Post-smoke refactor (code-review follow-up, 2026-05-02)
+
+`/everything-claude-code:code-review` の指摘 M-1〜M-3 / L-1 / L-2 / L-4 を 2 commit でフォローアップ済み。**いずれも behavior-preserving な refactor** で、本 smoke 結果に影響しない (cache file format / summary 出力 / prune 削除条件 / SessionEnd 経路すべて不変)。
+
+| Commit | 内容 |
+|---|---|
+| `7f26cc4` | M-1 (switcher prune Start エラーログ) / M-2 (`xdg.{ConfigDir,LocalBinDir}` helper 追加 + `claude-kill-session.sh` パス再配線) / M-3 (`obslog.New` を package-level `var logger` に hoist) |
+| `f6abd95` | L-1 (switcher Ctrl-R reload エラーログ) / L-2 部分 (`dispatchSwitch` table-driven test) / L-4 (README の `internal/notify` 表記を Phase 2 forward-looking に修正) |
+
+検証:
+
+- `go vet ./...` PASS
+- `go test -race ./...` 10/10 PASS
+- `go build -o ... ./cmd/...` 5 binary PASS
+- coverage: `internal/xdg` 100% (新 helper 込み) / switcher 40.5% → 42.0% (`dispatchSwitch` 完全網羅)
+
+未対応 follow-up は [`docs/todos.md`](../../todos.md) の G-1.next #7 (`dispatchKill` testability refactor) / #8 (`eventToStatus` YAGNI 削除) で追跡。
+
 ## journalctl Errors
 
 ```bash

@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-05-02 (G-1 Phase 1 実装完了 + Phase 1.5 F-8 Go 移植 完了 / B サブシステム 5 binary、実機 smoke PASS / F-7 branch-out + F-8 cockpit 死蔵対策 取り込み)
+最終更新: 2026-05-02 (G-1 Phase 1 実装完了 + Phase 1.5 F-8 Go 移植 完了 + code-review M-1〜M-3 / L-1 / L-2 / L-4 patch 取り込み / B サブシステム 5 binary、実機 smoke PASS / F-7 branch-out + F-8 cockpit 死蔵対策 取り込み)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -236,6 +236,17 @@
   - [ ] **G-1.next #3: `notify-dispatch` daemon 化** — F-3.next L33 の既存項目と同一テーマ。本 G-1 で 1:1 置換した上で、popup state を全集約する常駐 helper daemon (`claude-notifyd`) に移行する案。systemd --user unit 追加 / Unix socket protocol 設計 / daemon 死亡時の hook fallback を別 spec に切り出す
   - [ ] **G-1.next #4: F-4 nix 移行と build トリガ統合** — F-4 の nix flakes + Home Manager 設計が固まったら、`run_onchange_after_build-claude-tools.sh.tmpl` を nix overlay 経由 build に振り替える。Go toolchain も nix で pin できるので mise 依存を外せる
   - [x] **G-1.next #5: F-8 cockpit 死蔵対策の Go 移植 🔥 (merge 由来の regression / 優先) — 完了 (2026-05-02 / `fix/g1-phase15-f8-port`)** — refactor branch は F-8 v1 (2026-04-30 完了) より前の shell を base にしていたため、Phase 1 Go binary に F-8 の 3 機能が抜けていた: (a) `claude-cockpit-state` の `SessionEnd` event handler (status file の `rm -f`、settings.json のエントリは残るが Go 側は no-op)、(b) `claude-cockpit-{summary,next-ready,switcher}` の `pane_current_command == claude` 防御フィルタ、(c) `claude-cockpit-prune` の "live pane で claude を動かしている集合" 拡張削除条件。Phase 1.5 patch ブランチで TDD (test → fail → impl → pass → commit) で 5 commit (`3c62cb9` / `d06631e` / `1512595` / `240b3a0` / `62377d6`) として塞ぎ、実機 smoke (real tmux + sandbox `XDG_CACHE_HOME`) で 3 経路すべてが shell F-8 v1 (commit `b81cb81`) と挙動一致することを確認。eBPF 検討 (F-8 残課題) は本項目とは独立 (F-8 セクション末尾に残置)
+  - [x] **G-1.next #6: Phase 1.5 code-review follow-up (M-1〜M-3 / L-1 / L-2 / L-4) — 完了 (2026-05-02 / `fix/g1-phase15-f8-port`)** — `/everything-claude-code:code-review` の指摘を 2 commit でフォローアップ。
+    - `7f26cc4 refactor(g1): hoist obslog handlers + xdg.ConfigDir/LocalBinDir helpers`:
+      - **M-1**: switcher の fire-and-forget prune `exec.Command(...).Start()` を `startBackgroundPrune()` helper に切り出し、`xdg.LocalBinDir()` 経由のパス + Start() エラーログ (`HOME` 未設定 / binary 未配置 / exec 失敗を WARN レベルで surface)
+      - **M-2**: `dispatchKill` の `claude-kill-session.sh` 起動を `os.Getenv("HOME") + ".config/..."` 直結合から `xdg.ConfigDir()` 経由に変更。`internal/xdg` に `ConfigDir()` / `LocalBinDir()` helper を新規追加し、空時は `logger.Error` + return で silent failure を排除、`cmd.Run()` のエラーも logger.Error
+      - **M-3**: `claude-cockpit-{prune,summary,switcher}` の `obslog.New(progName)` を package-level `var logger` に hoist (prune 3→1 / summary 2→1 / switcher 1→1)。status-right が頻繁に再描画される summary などで slog handler の都度生成を回避
+    - `f6abd95 refactor(g1): switcher ctrl-r error log + dispatchSwitch tests + README fix`:
+      - **L-1**: switcher の Ctrl-R reload で `os.Executable()` / `syscall.Exec()` のエラーを `logger.Error` で surface (silent failure 排除)
+      - **L-2 (部分)**: `dispatchSwitch()` の S/W/P 3 kind + unknown kind を table-driven test 化、`recordingRunner` ヘルパを test に追加。switcher coverage 40.5% → 42.0%
+      - **L-4**: `programs/claude-tools/README.md` の `internal/notify` 言及を Phase 2 で追加予定の forward-looking 表記に修正
+  - [ ] **G-1.next #7: dispatchKill の testability refactor (L-2 残り)** — `dispatchKill` の S/W (managed/unmanaged) / P 各経路は `confirmYesNo()` が `/dev/tty` を直接 open するため、現状 unit test 化が困難。注入可能な `prompter` interface を切り出して FakeRunner と並走させる refactor が必要。優先度低 (interactive UI は smoke でカバー)。着手指標: switcher coverage を 60%+ に持っていきたくなったとき
+  - [ ] **G-1.next #8: `eventToStatus` の YAGNI 削除 (L-5)** — `cmd/claude-cockpit-state/main.go` の `eventToStatus` は `eventToAction` の thin wrapper として `TestEventToStatus` 互換のためだけに残っている。本来必要なのは `eventToAction` のみ。test を `eventToAction` ベースに書き換えて 1 関数に集約する。signal-based test hook の予約も実装予定が立っていない。優先度低
 
 - 注意:
   - cache (`~/.cache/claude-cockpit/panes/<S>_<P>.status`) と notify state (`${XDG_RUNTIME_DIR}/claude-notify/sessions/<sid>.id`) のパス・フォーマットは shell 時代と完全互換 → 過渡期に shell ↔ Go が並存しても state を共有できる、revert 後も runtime 状態が連続
