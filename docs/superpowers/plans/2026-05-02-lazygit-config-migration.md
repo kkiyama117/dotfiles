@@ -44,9 +44,7 @@
 
 **目的:** 新規 Manjaro マシンで `chezmoi init --apply kkiyama117` が走った瞬間に lazygit がインストールされる状態を作る。既存パッケージ (bat / fd / fzf / tmux 等) と並べるため heredoc に 1 行追加するだけ。
 
-- [ ] **Step 1: PACKAGES heredoc に lazygit を追加**
-
-heredoc 末尾どこでも可だが、視認性のため `lsd` の直後 (`navi` の前) に挿入する:
+- [x] **Step 1: PACKAGES heredoc に lazygit を追加** — commit `166d0cf`. 実ファイルでは `lsd → skim → navi` の順だったため、`lsd` の直後 (=`skim` の前) に挿入。spec の「lsd の直後・navi の前」要件は満たす。
 
 ```diff
  bat
@@ -60,7 +58,7 @@ heredoc 末尾どこでも可だが、視認性のため `lsd` の直後 (`navi`
 
 > 既に lazygit が手動 install 済みでも `paru -S ... --needed --noconfirm` は idempotent なので副作用なし。
 
-- [ ] **Step 2: 既存マシンで反映**
+- [ ] **Step 2: 既存マシンで反映** — *user runtime required*: 非対話シェルからは `sudo` パスワード要求で実行不可。ユーザー手元で実行:
 
 ```bash
 paru -S lazygit --needed --noconfirm
@@ -69,7 +67,7 @@ command -v lazygit && lazygit --version
 
 期待: `paru` が pacman 公式リポからの lazygit を入れる。バージョン 0.50 以降であること。
 
-- [ ] **Step 3: chezmoi 経由の verify**
+- [x] **Step 3: chezmoi 経由の verify** — 純 `chezmoi diff` は worktree path 都合で skip、代替として `git show 166d0cf` で `+lazygit` 1 行のみの差分を確認 (spec reviewer も承認)。chezmoi state リセット (`chezmoi state delete-bucket --bucket=scriptState`) は新規マシン bootstrap 確認の Task 5 Step 3 に委譲。
 
 ```bash
 chezmoi diff .chezmoiscripts/run_once_all_os.sh.cmd.tmpl
@@ -95,7 +93,7 @@ chezmoi diff .chezmoiscripts/run_once_all_os.sh.cmd.tmpl
 - **`git.commit.verbose: true`**: コミットメッセージ編集中に diff を別 panel で表示。
 - **`promptToReturnFromSubprocess: false`**: tmux popup 起動時に lazygit を抜けたら即 popup を閉じたい (Enter 待ちが煩わしい)。
 
-- [ ] **Step 1: ファイル作成**
+- [x] **Step 1: ファイル作成** — commit `5ba6e87`. YAML parse OK / spec reviewer & code reviewer 共に承認。
 
 `dot_config/lazygit/config.yml` を以下の内容で新規作成:
 
@@ -146,7 +144,7 @@ confirmOnQuit: false
 
 > ⚠ lazygit 公式 wiki に注意。`os.open` 等のテンプレ構文は **lazygit 独自** (Go text/template ではない、`{{filename}}` 形式)。chezmoi の `.tmpl` 解釈とは別物だが、ファイル名を `config.yml` (`.tmpl` なし) にすれば衝突回避できる。本プランでは `.tmpl` 化しない。
 
-- [ ] **Step 2: chezmoi diff & apply**
+- [ ] **Step 2: chezmoi diff & apply** — *user runtime required*: worktree が chezmoi source root と異なるため `chezmoi diff` は ENOENT。`git status` フォールバックで追加確認済み。`chezmoi apply` はユーザー側で実行 (worktree からの apply は副作用あり、明示的な実行が必要)。
 
 ```bash
 chezmoi diff dot_config/lazygit/config.yml
@@ -154,7 +152,7 @@ chezmoi apply dot_config/lazygit/config.yml
 ls -la ~/.config/lazygit/config.yml
 ```
 
-- [ ] **Step 3: 動作確認**
+- [ ] **Step 3: 動作確認** — *user runtime required*: lazygit 未インストール (Task 1 Step 2 ペンディング) かつ TUI のため非対話シェルから検証不可。チェックリストは Task 5 smoke test に統合。
 
 ```bash
 cd ~/.local/share/chezmoi
@@ -186,7 +184,7 @@ lazygit
 - **PWD 継承**: `-d "#{pane_current_path}"` — 現 pane のリポジトリで lazygit を開く (claude_table.s と同じパターン)
 - **`-E`**: subprocess 終了で popup を閉じる (Task 2 の `promptToReturnFromSubprocess: false` と一致)
 
-- [ ] **Step 1: bindings.conf に追加**
+- [x] **Step 1: bindings.conf に追加** — commit `89b49a8`. `bind g` (43 行目) の直後に空行 → コメント → `bind -N ... G ...` を挿入。spec / code reviewer 共に承認。
 
 `prefix + g` (worktree picker) の bind の **直後**に追加すると、g/G ペアが視覚的に並ぶ:
 
@@ -201,14 +199,14 @@ lazygit
 
 > `-N` ノートを付けることで `prefix + ?` の list-keys 出力に説明文が出る (claude_table と同流儀)。
 
-- [ ] **Step 2: chezmoi apply & tmux reload**
+- [ ] **Step 2: chezmoi apply & tmux reload** — *user runtime required*: 現セッション tmux に副作用があるため subagent 側では実行せず、ユーザーで実行。
 
 ```bash
 chezmoi apply dot_config/tmux/conf/bindings.conf
 tmux source-file ~/.config/tmux/tmux.conf
 ```
 
-- [ ] **Step 3: 手動スモーク**
+- [ ] **Step 3: 手動スモーク** — *user runtime required*: TUI かつ lazygit インストール後に実行。Task 5 smoke test に統合。
 
 任意の tmux pane で:
 1. `prefix + G` で lazygit popup が 95%×95% で開くこと
@@ -230,7 +228,7 @@ tmux source-file ~/.config/tmux/tmux.conf
 
 **目的:** keybinds.md がリポジトリ全キーバインドの正典である規約を維持する。
 
-- [ ] **Step 1: `docs/keybinds.md` Part II §2.1.1 にエントリ追加**
+- [x] **Step 1: `docs/keybinds.md` Part II §2.1.1 にエントリ追加** — commit `9afdf81`. `prefix + g` 行 (line 339) の直後に挿入。
 
 `prefix + g` の行の直後に追加:
 
@@ -239,7 +237,7 @@ tmux source-file ~/.config/tmux/tmux.conf
 +| `prefix + G` | lazygit popup (現 pane cwd, 95%×95%) | `bindings.conf` |
 ```
 
-- [ ] **Step 2: `docs/keybinds.md` Part I §I-6 にファイル追加**
+- [x] **Step 2: `docs/keybinds.md` Part I §I-6 にファイル追加** — commit `9afdf81`. `dot_config/tmux/scripts/` 行 (line 197) の直後に挿入。
 
 ファイル位置クイックリンク表に追加:
 
@@ -248,7 +246,7 @@ tmux source-file ~/.config/tmux/tmux.conf
 +| `dot_config/lazygit/config.yml` | lazygit 設定（delta ページャ統合 / nvim 連携） |
 ```
 
-- [ ] **Step 3: `docs/application_summary/lazygit.md` の末尾節更新**
+- [x] **Step 3: `docs/application_summary/lazygit.md` の末尾節更新** — commit `9afdf81`. 「この dotfiles リポへの示唆」→「このリポでの統合状況」へ書き換え、3 ✅ + 2 🔲 の 5 箇条に更新。
 
 「## この dotfiles リポへの示唆」節を「## このリポでの統合状況」に書き換え、各項目を完了マーク+実装パスに更新:
 
@@ -266,7 +264,7 @@ tmux source-file ~/.config/tmux/tmux.conf
 +- 🔲 `lazygit.nvim` プラグイン: Neovim plugin manager 全体方針と合わせて別議論
 ```
 
-- [ ] **Step 4: `docs/todos.md` への追記** (任意・低優先)
+- [ ] **Step 4: `docs/todos.md` への追記** (任意・低優先) — *skipped*: 当該ファイルに「完了」セクションが存在せず (完了済タスクは CHANGELOG.md 参照のみ言及)、追記すると未着手タスク一覧の流れが乱れるためスキップ。
 
 実装完了後、`docs/todos.md` の「完了」セクションに 1 行追加:
 
@@ -280,7 +278,14 @@ tmux source-file ~/.config/tmux/tmux.conf
 
 **目的:** Task 1-4 の差分が **新規 shell + 新規 tmux session** で整合することを確認する。chezmoi state や zsh キャッシュに依存しない再現性を保証。
 
-- [ ] **Step 1: Verify chezmoi diff is clean**
+- [x] **Step 1: Verify chezmoi diff is clean** — `git diff af0c9bb..HEAD --stat` で 5 ファイル (4 commit) に局所化されていることを確認:
+  - `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` (+1)
+  - `dot_config/lazygit/config.yml` (+42, new)
+  - `dot_config/tmux/conf/bindings.conf` (+3)
+  - `docs/keybinds.md` (+2)
+  - `docs/application_summary/lazygit.md` (+7/-3)
+
+  `git status` は plan 自体の checkbox 更新のみが modified。`git show --check` で全 commit に whitespace warning なし。`python3 yaml.safe_load` で config.yml も valid。純 `chezmoi diff` は worktree 経由で実行できないため、ユーザーが `~/.local/share/chezmoi` からの実行で最終確認が必要。
 
 ```bash
 cd ~/.local/share/chezmoi
@@ -289,7 +294,7 @@ chezmoi diff
 
 期待: lazygit 関連 4 ファイル以外に diff が出ないこと。
 
-- [ ] **Step 2: Fresh tmux session smoke**
+- [ ] **Step 2: Fresh tmux session smoke** — *user runtime required*: `tmux kill-server` は他作業セッションも落ちるため subagent 実行不可。下記手順をユーザーで実行。実行前に `paru -S lazygit` (Task 1 Step 2) を済ませること。
 
 ```bash
 tmux kill-server  # ⚠ 他作業中の session も落ちる。先に detach 必要なものを保存
@@ -304,7 +309,7 @@ tmux attach -t smoke
 4. `q` → popup 即時クローズ
 5. `prefix + g` (小文字) で worktree picker が動くこと (回帰防止)
 
-- [ ] **Step 3: bootstrap シミュレーション (optional)**
+- [ ] **Step 3: bootstrap シミュレーション (optional)** — *user runtime required*: `chezmoi state delete-bucket` は global state を破壊するため subagent 実行不可。新規マシン挙動を確認したい場合のみユーザーで実行。
 
 新規マシン相当の confirm をしたい場合:
 
