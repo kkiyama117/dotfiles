@@ -122,11 +122,13 @@ paru -S lazygit-git             # AUR 開発版
 
 ---
 
-## この dotfiles リポへの示唆
+## このリポでの統合状況
 
-- 既に **paru でインストール済み**かは要確認（`run_once_all_os.sh.cmd.tmpl` への追加候補）
-- `dot_config/lazygit/config.yml` を chezmoi 管理にすると、**delta 統合・カスタムコマンド・キーバインド**が再現可能
-- shuntaka 氏の **`!aic` AI commit** や m3tech の **`prefix + g` popup** を chezmoi 化すれば tmux/Claude ワークフローと統合できる
+- ✅ paru インストール: `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl` の PACKAGES に追加済
+- ✅ delta ペイジャ統合: `dot_config/lazygit/config.yml` で `delta --paging=never --side-by-side`
+- ✅ tmux popup: `prefix + G` で現 pane の cwd で起動 (`dot_config/tmux/conf/bindings.conf`)
+- 🔲 AI commit (`!aic`) カスタムコマンド: 別プランで Claude Code 連携が固まってから扱う
+- 🔲 `lazygit.nvim` プラグイン: Neovim plugin manager 全体方針と合わせて別議論
 
 ---
 
