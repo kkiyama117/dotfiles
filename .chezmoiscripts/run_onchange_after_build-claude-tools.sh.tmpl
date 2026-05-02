@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# claude-tools build trigger (chezmoi run_onchange_after_*).
+#
+# このスクリプト先頭の sha256 は、programs/claude-tools 配下の Go ソース
+# (*.go / go.mod / go.sum) の内容ハッシュ。chezmoi はテンプレート展開後の
+# スクリプト本体が前回実行時と異なるかで再実行を判定するため、ソースが
+# 変わるとここの値が変わり、自動で再ビルドされる。
+#
+# tree sha256: {{ output "bash" "-c" (printf "cd %q && find programs/claude-tools -type f \\( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \\) -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir) }}
+
+set -euo pipefail
+
+REPO_DIR={{ .chezmoi.sourceDir | quote }}/programs/claude-tools
+
+# 1. Source dir 不在 (chezmoi 配布対象外環境) ならスキップ
+if [[ ! -d "$REPO_DIR" ]]; then
+  echo "[claude-tools] source dir not found at $REPO_DIR; skipping" >&2
+  exit 0
+fi
+
+# 2. Go toolchain 不在 (Manjaro 以外 / mise install 未完了) ならスキップ
+if ! command -v go >/dev/null 2>&1; then
+  echo "[claude-tools] go toolchain not in PATH; skipping (run \`mise install\` first)" >&2
+  exit 0
+fi
+
+# 3. cmd/ サブディレクトリが空ならビルド対象なし (移行初期 / Task 7 直後の状態)
+shopt -s nullglob
+cmd_dirs=("$REPO_DIR"/cmd/*/)
+if [[ ${#cmd_dirs[@]} -eq 0 ]]; then
+  echo "[claude-tools] no cmd/ subdirectories yet; skipping build" >&2
+  exit 0
+fi
+
+cd "$REPO_DIR"
+
+# 4. テスト先行: 失敗時は新バイナリを ~/.local/bin/ に出さない (rollback 安全)
+echo "[claude-tools] go test ./..."
+go test ./...
+
+# 5. build (all-or-nothing で ~/.local/bin/ に書き出し)
+echo "[claude-tools] go build -> ~/.local/bin/"
+mkdir -p "$HOME/.local/bin"
+go build -trimpath -ldflags="-s -w" -o "$HOME/.local/bin/" ./cmd/...
+
+echo "[claude-tools] build complete"

@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude Code notifyd daemon (G-1.next #3)
+Documentation=https://github.com/kkiyama117/dotfiles
+Requires=claude-notifyd.socket
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=%h/.local/bin/claude-notifyd
+Restart=on-failure
+RestartSec=10
+# Defence in depth: read-only filesystem except for the runtime state dir
+# the daemon actually writes to (replace-id state files + socket).
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%t/claude-notify
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

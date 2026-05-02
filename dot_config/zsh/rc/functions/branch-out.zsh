@@ -1,7 +1,7 @@
 # branch-out — `/branch-out` slash command の shell wrapper。
 #
 # claude -p で non-interactive にスラッシュコマンドを 1 回実行し、その内側で
-# `~/.config/tmux/scripts/tmux-claude-new.sh` が新しい worktree + tmux window +
+# `~/.local/bin/claude-tmux-new` が新しい worktree + tmux window +
 # 子 claude セッションを spawn する。tmux 内から呼ぶことを想定。
 #
 # 使い方:
@@ -10,7 +10,7 @@
 #
 # 注意:
 # - ブランチ名生成のため LLM 呼び出しが 1 回発生する (レイテンシ + API コスト)。
-#   命名を自分で決めて LLM を省きたい場合は tmux-claude-new.sh を直接叩く。
+#   命名を自分で決めて LLM を省きたい場合は claude-tmux-new を直接叩く。
 # - 初回は Bash 権限の確認 prompt が出ることがある (~/.claude/settings.json の
 #   allowedTools に登録済みなら出ない)。
 # - spawn 後フォーカスは新 window へ切り替わる。元の pane に戻りたい場合は
