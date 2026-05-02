@@ -64,9 +64,16 @@ func main() {
 
 	switch key {
 	case "ctrl-r":
-		bin, _ := os.Executable()
-		_ = syscall.Exec(bin, []string{bin}, os.Environ())
-		os.Exit(0)
+		bin, err := os.Executable()
+		if err != nil {
+			logger.Error("ctrl-r reload: os.Executable failed", "err", err)
+			os.Exit(1)
+		}
+		// syscall.Exec replaces the process on success and never returns;
+		// reaching the next line means it failed.
+		err = syscall.Exec(bin, []string{bin}, os.Environ())
+		logger.Error("ctrl-r reload: syscall.Exec failed", "bin", bin, "err", err)
+		os.Exit(1)
 	case "ctrl-x":
 		dispatchKill(ctx, runner, row)
 	default:

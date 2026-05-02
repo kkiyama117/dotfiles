@@ -7,7 +7,8 @@ chezmoi-managed Go binaries that replace the shell scripts under
 ## Layout
 
 - `cmd/<name>/main.go` — thin entry points (1 binary per former shell script)
-- `internal/{cockpit,notify,xdg,atomicfile,proc,obslog}` — shared packages
+- `internal/{cockpit,xdg,atomicfile,proc,obslog}` — shared packages
+  (Phase 2 で `internal/notify` を追加予定)
 
 ## Build & Deploy
 

@@ -138,6 +138,77 @@ func TestBuildLines_emitsTreeOrder(t *testing.T) {
 	}
 }
 
+// recordingRunner records every Run invocation (name + args) and always
+// returns success. Unlike proc.FakeRunner this does not require pre-
+// registration, which keeps dispatchSwitch tests focused on argv shape.
+type recordingRunner struct {
+	calls [][]string
+}
+
+func (r *recordingRunner) Run(_ context.Context, name string, args ...string) ([]byte, error) {
+	r.calls = append(r.calls, append([]string{name}, args...))
+	return nil, nil
+}
+
+func eqStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestDispatchSwitch(t *testing.T) {
+	cases := []struct {
+		name string
+		row  selectedRow
+		want []string
+	}{
+		{
+			name: "S row switches client only",
+			row:  selectedRow{kind: "S", session: "alpha"},
+			want: []string{"tmux", "switch-client", "-t", "alpha"},
+		},
+		{
+			name: "W row also selects window",
+			row:  selectedRow{kind: "W", session: "alpha", window: "0"},
+			want: []string{"tmux", "switch-client", "-t", "alpha",
+				";", "select-window", "-t", "alpha:0"},
+		},
+		{
+			name: "P row also selects pane",
+			row:  selectedRow{kind: "P", session: "alpha", window: "0", paneID: "%5"},
+			want: []string{"tmux", "switch-client", "-t", "alpha",
+				";", "select-window", "-t", "alpha:0",
+				";", "select-pane", "-t", "%5"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := &recordingRunner{}
+			dispatchSwitch(context.Background(), r, c.row)
+			if len(r.calls) != 1 {
+				t.Fatalf("expected 1 tmux call, got %d: %v", len(r.calls), r.calls)
+			}
+			if !eqStrings(r.calls[0], c.want) {
+				t.Errorf("argv = %v, want %v", r.calls[0], c.want)
+			}
+		})
+	}
+}
+
+func TestDispatchSwitch_unknownKindIsNoOp(t *testing.T) {
+	r := &recordingRunner{}
+	dispatchSwitch(context.Background(), r, selectedRow{kind: "X"})
+	if len(r.calls) != 0 {
+		t.Errorf("unknown kind should not invoke tmux, got %v", r.calls)
+	}
+}
+
 // F-8 (b3): when a pane has a status file but its current command is
 // no longer "claude", buildLines must still emit the row (so the user
 // can switch to it / kill it from the switcher) but with a blank badge.
