@@ -124,3 +124,45 @@ func TestMaxFrameBytesConstant(t *testing.T) {
 		t.Errorf("MaxFrameBytes = %d, want 8192", MaxFrameBytes)
 	}
 }
+
+// TestUnmarshal_TitleTooLong verifies that Title exceeding 4096 chars returns ErrFieldTooLong.
+func TestUnmarshal_TitleTooLong(t *testing.T) {
+	longTitle := strings.Repeat("t", 4097)
+	// Build JSON manually to avoid the SID-length guard firing first.
+	line := []byte(`{"v":1,"op":"show","title":"` + longTitle + `"}`)
+	_, err := Unmarshal(line)
+	if err == nil {
+		t.Fatal("Unmarshal: expected error for Title > 4096 chars, got nil")
+	}
+	if !errors.Is(err, ErrFieldTooLong) {
+		t.Errorf("Unmarshal: error = %v, want wrapping ErrFieldTooLong", err)
+	}
+}
+
+// TestUnmarshal_BodyTooLong verifies that Body exceeding 4096 chars returns ErrFieldTooLong.
+func TestUnmarshal_BodyTooLong(t *testing.T) {
+	longBody := strings.Repeat("b", 4097)
+	line := []byte(`{"v":1,"op":"show","body":"` + longBody + `"}`)
+	_, err := Unmarshal(line)
+	if err == nil {
+		t.Fatal("Unmarshal: expected error for Body > 4096 chars, got nil")
+	}
+	if !errors.Is(err, ErrFieldTooLong) {
+		t.Errorf("Unmarshal: error = %v, want wrapping ErrFieldTooLong", err)
+	}
+}
+
+// TestUnmarshal_FrameTooLarge verifies that a frame exceeding MaxFrameBytes
+// returns ErrFrameTooLarge.
+func TestUnmarshal_FrameTooLarge(t *testing.T) {
+	// Build a line that is MaxFrameBytes+1 bytes long.
+	padding := strings.Repeat("x", MaxFrameBytes+1)
+	line := []byte(padding)
+	_, err := Unmarshal(line)
+	if err == nil {
+		t.Fatal("Unmarshal: expected error for frame > MaxFrameBytes, got nil")
+	}
+	if !errors.Is(err, ErrFrameTooLarge) {
+		t.Errorf("Unmarshal: error = %v, want wrapping ErrFrameTooLarge", err)
+	}
+}
