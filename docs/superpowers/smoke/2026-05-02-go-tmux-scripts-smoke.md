@@ -49,3 +49,15 @@ automated 層 (unit + race + vet + build + chezmoi diff) は全 GREEN。実機 t
 - [ ] (manual) --from-root with explicit id OK
 - [ ] (manual) --from-root without id (fzf) OK
 - [ ] (manual) --worktree-base custom dir OK
+
+## C-5: claude-pick-branch — 2026-05-02
+
+- [x] go test -race ./cmd/claude-pick-branch/... ./internal/gitwt/... — PASS
+- [x] go test -race ./... — PASS (24 パッケージ全 PASS、新規 cmd/claude-pick-branch 含む)
+- [x] go vet ./... — clean
+- [x] go build ./cmd/claude-pick-branch — OK
+- [x] `dot_config/tmux/conf/bindings.conf` L61/L66 を `~/.local/bin/claude-pick-branch` に書き換え
+- [x] 旧 `dot_config/tmux/scripts/executable_claude-pick-branch.sh` を `git rm` で撤去
+- [ ] (manual) prefix + C → n: fzf "claude branch> " → claude-tmux-new 起動 OK
+- [ ] (manual) prefix + C → o: fzf "worktree branch> " → --no-claude 経路 (1-pane shell) OK
+- [ ] (manual) fzf cancel (Esc) で no-op (popup 閉じるだけ) OK

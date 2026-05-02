@@ -129,6 +129,20 @@ func (c *Client) TopLevel(ctx context.Context, cwd string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// LocalBranches lists local branch short-names via for-each-ref.
+// Returns nil (not empty slice) when no local branches exist.
+func (c *Client) LocalBranches(ctx context.Context, cwd string) ([]string, error) {
+	out, err := c.runner.Run(ctx, "git", "-C", cwd, "for-each-ref", "--format=%(refname:short)", "refs/heads")
+	if err != nil {
+		return nil, fmt.Errorf("git for-each-ref: %w", err)
+	}
+	s := strings.TrimRight(string(out), "\n")
+	if s == "" {
+		return nil, nil
+	}
+	return strings.Split(s, "\n"), nil
+}
+
 // HasLocalRef returns true when refs/heads/<branch> exists.
 func (c *Client) HasLocalRef(ctx context.Context, cwd, branch string) bool {
 	_, err := c.runner.Run(ctx, "git", "-C", cwd, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)

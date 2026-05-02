@@ -123,6 +123,25 @@ func TestTopLevel(t *testing.T) {
 	}
 }
 
+func TestLocalBranches(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "for-each-ref", "--format=%(refname:short)", "refs/heads"},
+		[]byte("main\nfeat/x\nfeat/y\n"), nil)
+	got, err := New(r).LocalBranches(context.Background(), "/p")
+	if err != nil || len(got) != 3 || got[0] != "main" {
+		t.Fatalf("got=%v err=%v", got, err)
+	}
+}
+
+func TestLocalBranches_empty(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "for-each-ref", "--format=%(refname:short)", "refs/heads"}, []byte(""), nil)
+	got, _ := New(r).LocalBranches(context.Background(), "/p")
+	if got != nil {
+		t.Fatalf("got %v want nil", got)
+	}
+}
+
 func TestHasLocalRef(t *testing.T) {
 	r := proc.NewFakeRunner()
 	r.Register("git", []string{"-C", "/p", "show-ref", "--verify", "--quiet", "refs/heads/x"}, nil, nil)
