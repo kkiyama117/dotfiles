@@ -122,3 +122,35 @@ func TestTopLevel(t *testing.T) {
 		t.Fatalf("got=%q err=%v", got, err)
 	}
 }
+
+func TestHasLocalRef(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "show-ref", "--verify", "--quiet", "refs/heads/x"}, nil, nil)
+	if !New(r).HasLocalRef(context.Background(), "/p", "x") {
+		t.Fatal("want true")
+	}
+}
+
+func TestAddExistingLocal_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "worktree", "add", "/wt", "x"}, nil, nil)
+	if err := New(r).AddExistingLocal(context.Background(), "/p", "/wt", "x"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAddTrackingRemote_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "worktree", "add", "-b", "x", "/wt", "origin/x"}, nil, nil)
+	if err := New(r).AddTrackingRemote(context.Background(), "/p", "/wt", "x"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAddFromHead_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("git", []string{"-C", "/p", "worktree", "add", "-b", "x", "/wt", "HEAD"}, nil, nil)
+	if err := New(r).AddFromHead(context.Background(), "/p", "/wt", "x"); err != nil {
+		t.Fatal(err)
+	}
+}

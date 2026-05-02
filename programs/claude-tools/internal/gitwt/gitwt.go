@@ -128,3 +128,39 @@ func (c *Client) TopLevel(ctx context.Context, cwd string) (string, error) {
 	}
 	return strings.TrimSpace(string(out)), nil
 }
+
+// HasLocalRef returns true when refs/heads/<branch> exists.
+func (c *Client) HasLocalRef(ctx context.Context, cwd, branch string) bool {
+	_, err := c.runner.Run(ctx, "git", "-C", cwd, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	return err == nil
+}
+
+// HasRemoteRef is the same for refs/remotes/origin/<branch>.
+func (c *Client) HasRemoteRef(ctx context.Context, cwd, branch string) bool {
+	_, err := c.runner.Run(ctx, "git", "-C", cwd, "show-ref", "--verify", "--quiet", "refs/remotes/origin/"+branch)
+	return err == nil
+}
+
+// AddExistingLocal: git worktree add <path> <branch>
+func (c *Client) AddExistingLocal(ctx context.Context, cwd, path, branch string) error {
+	if _, err := c.runner.Run(ctx, "git", "-C", cwd, "worktree", "add", path, branch); err != nil {
+		return fmt.Errorf("git worktree add %q %q: %w", path, branch, err)
+	}
+	return nil
+}
+
+// AddTrackingRemote: git worktree add -b <branch> <path> origin/<branch>
+func (c *Client) AddTrackingRemote(ctx context.Context, cwd, path, branch string) error {
+	if _, err := c.runner.Run(ctx, "git", "-C", cwd, "worktree", "add", "-b", branch, path, "origin/"+branch); err != nil {
+		return fmt.Errorf("git worktree add -b %q %q origin/%s: %w", branch, path, branch, err)
+	}
+	return nil
+}
+
+// AddFromHead: git worktree add -b <branch> <path> HEAD
+func (c *Client) AddFromHead(ctx context.Context, cwd, path, branch string) error {
+	if _, err := c.runner.Run(ctx, "git", "-C", cwd, "worktree", "add", "-b", branch, path, "HEAD"); err != nil {
+		return fmt.Errorf("git worktree add -b %q %q HEAD: %w", branch, path, err)
+	}
+	return nil
+}

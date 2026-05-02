@@ -6,8 +6,11 @@ package tmux
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"claude-tools/internal/proc"
 )
@@ -89,6 +92,71 @@ func (c *Client) ShowWindowOption(ctx context.Context, target, key string) (stri
 		return "", false
 	}
 	return strings.TrimRight(string(out), "\n"), true
+}
+
+// HasSession returns true if `tmux has-session -t "=<name>"` exits zero.
+func (c *Client) HasSession(ctx context.Context, name string) bool {
+	_, err := c.runner.Run(ctx, "tmux", "has-session", "-t", "="+name)
+	return err == nil
+}
+
+// SetWindowOption sets a tmux window-scope option.
+func (c *Client) SetWindowOption(ctx context.Context, target, key, value string) error {
+	if _, err := c.runner.Run(ctx, "tmux", "set-option", "-w", "-t", target, "-o", key, value); err != nil {
+		return fmt.Errorf("tmux set-option -w -t %q %s: %w", target, key, err)
+	}
+	return nil
+}
+
+// NewSessionDetached creates a detached tmux session.
+func (c *Client) NewSessionDetached(ctx context.Context, session, window, cwd string) error {
+	if _, err := c.runner.Run(ctx, "tmux", "new-session", "-d", "-s", session, "-n", window, "-c", cwd); err != nil {
+		return fmt.Errorf("tmux new-session -d -s %q: %w", session, err)
+	}
+	return nil
+}
+
+// NewWindowSelectExisting runs `tmux new-window -S` (selects same-named
+// window if it already exists, instead of creating a duplicate).
+func (c *Client) NewWindowSelectExisting(ctx context.Context, session, window, cwd string) error {
+	if _, err := c.runner.Run(ctx, "tmux", "new-window", "-S", "-t", session+":", "-n", window, "-c", cwd); err != nil {
+		return fmt.Errorf("tmux new-window -S -t %q -n %q: %w", session+":", window, err)
+	}
+	return nil
+}
+
+// SplitWindowH splits the window horizontally.
+func (c *Client) SplitWindowH(ctx context.Context, target, cwd string) error {
+	if _, err := c.runner.Run(ctx, "tmux", "split-window", "-h", "-t", target, "-c", cwd); err != nil {
+		return fmt.Errorf("tmux split-window -h -t %q: %w", target, err)
+	}
+	return nil
+}
+
+// SelectPaneTitle sets the pane title (failures swallowed — cosmetic).
+func (c *Client) SelectPaneTitle(ctx context.Context, target, title string) {
+	_, _ = c.runner.Run(ctx, "tmux", "select-pane", "-t", target, "-T", title)
+}
+
+// SwitchClient switches the current client to the given target.
+func (c *Client) SwitchClient(ctx context.Context, target string) error {
+	if _, err := c.runner.Run(ctx, "tmux", "switch-client", "-t", target); err != nil {
+		return fmt.Errorf("tmux switch-client -t %q: %w", target, err)
+	}
+	return nil
+}
+
+// AttachSessionExec replaces the current process with `tmux attach-session`,
+// preserving the TTY. Returns only on syscall.Exec failure.
+func (c *Client) AttachSessionExec(target string) error {
+	bin, err := exec.LookPath("tmux")
+	if err != nil {
+		return fmt.Errorf("tmux binary not found: %w", err)
+	}
+	if err := syscall.Exec(bin, []string{"tmux", "attach-session", "-t", target}, os.Environ()); err != nil {
+		return fmt.Errorf("exec tmux attach-session -t %q: %w", target, err)
+	}
+	return nil
 }
 
 // sanitizeRe matches characters NOT allowed in tmux session/window names.

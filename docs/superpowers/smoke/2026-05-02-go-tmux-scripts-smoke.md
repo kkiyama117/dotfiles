@@ -35,3 +35,17 @@
 ## C-3 後の go/no-go: GO (2026-05-02)
 
 automated 層 (unit + race + vet + build + chezmoi diff) は全 GREEN。実機 tmux 目視 smoke は user 手動にデファ。
+
+## C-4: claude-tmux-new — 2026-05-02
+
+- [x] go test -race ./cmd/claude-tmux-new/... ./internal/tmux/... ./internal/gitwt/... — PASS
+- [x] go test -race ./... — PASS (23 パッケージ全 PASS、新規 cmd/claude-tmux-new 含む)
+- [x] go vet ./... — clean
+- [x] go build ./cmd/claude-tmux-new — OK (ELF x86-64 statically linked)
+- [x] 旧 `dot_config/tmux/scripts/executable_tmux-claude-new.sh` を `git rm` で撤去 (binary は claude- prefix 統一のため `claude-tmux-new` にリネーム)
+- [ ] (manual) new branch + worktree + 2-pane + claude OK
+- [ ] (manual) --no-claude (1-pane shell) OK
+- [ ] (manual) --prompt with single quotes (ShellQuote round-trip) OK
+- [ ] (manual) --from-root with explicit id OK
+- [ ] (manual) --from-root without id (fzf) OK
+- [ ] (manual) --worktree-base custom dir OK

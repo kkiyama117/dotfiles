@@ -124,6 +124,54 @@ func TestShowWindowOption_unsetReturnsEmpty(t *testing.T) {
 	}
 }
 
+func TestNewSessionDetached_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"new-session", "-d", "-s", "S", "-n", "W", "-c", "/p"}, nil, nil)
+	if err := New(r).NewSessionDetached(context.Background(), "S", "W", "/p"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSetWindowOption_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"set-option", "-w", "-t", "S:W", "-o", "@claude-managed", "yes"}, nil, nil)
+	if err := New(r).SetWindowOption(context.Background(), "S:W", "@claude-managed", "yes"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHasSession_returnsTrueOnSuccess(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"has-session", "-t", "=S"}, nil, nil)
+	if !New(r).HasSession(context.Background(), "S") {
+		t.Fatal("want true")
+	}
+}
+
+func TestSwitchClient_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"switch-client", "-t", "S:W"}, nil, nil)
+	if err := New(r).SwitchClient(context.Background(), "S:W"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSplitWindowH_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"split-window", "-h", "-t", "S:W", "-c", "/p"}, nil, nil)
+	if err := New(r).SplitWindowH(context.Background(), "S:W", "/p"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewWindowSelectExisting_argv(t *testing.T) {
+	r := proc.NewFakeRunner()
+	r.Register("tmux", []string{"new-window", "-S", "-t", "S:", "-n", "W", "-c", "/p"}, nil, nil)
+	if err := New(r).NewWindowSelectExisting(context.Background(), "S", "W", "/p"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // TestShellQuote_roundTrip feeds the quoted form through bash and verifies
 // the original bytes round-trip. Skips if bash is unavailable.
 func TestShellQuote_roundTrip(t *testing.T) {
