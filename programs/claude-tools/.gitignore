@@ -1,0 +1,15 @@
+# build artifacts (binaries are deployed to ~/.local/bin/, never committed)
+/bin/
+/dist/
+
+# stray binaries from `go build ./cmd/...` invoked at package root
+/claude-cockpit-state
+/claude-cockpit-prune
+/claude-cockpit-summary
+/claude-cockpit-next-ready
+/claude-cockpit-switcher
+
+# go test cache / coverage
+*.test
+*.out
+coverage.txt

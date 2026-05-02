@@ -1,6 +1,6 @@
 # Open TODOs
 
-最終更新: 2026-05-01 (F-7 branch-out worktree spawner 実装)
+最終更新: 2026-05-02 (G-1 Phase 1 実装完了 + Phase 1.5 F-8 Go 移植 完了 + code-review M-1〜M-3 / L-1 / L-2 / L-4 patch 取り込み / B サブシステム 5 binary、実機 smoke PASS / F-7 branch-out + F-8 cockpit 死蔵対策 取り込み)
 完了済みタスクは [`CHANGELOG.md`](../CHANGELOG.md) を参照。
 当初のレビューは `7cd0cb0` / `39ec75a` / `4424716` / `ee5108c` 周辺のコミットで C-1 〜 L-9 / F-1 / F-2 をすべて消化済み。本ファイルは派生フォローアップ + 新規タスクの追跡用。
 
@@ -30,7 +30,8 @@
   - 残: cwd ベースで「該当 Claude プロセスが居る window だけ」を選んで focus、または `transcript_path` を `$EDITOR` で開くアクションを追加
 - [ ] **セッション消失時の自動再オープン** — kill されたあと残った popup を左クリック → `tmux_claude_new` 相当のロジックで tmux session を再生成 + `claude --resume <session_id>` で claude を復元
 - [ ] **右クリックの拡張アクション** — 単純 close 以外に「transcript を開く」など二重アクションを検討 (要 wired/notify-send の追加 action 設計)
-- [ ] **dispatcher を 1 本の常駐 helper daemon に集約** — D-Bus signal を直接 listen する案 (ブレストの案 B)。多重 popup 時の状態管理が綺麗になる代わりに systemd unit が増える
+- [x] **dispatcher を 1 本の常駐 helper daemon に集約** — D-Bus signal を直接 listen する案 (ブレストの案 B)。多重 popup 時の状態管理が綺麗になる代わりに systemd unit が増える
+  - 完了 (2026-05-02): see commits 7071bf7 .. d88fc7a + PR-D4。`claude-notifyd` daemon を `programs/claude-tools/cmd/claude-notifyd/` に実装、Unix socket protocol (`internal/notifyd/`) + systemd socket activation unit 2 本 + chezmoi bootstrap script を追加。`claude-notify-hook` は socket dispatch を優先し、失敗時に既存 `claude-notify-dispatch` へ fallback する。
 - [x] **state file cleanup** (実装済み, 2026-04-30) — F-3.next #1 の副作用対応として `dot_local/bin/executable_claude-notify-cleanup.sh` + `dot_config/systemd/user/claude-notify-cleanup.{service,timer}` を追加。`OnCalendar=daily Persistent=true RandomizedDelaySec=15min` で `*.id` を mtime ベース TTL (既定 7 日、`CLAUDE_NOTIFY_CLEANUP_TTL_DAYS` で上書き可) で剪定し、`.tmp.XXXXXX` 残骸 (mktemp 中断時の漏れ) を 60 分超えで併せて削除。base_dir suffix チェックで env 注入耐性、`ProtectSystem=strict` + `ReadWritePaths=%t/claude-notify` で書き換え範囲を runtime dir に限定。`atime` は `noatime` / `relatime` mount で信頼できないため mtime に切替 (dispatcher が atomic `mv -f` で更新する都度 mtime が引かれるので "最後の通知発火時刻" として機能)。bootstrap は `.chezmoiscripts/run_onchange_after_enable-claude-notify-cleanup.sh.tmpl` 経由で `systemctl --user daemon-reload` + `enable --now` を idempotent に実行 (unit / helper の sha256 を埋めて変更検知)。smoke (合成 state dir): stale 2 件 + 古い `.tmp` 1 件のみ削除、fresh 4 件は保持、unexpected base 引数は exit 0 ガード発動を実機 PASS
 
 ### S-1. シェルコマンド発見系3層 (zsh補完 / tldr / navi) の役割整理と統合 🆕
@@ -171,7 +172,7 @@
   - [ ] worktree の **掃除** (merged branch の worktree 自動 prune) helper — 現状 `git wt remove` 手動。F-3.next #5 のような systemd timer でやるか手動運用かは未決
   - [ ] `--prompt` の長文 (~数 KB) における send-keys 遅延 / quoting 限界の実測 — 通常用途では問題なし想定
 
-### F-8. cockpit 状態 file の死蔵対策 🆕 (v1 完了 / 残: eBPF 検討)
+### F-8. cockpit 状態 file の死蔵対策 🆕 (v1 shell 完了 / Go 移植 完了 (2026-05-02 G-1.next #5) / 残: eBPF 検討)
 - 背景: claude が `/exit` で終わった、あるいは SIGKILL / OOM / pane クローズで terminal 内 claude プロセスが終了した場合、`${XDG_CACHE_HOME}/claude-cockpit/panes/<S>_<P>.status` が **最後の hook 値で残り続けるバグ**。`cockpit/summary.sh` の `⚡ N ⏸ M ✓ K ` カウントが減らず、`cockpit/next-ready.sh` (prefix+C+N) も幽霊 pane を ready 候補として選んでしまう。F-5 cockpit と F-6 repo-session の組合せで顕在化した。
 - 該当: `dot_local/bin/executable_claude-cockpit-state.sh` / `dot_config/claude/settings.json` / `dot_config/tmux/scripts/cockpit/{summary,next-ready,switcher,prune}.sh` / `docs/superpowers/specs/2026-04-30-claude-cockpit-state-tracking-design.md`
 - 対応 v1 (実装済み):
@@ -205,6 +206,55 @@
 - 注意:
   - `pane_current_command == claude` の比較は live tmux の `display-message` 結果に依存。`claude` が `node` 等の interpreter 名で表示されるシェルラッパー経由の起動には未対応
   - `prune.sh` の cleanup 頻度は spec の "tmux 起動時 + switcher 起動時" 粒度のまま。eBPF が入るまではこの粒度で運用
+
+### G-1. Shell → Go 移行 (Claude Tools サブシステム) 🆕 (Phase 1 実装完了 / smoke 待ち)
+- 背景: `dot_local/bin/` + `dot_config/tmux/scripts/cockpit/` に蓄積した shell script 9 本 (~430 行) を **Go** で 1:1 置換する。Rust は将来比較対象として保留。設計は [`superpowers/specs/2026-05-01-shell-to-go-migration-design.md`](superpowers/specs/2026-05-01-shell-to-go-migration-design.md)。実装計画は別途 `superpowers/plans/2026-05-01-shell-to-go-migration.md` を生成予定。
+- 該当範囲:
+  - 新設: `programs/claude-tools/` (Go module, `.chezmoiignore` で配布対象外)
+  - 新設: `.chezmoiscripts/run_onchange_after_build-claude-tools.sh.tmpl` (sha256 ベース変更検知 → `go build -o ~/.local/bin/`)
+  - 新設: `dot_config/mise/config.toml` の `[tools]` に `go = "latest"`
+  - 撤去予定 (各 PR 内で `git rm`):
+    - `dot_local/bin/executable_claude-{cockpit-state,notify-hook,notify-dispatch,notify-sound,notify-cleanup}.sh` (5 本)
+    - `dot_config/tmux/scripts/cockpit/executable_{summary,switcher,next-ready,prune}.sh` (4 本)
+  - 書き換え予定: `dot_config/tmux/conf/status.conf` 等の `.sh` を含むパス参照
+  - `docs/manage_claude.md` の Cockpit/Notify smoke 節 (新 binary 名に追従)
+
+- 移行順序 (Vertical-B-first, 1 PR = 1 binary):
+  - [x] PR-1: `cockpit-state` (T1) — `internal/{xdg,atomicfile,obslog,proc}` 同時 commit / `programs/claude-tools/` 初期化 / build script 新設 / hook `exit 0` 契約 unit test 化
+  - [x] PR-2: `cockpit-prune` (T1) — `internal/cockpit.LoadAll` 追加
+  - [x] PR-3: `cockpit-summary` (T2) — status-right byte-exact 一致 test
+  - [x] PR-4: `cockpit-next-ready` (T2) — inbox 順 (session asc / window idx asc / pane idx asc) test
+  - [x] PR-5: `cockpit-switcher` (T3) — fzf stdin pipe + Enter/Ctrl-X/Ctrl-R キーバインド
+  - [x] **★ B 完走チェックポイント** — Phase 1 実装完了 + Phase 1.5 F-8 patch (a / b1 / b2 / b3 / c) を `fix/g1-phase15-f8-port` で TDD 実装、実機 smoke (real tmux + sandbox `XDG_CACHE_HOME`) で F-8 死蔵対策の 3 経路 (SessionEnd / live-claude filter / prune sweep) が shell F-8 v1 (commit `b81cb81`) と挙動一致することを確認 (2026-05-02): [`smoke/2026-05-01-go-cockpit-smoke.md`](superpowers/smoke/2026-05-01-go-cockpit-smoke.md)。Step 4-7 の interactive UI (switcher fzf / next-ready jump) のみ merge → `chezmoi apply` 後の手元 tmux で再走して確認することにし、その時点で本タスクを完全クローズする (現状 deferred として明示)。
+  - [x] PR-6: `notify-cleanup` (T1) — mtime TTL を `time.Time` で / `base_dir` suffix チェック (env 注入耐性) test。`internal/notify.StateDir()` 新設 + `cmd/claude-notify-cleanup/` 実装 (TTL boundary / nonexistent / 不正 base_dir / unrelated file 全 7 unit test PASS)、systemd unit の `ExecStart` を `.sh` 抜きに更新、bootstrap script の helper sha256 行を撤去 (旧 shell 削除に伴う include エラー回避)。合成 smoke (8d/30d 前 .id 削除、3d/1h fresh 保持、90 分 .tmp 削除、unrelated keep) PASS
+  - [x] PR-7: `notify-sound` (T1) — `cmd/claude-notify-sound/` を Go 化。pw-play → paplay → ffplay の優先順位、各バックエンドの volume 正規化 (≈60%) を `play(sound, lookPath, execFn)` に閉じ込め、`syscall.Exec` で player に process replace。lookPath/execFn 関数注入で argv 組み立て + フォールバック順 + missing/empty/non-readable sound のスキップを 7 unit test で検証。`claude-notify-hook.sh:70` の `CLAUDE_NOTIFY_SOUND_BIN` デフォルト path を `.sh` 抜きに更新
+  - [x] PR-8: `notify-hook` (T4) — `cmd/claude-notify-hook/` 実装。`composeNotification(ctx, event, payloadJSON, getEnv, runner)` で event mapping (notification/stop/subagent-stop/error + default) → JSON payload extract → git context (worktree basename + branch / detached HEAD fallback) → tmux session lookup を 1 関数に集約。fork 系は `startBackground` 関数変数で注入可能化、`cmd.SysProcAttr.Setsid=true` で dispatcher を hook 親から detach。`defer recover()+os.Exit(0)` で hook 契約 (常に exit 0) を担保。`dot_config/claude/settings.json` の Notification/Stop hook 2 箇所を `.sh` 抜きに更新。FakeRunner + FakeFork で 16 unit test (event mapping 5 / payload override / malformed payload / cwd fallback / sound dir override / git context 4 / tmux session 2 / 統合 / fork sound&dispatch 3 / isExecutable) PASS、coverage 66.7%
+  - [x] PR-9: `notify-dispatch` (T5) — `cmd/claude-notify-dispatch/` 実装、`internal/notify/state.go` 新設 (SafeSessionID / LoadReplaceID / SaveReplaceID atomic via `internal/atomicfile`)。**設計判断: D-Bus 直接呼び出し (godbus 依存) ではなく shell parity を採用** — `notify-send --print-id --wait` の subprocess 経由で id+action を取得し、`gdbus call CloseNotification` で popup dismiss。理由: 個人 dotfile での新規 Go module 依存 YAGNI / `proc.FakeRunner` パターン一貫性 / G-1.next #3 daemon 化で後日刷新。dispatch state machine (load prev id → notify-send w/ replace-id → save → action handler → tmux switch + select-pane → xdotool/swaymsg WM focus → gdbus close) を `dispatch()` 1 関数に集約、各ステップを FakeRunner で 21 unit test (parsePopupOutput 6 / showPopup 3 / focusTmux 3 / focusWM 4 / closeNotification 2 / 統合 3 / envOrDefault / 自己点検 2) PASS。dispatch coverage 81.8% / notify package 88.9%
+
+- G-1 派生フォローアップ (本 spec の Out-of-Scope, G-1 完了後に着手):
+  - [ ] **G-1.next #1: Rust 版実装の検討** — 学習比較用。Go 版を一巡してから、同じ 9 binary のうち 2〜3 本 (例: `cockpit-state` + `notify-cleanup`) を Rust で書き直して並走比較。判断指標: 実装行数 / バイナリサイズ / 起動時間 / cross-compile 容易性 / dependency tree
+  - [ ] **G-1.next #2: C サブシステム (installer / `.chezmoiscripts/run_*.sh.tmpl`) の Go 化** — chezmoi template 結合の解消方法を別途設計。`chezmoi execute-template` の代替として `text/template` + chezmoi data export を Go 側で読む方式が候補。`tpm-bootstrap.sh` 等の bootstrap script 群も対象。先に G-1 で `programs/claude-tools/` 構造とテストパターンを確立してから着手
+  - [x] **G-1.next #3: `notify-dispatch` daemon 化** — F-3.next L33 の既存項目と同一テーマ。本 G-1 で 1:1 置換した上で、popup state を全集約する常駐 helper daemon (`claude-notifyd`) に移行する案。systemd --user unit 追加 / Unix socket protocol 設計 / daemon 死亡時の hook fallback を別 spec に切り出す
+    - 完了 (2026-05-02): see commits 7071bf7 .. d88fc7a + PR-D4。spec: `docs/superpowers/specs/2026-05-02-notify-dispatch-daemon-design.md`。
+  - [ ] **G-1.next #4: F-4 nix 移行と build トリガ統合** — F-4 の nix flakes + Home Manager 設計が固まったら、`run_onchange_after_build-claude-tools.sh.tmpl` を nix overlay 経由 build に振り替える。Go toolchain も nix で pin できるので mise 依存を外せる
+  - [x] **G-1.next #5: F-8 cockpit 死蔵対策の Go 移植 🔥 (merge 由来の regression / 優先) — 完了 (2026-05-02 / `fix/g1-phase15-f8-port`)** — refactor branch は F-8 v1 (2026-04-30 完了) より前の shell を base にしていたため、Phase 1 Go binary に F-8 の 3 機能が抜けていた: (a) `claude-cockpit-state` の `SessionEnd` event handler (status file の `rm -f`、settings.json のエントリは残るが Go 側は no-op)、(b) `claude-cockpit-{summary,next-ready,switcher}` の `pane_current_command == claude` 防御フィルタ、(c) `claude-cockpit-prune` の "live pane で claude を動かしている集合" 拡張削除条件。Phase 1.5 patch ブランチで TDD (test → fail → impl → pass → commit) で 5 commit (`3c62cb9` / `d06631e` / `1512595` / `240b3a0` / `62377d6`) として塞ぎ、実機 smoke (real tmux + sandbox `XDG_CACHE_HOME`) で 3 経路すべてが shell F-8 v1 (commit `b81cb81`) と挙動一致することを確認。eBPF 検討 (F-8 残課題) は本項目とは独立 (F-8 セクション末尾に残置)
+  - [x] **G-1.next #6: Phase 1.5 code-review follow-up (M-1〜M-3 / L-1 / L-2 / L-4) — 完了 (2026-05-02 / `fix/g1-phase15-f8-port`)** — `/everything-claude-code:code-review` の指摘を 2 commit でフォローアップ。
+    - `7f26cc4 refactor(g1): hoist obslog handlers + xdg.ConfigDir/LocalBinDir helpers`:
+      - **M-1**: switcher の fire-and-forget prune `exec.Command(...).Start()` を `startBackgroundPrune()` helper に切り出し、`xdg.LocalBinDir()` 経由のパス + Start() エラーログ (`HOME` 未設定 / binary 未配置 / exec 失敗を WARN レベルで surface)
+      - **M-2**: `dispatchKill` の `claude-kill-session.sh` 起動を `os.Getenv("HOME") + ".config/..."` 直結合から `xdg.ConfigDir()` 経由に変更。`internal/xdg` に `ConfigDir()` / `LocalBinDir()` helper を新規追加し、空時は `logger.Error` + return で silent failure を排除、`cmd.Run()` のエラーも logger.Error
+      - **M-3**: `claude-cockpit-{prune,summary,switcher}` の `obslog.New(progName)` を package-level `var logger` に hoist (prune 3→1 / summary 2→1 / switcher 1→1)。status-right が頻繁に再描画される summary などで slog handler の都度生成を回避
+    - `f6abd95 refactor(g1): switcher ctrl-r error log + dispatchSwitch tests + README fix`:
+      - **L-1**: switcher の Ctrl-R reload で `os.Executable()` / `syscall.Exec()` のエラーを `logger.Error` で surface (silent failure 排除)
+      - **L-2 (部分)**: `dispatchSwitch()` の S/W/P 3 kind + unknown kind を table-driven test 化、`recordingRunner` ヘルパを test に追加。switcher coverage 40.5% → 42.0%
+      - **L-4**: `programs/claude-tools/README.md` の `internal/notify` 言及を Phase 2 で追加予定の forward-looking 表記に修正
+  - [ ] **G-1.next #7: dispatchKill の testability refactor (L-2 残り)** — `dispatchKill` の S/W (managed/unmanaged) / P 各経路は `confirmYesNo()` が `/dev/tty` を直接 open するため、現状 unit test 化が困難。注入可能な `prompter` interface を切り出して FakeRunner と並走させる refactor が必要。優先度低 (interactive UI は smoke でカバー)。着手指標: switcher coverage を 60%+ に持っていきたくなったとき
+  - [ ] **G-1.next #8: `eventToStatus` の YAGNI 削除 (L-5)** — `cmd/claude-cockpit-state/main.go` の `eventToStatus` は `eventToAction` の thin wrapper として `TestEventToStatus` 互換のためだけに残っている。本来必要なのは `eventToAction` のみ。test を `eventToAction` ベースに書き換えて 1 関数に集約する。signal-based test hook の予約も実装予定が立っていない。優先度低
+
+- 注意:
+  - cache (`~/.cache/claude-cockpit/panes/<S>_<P>.status`) と notify state (`${XDG_RUNTIME_DIR}/claude-notify/sessions/<sid>.id`) のパス・フォーマットは shell 時代と完全互換 → 過渡期に shell ↔ Go が並存しても state を共有できる、revert 後も runtime 状態が連続
+  - hook 系 (`cockpit-state` / `notify-hook` / `notify-sound`) は **常に exit 0 絶対契約**。`defer func() { recover(); os.Exit(0) }()` で panic も握りつぶす
+  - clean cut per PR (feature flag は YAGNI)。壊れたら `git revert <PR>` で shell 復帰
+  - F-4 (nix 移行) を blocker にしない — G-1 は mise + chezmoi run_onchange の独立完結。F-4 完成後に G-1.next #4 で振替
 
 ---
 

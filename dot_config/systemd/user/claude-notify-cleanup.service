@@ -5,7 +5,7 @@ ConditionPathExists=%t/claude-notify/sessions
 
 [Service]
 Type=oneshot
-ExecStart=%h/.local/bin/claude-notify-cleanup.sh
+ExecStart=%h/.local/bin/claude-notify-cleanup
 # Defence in depth: read-only filesystem except for the runtime state dir
 # the helper actually prunes.
 ProtectSystem=strict

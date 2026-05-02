@@ -8,7 +8,9 @@ hashes change.
 # unit hashes (chezmoi rerun trigger — do not edit by hand):
 #   service: {{ include "dot_config/systemd/user/claude-notify-cleanup.service" | sha256sum }}
 #   timer:   {{ include "dot_config/systemd/user/claude-notify-cleanup.timer" | sha256sum }}
-#   helper:  {{ include "dot_local/bin/executable_claude-notify-cleanup.sh" | sha256sum }}
+# Note: the helper is now a Go binary (programs/claude-tools/cmd/claude-notify-cleanup/),
+# rebuilt by run_onchange_after_build-claude-tools.sh.tmpl. The unit only
+# needs `systemctl daemon-reload` when the .service/.timer files change.
 
 set -euo pipefail
 
