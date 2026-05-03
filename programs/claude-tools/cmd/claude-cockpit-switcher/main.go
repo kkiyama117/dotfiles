@@ -75,7 +75,7 @@ func main() {
 		logger.Error("ctrl-r reload: syscall.Exec failed", "bin", bin, "err", err)
 		os.Exit(1)
 	case "ctrl-x":
-		dispatchKill(ctx, runner, row)
+		dispatchKill(ctx, runner, ttyPrompter{}, row)
 	default:
 		dispatchSwitch(ctx, runner, row)
 	}
@@ -271,10 +271,10 @@ func dispatchSwitch(ctx context.Context, runner proc.Runner, row selectedRow) {
 	}
 }
 
-func dispatchKill(ctx context.Context, runner proc.Runner, row selectedRow) {
+func dispatchKill(ctx context.Context, runner proc.Runner, prompter Prompter, row selectedRow) {
 	switch row.kind {
 	case "P":
-		if !confirmYesNo(fmt.Sprintf("kill pane %s? (y/N) ", row.paneID)) {
+		if !prompter.Confirm(fmt.Sprintf("kill pane %s? (y/N) ", row.paneID)) {
 			return
 		}
 		_, _ = runner.Run(ctx, "tmux", "kill-pane", "-t", row.paneID)
@@ -283,7 +283,7 @@ func dispatchKill(ctx context.Context, runner proc.Runner, row selectedRow) {
 		out, _ := runner.Run(ctx, "tmux", "show-options", "-w", "-t", row.session+":"+row.window, "-v", "@claude-managed")
 		managed := strings.TrimSpace(string(out)) == "yes"
 		if managed {
-			if !confirmYesNo(fmt.Sprintf("kill claude window %s:%s and worktree? (y/N) ", row.session, row.window)) {
+			if !prompter.Confirm(fmt.Sprintf("kill claude window %s:%s and worktree? (y/N) ", row.session, row.window)) {
 				return
 			}
 			cfgDir := xdg.ConfigDir()
@@ -303,21 +303,29 @@ func dispatchKill(ctx context.Context, runner proc.Runner, row selectedRow) {
 			}
 			return
 		}
-		if !confirmYesNo(fmt.Sprintf("kill window %s:%s? (y/N) ", row.session, row.window)) {
+		if !prompter.Confirm(fmt.Sprintf("kill window %s:%s? (y/N) ", row.session, row.window)) {
 			return
 		}
 		_, _ = runner.Run(ctx, "tmux", "kill-window", "-t", row.session+":"+row.window)
 	case "S":
-		if !confirmYesNo(fmt.Sprintf("kill session %s? (worktrees kept) (y/N) ", row.session)) {
+		if !prompter.Confirm(fmt.Sprintf("kill session %s? (worktrees kept) (y/N) ", row.session)) {
 			return
 		}
 		_, _ = runner.Run(ctx, "tmux", "kill-session", "-t", row.session)
 	}
 }
 
-// confirmYesNo prompts on stderr and reads from /dev/tty so the popup
+// Prompter asks the user a yes/no question. Production uses ttyPrompter
+// (reads /dev/tty so fzf popup stays focused); tests inject a stub.
+type Prompter interface {
+	Confirm(prompt string) bool
+}
+
+// ttyPrompter prompts on stderr and reads from /dev/tty so the popup
 // keeps focus. Matches shell switcher.sh's `IFS= read -r ans </dev/tty`.
-func confirmYesNo(prompt string) bool {
+type ttyPrompter struct{}
+
+func (ttyPrompter) Confirm(prompt string) bool {
 	tty, err := os.Open("/dev/tty")
 	if err != nil {
 		return false

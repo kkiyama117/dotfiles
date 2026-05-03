@@ -1,14 +1,33 @@
 # claude-tools
 
-chezmoi-managed Go binaries that replace the shell scripts under
-`dot_local/bin/executable_claude-*.sh` and
-`dot_config/tmux/scripts/cockpit/executable_*.sh`.
+chezmoi-managed Go binaries that replace the shell scripts originally under
+`dot_local/bin/executable_claude-*.sh`, `dot_config/tmux/scripts/cockpit/executable_*.sh`,
+and `dot_config/tmux/scripts/executable_*.sh`. As of G-2 only
+`dot_config/tmux/scripts/executable_tpm-bootstrap.sh` remains as shell (it
+manages tmux itself, out of scope).
+
+## Binaries
+
+| Binary | Backed slash command / hook | Notes |
+|---|---|---|
+| `claude-cockpit-state` | `hooks.UserPromptSubmit` / `PreToolUse` / `Notification` / `Stop` / `SessionEnd` | per-pane status writer |
+| `claude-cockpit-prune` / `-summary` / `-next-ready` / `-switcher` | `prefix + C` ⇒ `s` / `N` / status-right | cockpit fzf + state aggregation |
+| `claude-notify-hook` / `-sound` / `-dispatch` / `claude-notifyd` | `hooks.Notification` / `Stop` | popup pipeline + resident daemon (G-1.next #3) |
+| `claude-tmux-new` | `/branch-out` slash command, `prefix + C` ⇒ `n` / `o` | spawn worktree + window + child claude |
+| `claude-pick-branch` | `prefix + C` ⇒ `n` / `o` | fzf branch picker → `claude-tmux-new` |
+| `claude-respawn-pane` | `prefix + C` ⇒ `r` | restart claude pane |
+| `claude-kill-session` | `/branch-finish` slash command, `prefix + C` ⇒ `k` | tear down worktree + window |
+| `claude-branch-merge` | `/branch-merge` slash command | rebase + merge current worktree into target (squash optional) |
+| `claude-branch` | tmux status-right `[branch]` | git branch reader |
+
+The slash commands listed above live in
+[`programs/claude-plugins/plugins/kkiyama117-flow-tools/commands/`](../claude-plugins/plugins/kkiyama117-flow-tools/commands/);
+see [`docs/manage_claude.md`](../../docs/manage_claude.md) §5.8.
 
 ## Layout
 
 - `cmd/<name>/main.go` — thin entry points (1 binary per former shell script)
-- `internal/{cockpit,xdg,atomicfile,proc,obslog}` — shared packages
-  (Phase 2 で `internal/notify` を追加予定)
+- `internal/{cockpit,xdg,atomicfile,proc,obslog,notify,notifyd,gitwt,tmux}` — 共有パッケージ
 
 ## Build & Deploy
 

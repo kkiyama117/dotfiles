@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-05-03 — kkiyama117-flow-tools プラグイン抽出 + /branch-{out,finish,merge}
+
+### Added
+- `programs/claude-plugins/` に自作 Claude Code プラグインのマーケットプレイス + 単一プラグイン `kkiyama117-flow-tools` を新設。`marketplace.json` + `plugin.json` の最小スケルトンを置き、`programs/` 配下なので chezmoi 配布対象外
+- 新規 slash command `/branch-finish` — `~/.local/bin/claude-kill-session` を叩いて現 worktree + tmux window を破棄。tmux キーバインド `prefix + C + k` の slash command 版
+- 新規 slash command `/branch-merge <target> [squash] [no-rebase] [fetch]` — target branch の worktree パスを検索 → 現 worktree で `git rebase target` → target worktree で `git merge` (squash 時は `--squash` + 自動 commit message)
+- 新規 Go バイナリ `claude-branch-merge` (`programs/claude-tools/cmd/claude-branch-merge/`) — `/branch-merge` の実体
+- `internal/gitwt` に `MergeOpts` struct と `Fetch` / `Rebase` / `Merge` / `Commit` / `LogOneline` の 5 メソッドを追加
+- `dot_config/claude/settings.json` の `extraKnownMarketplaces` に `kkiyama117-flow-tools` (git URL + `subdirectory: programs/claude-plugins`) を登録、`enabledPlugins` で同プラグインを有効化
+
+### Changed
+- `dot_config/claude/commands/branch-out.md` を `programs/claude-plugins/plugins/kkiyama117-flow-tools/commands/branch-out.md` に移動 (git mv で履歴保持)。`dot_config/claude/commands/` ディレクトリは空になったため削除
+- `docs/manage_claude.md` / `docs/keybinds.md` の `xxx.sh` 言及を Go バイナリ名 (`claude-tmux-new` / `claude-kill-session` / `claude-cockpit-*` / `claude-notify-*`) に追従更新。新規 §5.8 「Slash commands & プラグイン」を追加
+- `programs/claude-tools/README.md` に `## Binaries` 表を新設。`claude-branch-merge` を含む全 11 binary とそれぞれの slash command / hook 紐づけを可視化
+
+### Notes
+- プラグイン版数は `git HEAD` でキー化されるため、ローカル開発時はコミット → `claude plugin update kkiyama117-flow-tools@kkiyama117-flow-tools` → Claude Code 再起動の順で反映
+- `hooks.*` (Notification / Stop / UserPromptSubmit / PreToolUse / SessionEnd) はクロスマシン同期のためプラグインに含めず `dot_config/claude/settings.json` 直書きを維持
+
+---
+
 ## 2026-05-01 — BW_SESSION tmpfs cache (F-2 派生)
 
 ### Added

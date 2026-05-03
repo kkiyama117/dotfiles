@@ -46,7 +46,7 @@ $ARGUMENTS
 ### 2. spawn を起動 (Bash 1 回のみ)
 
 ```bash
-~/.config/tmux/scripts/tmux-claude-new.sh '<BRANCH>' \
+~/.local/bin/claude-tmux-new '<BRANCH>' \
   --worktree-base "${XDG_DATA_HOME:-$HOME/.local/share}/worktrees" \
   --prompt '<MESSAGE>'
 ```
@@ -66,6 +66,6 @@ $ARGUMENTS
 ## 補足
 
 - worktree 配置: `~/.local/share/worktrees/<repo>/<sanitized-branch>` (XDG 中央集約。slash はハイフンに sanitize される)。
-- 同名ブランチが既に worktree として存在する場合は `tmux-claude-new.sh` が既存 path を再利用 (新規作成はしない)。
+- 同名ブランチが既に worktree として存在する場合は `claude-tmux-new` が既存 path を再利用 (新規作成はしない)。
 - 新セッションは `claude '<MESSAGE>'` で起動するため、最初のメッセージとして依頼内容が pre-fill される。
-- `--no-claude` 相当 (claude 抜きの worktree のみ作成) は本コマンドではサポートしない。必要なら直接 `tmux-claude-new.sh <branch> --no-claude --worktree-base ...` を叩く。
+- `--no-claude` 相当 (claude 抜きの worktree のみ作成) は本コマンドではサポートしない。必要なら直接 `claude-tmux-new <branch> --no-claude --worktree-base ...` を叩く。

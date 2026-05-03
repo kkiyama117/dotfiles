@@ -138,16 +138,47 @@ func TestBuildLines_emitsTreeOrder(t *testing.T) {
 	}
 }
 
-// recordingRunner records every Run invocation (name + args) and always
-// returns success. Unlike proc.FakeRunner this does not require pre-
-// registration, which keeps dispatchSwitch tests focused on argv shape.
+// recordingRunner records every Run invocation (name + args). Optional
+// per-argv responses can be set via register; calls without a registered
+// argv return (nil, nil). Unlike proc.FakeRunner this never errors on
+// unregistered calls, which keeps dispatch* tests focused on argv shape.
 type recordingRunner struct {
-	calls [][]string
+	calls     [][]string
+	responses []recordedResponse
+}
+
+type recordedResponse struct {
+	name string
+	args []string
+	out  []byte
+	err  error
+}
+
+func (r *recordingRunner) register(name string, args []string, out []byte, err error) {
+	r.responses = append(r.responses, recordedResponse{name, args, out, err})
 }
 
 func (r *recordingRunner) Run(_ context.Context, name string, args ...string) ([]byte, error) {
-	r.calls = append(r.calls, append([]string{name}, args...))
+	// Copy args because the slice may be reused by the caller.
+	argsCopy := append([]string(nil), args...)
+	r.calls = append(r.calls, append([]string{name}, argsCopy...))
+	for _, rr := range r.responses {
+		if rr.name == name && eqStrings(rr.args, args) {
+			return rr.out, rr.err
+		}
+	}
 	return nil, nil
+}
+
+// fakePrompter records every prompt and returns a canned answer.
+type fakePrompter struct {
+	answer bool
+	asked  []string
+}
+
+func (f *fakePrompter) Confirm(prompt string) bool {
+	f.asked = append(f.asked, prompt)
+	return f.answer
 }
 
 func eqStrings(a, b []string) bool {
@@ -204,6 +235,142 @@ func TestDispatchSwitch(t *testing.T) {
 func TestDispatchSwitch_unknownKindIsNoOp(t *testing.T) {
 	r := &recordingRunner{}
 	dispatchSwitch(context.Background(), r, selectedRow{kind: "X"})
+	if len(r.calls) != 0 {
+		t.Errorf("unknown kind should not invoke tmux, got %v", r.calls)
+	}
+}
+
+// G-1.next #7 (L-2): dispatchKill paths exercise the prompter +
+// runner injection points. Coverage matrix:
+//   P (yes)     : single tmux kill-pane after prompt
+//   P (no)      : prompter declines, no tmux call
+//   W unmanaged : prompter is asked the unmanaged question, kill-window
+//                 fires only on yes
+//   W managed   : prompter is asked the managed question (with worktree
+//                 wording); the YES branch shells out to the external
+//                 claude-kill-session.sh script and is NOT covered here
+//                 (interactive smoke covers it — see todos.md F-3.next)
+//   S (yes/no)  : single tmux kill-session after prompt
+func TestDispatchKill_paneAccept(t *testing.T) {
+	r := &recordingRunner{}
+	p := &fakePrompter{answer: true}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "P", paneID: "%5"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill pane %5") {
+		t.Errorf("prompt mismatch: %v", p.asked)
+	}
+	want := []string{"tmux", "kill-pane", "-t", "%5"}
+	if len(r.calls) != 1 || !eqStrings(r.calls[0], want) {
+		t.Errorf("argv = %v, want %v", r.calls, want)
+	}
+}
+
+func TestDispatchKill_paneDecline(t *testing.T) {
+	r := &recordingRunner{}
+	p := &fakePrompter{answer: false}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "P", paneID: "%5"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill pane %5") {
+		t.Errorf("prompt mismatch: %v", p.asked)
+	}
+	if len(r.calls) != 0 {
+		t.Errorf("decline should not invoke tmux, got %v", r.calls)
+	}
+}
+
+func TestDispatchKill_unmanagedWindowAccept(t *testing.T) {
+	r := &recordingRunner{}
+	r.register("tmux",
+		[]string{"show-options", "-w", "-t", "alpha:0", "-v", "@claude-managed"},
+		[]byte(""), nil)
+	p := &fakePrompter{answer: true}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "W", session: "alpha", window: "0"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill window alpha:0") {
+		t.Errorf("expected unmanaged window prompt, got: %v", p.asked)
+	}
+	// Calls: [show-options, kill-window]
+	if len(r.calls) != 2 {
+		t.Fatalf("expected 2 tmux calls (show-options + kill-window), got %d: %v",
+			len(r.calls), r.calls)
+	}
+	want := []string{"tmux", "kill-window", "-t", "alpha:0"}
+	if !eqStrings(r.calls[1], want) {
+		t.Errorf("kill-window argv = %v, want %v", r.calls[1], want)
+	}
+}
+
+func TestDispatchKill_unmanagedWindowDecline(t *testing.T) {
+	r := &recordingRunner{}
+	r.register("tmux",
+		[]string{"show-options", "-w", "-t", "alpha:0", "-v", "@claude-managed"},
+		[]byte(""), nil)
+	p := &fakePrompter{answer: false}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "W", session: "alpha", window: "0"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill window alpha:0") {
+		t.Errorf("expected unmanaged window prompt, got: %v", p.asked)
+	}
+	// Only show-options should fire; kill-window must not.
+	if len(r.calls) != 1 {
+		t.Errorf("expected only show-options, got %v", r.calls)
+	}
+}
+
+func TestDispatchKill_managedWindowDecline(t *testing.T) {
+	r := &recordingRunner{}
+	r.register("tmux",
+		[]string{"show-options", "-w", "-t", "alpha:0", "-v", "@claude-managed"},
+		[]byte("yes\n"), nil)
+	p := &fakePrompter{answer: false}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "W", session: "alpha", window: "0"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill claude window alpha:0 and worktree") {
+		t.Errorf("expected managed window prompt with worktree wording, got: %v", p.asked)
+	}
+	// Decline must short-circuit before any kill happens; only show-options
+	// shows up. The accept path delegates to claude-kill-session.sh and is
+	// covered by interactive smoke (see todos.md F-3.next).
+	if len(r.calls) != 1 {
+		t.Errorf("expected only show-options on decline, got %v", r.calls)
+	}
+}
+
+func TestDispatchKill_sessionAccept(t *testing.T) {
+	r := &recordingRunner{}
+	p := &fakePrompter{answer: true}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "S", session: "alpha"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill session alpha") {
+		t.Errorf("prompt mismatch: %v", p.asked)
+	}
+	want := []string{"tmux", "kill-session", "-t", "alpha"}
+	if len(r.calls) != 1 || !eqStrings(r.calls[0], want) {
+		t.Errorf("argv = %v, want %v", r.calls, want)
+	}
+}
+
+func TestDispatchKill_sessionDecline(t *testing.T) {
+	r := &recordingRunner{}
+	p := &fakePrompter{answer: false}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "S", session: "alpha"})
+
+	if len(p.asked) != 1 || !strings.Contains(p.asked[0], "kill session alpha") {
+		t.Errorf("prompt mismatch: %v", p.asked)
+	}
+	if len(r.calls) != 0 {
+		t.Errorf("decline should not invoke tmux, got %v", r.calls)
+	}
+}
+
+func TestDispatchKill_unknownKindIsNoOp(t *testing.T) {
+	r := &recordingRunner{}
+	p := &fakePrompter{answer: true}
+	dispatchKill(context.Background(), r, p, selectedRow{kind: "X"})
+
+	if len(p.asked) != 0 {
+		t.Errorf("unknown kind should not prompt, got %v", p.asked)
+	}
 	if len(r.calls) != 0 {
 		t.Errorf("unknown kind should not invoke tmux, got %v", r.calls)
 	}
