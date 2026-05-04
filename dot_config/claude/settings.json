@@ -162,7 +162,7 @@
         "url": "https://github.com/kkiyama117/dotfiles.git",
         "subdirectory": "programs/claude-plugins"
       },
-      "autoUpdate": false
+      "autoUpdate": true
     }
   },
   "language": "Japanese",
@@ -171,7 +171,7 @@
   "skipDangerousModePermissionPrompt": true,
   "editorMode": "vim",
   "verbose": true,
-  "preferredNotifChannel": "ghostty",
+  "preferredNotifChannel": "kitty",
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
