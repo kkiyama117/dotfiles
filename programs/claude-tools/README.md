@@ -13,7 +13,7 @@ manages tmux itself, out of scope).
 | `claude-cockpit-state` | `hooks.UserPromptSubmit` / `PreToolUse` / `Notification` / `Stop` / `SessionEnd` | per-pane status writer |
 | `claude-cockpit-prune` / `-summary` / `-next-ready` / `-switcher` | `prefix + C` ⇒ `s` / `N` / status-right | cockpit fzf + state aggregation |
 | `claude-notify-hook` / `-sound` / `-dispatch` / `claude-notifyd` | `hooks.Notification` / `Stop` | popup pipeline + resident daemon (G-1.next #3) |
-| `claude-tmux-new` | `/branch-out` slash command, `prefix + C` ⇒ `n` / `o` | spawn worktree + window + child claude |
+| `claude-tmux-new` | `/branch-out` slash command, `prefix + C` ⇒ `n` / `o` | spawn worktree at `<repo>/.dmux/worktrees/<slug>/` + window + child claude (dmux-compatible layout) |
 | `claude-pick-branch` | `prefix + C` ⇒ `n` / `o` | fzf branch picker → `claude-tmux-new` |
 | `claude-respawn-pane` | `prefix + C` ⇒ `r` | restart claude pane |
 | `claude-kill-session` | `/branch-finish` slash command, `prefix + C` ⇒ `k` | tear down worktree + window |
@@ -77,3 +77,16 @@ The fallback binary is kept as a warm spare; deprecation is a future concern.
 - `.chezmoiscripts/run_onchange_after_enable-claude-notifyd.sh.tmpl` — idempotent bootstrap (`daemon-reload` + `enable --now claude-notifyd.socket`)
 
 Design spec: `docs/superpowers/specs/2026-05-02-notify-dispatch-daemon-design.md`.
+
+## dmux Compatibility (2026-05-05 onward)
+
+`claude-tmux-new` writes worktrees to `<main-repo>/.dmux/worktrees/<slug>/` so
+that the [dmux](https://github.com/standardagents/dmux) TUI can manage them
+when invoked. Branch naming (`<type>/<kebab>`) is preserved and the directory
+slug is computed via `gitwt.SanitizeSlug`, a bit-exact Go port of dmux's
+`sanitizeWorktreeSlugFromBranch()` (`src/utils/paneNaming.ts`). Standalone
+operation does not require dmux to be installed; mise-managed install is
+configured via `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl`.
+
+Design spec: `docs/superpowers/specs/2026-05-05-dmux-migration-design.md`.
+Plan: `docs/superpowers/plans/2026-05-05-dmux-migration.md`.
