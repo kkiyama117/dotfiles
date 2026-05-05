@@ -44,3 +44,10 @@ mkdir -p "$HOME/.local/bin"
 go build -trimpath -ldflags="-s -w" -o "$HOME/.local/bin/" ./cmd/...
 
 echo "[claude-tools] build complete"
+
+# Informational: warn if dmux is not yet installed. /branch-out works
+# without it (standalone direct mode); the warning just hints users to
+# install dmux for the optional UI.
+if ! command -v dmux >/dev/null 2>&1; then
+  echo "[chezmoi] dmux not installed; /branch-out works in standalone mode (run 'mise use -g npm:dmux@latest' to install)" >&2
+fi
