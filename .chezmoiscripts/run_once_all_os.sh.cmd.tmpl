@@ -94,3 +94,14 @@ done
 if [ -x "$HOME/.config/tmux/scripts/tpm-bootstrap.sh" ]; then
   "$HOME/.config/tmux/scripts/tpm-bootstrap.sh"
 fi
+
+# dmux: tmux pane manager for AI agents (mise-managed npm global).
+# Skips silently when mise is not on PATH (mise install runs earlier in this
+# same script when missing — but a partial bootstrap is still tolerated here).
+if ! command -v dmux >/dev/null 2>&1; then
+  if command -v mise >/dev/null 2>&1; then
+    mise use -g npm:dmux@latest
+  else
+    echo "[run_once_all_os] mise not found; skipping dmux install" >&2
+  fi
+fi
