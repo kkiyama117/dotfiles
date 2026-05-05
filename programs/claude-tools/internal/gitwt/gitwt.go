@@ -7,6 +7,7 @@ package gitwt
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -265,6 +266,40 @@ func SanitizeSlug(branchName string) string {
 // toplevel (use Client.MainRepo or Client.TopLevel).
 func DmuxWorktreeRoot(repoRoot string) string {
 	return filepath.Join(repoRoot, ".dmux", "worktrees")
+}
+
+// EnsureGitignoreEntry idempotently appends `line` to <repoRoot>/.gitignore.
+// Returns changed=true if the file was modified.
+//
+// The match is exact on a single line (leading/trailing whitespace ignored).
+// On any I/O error returns (changed=false, err).
+//
+// If the file does not exist it is created with mode 0644. If the file exists
+// without a trailing newline, a newline is added before the appended line.
+func EnsureGitignoreEntry(repoRoot, line string) (changed bool, err error) {
+	path := filepath.Join(repoRoot, ".gitignore")
+	existing, readErr := os.ReadFile(path)
+	if readErr != nil && !os.IsNotExist(readErr) {
+		return false, fmt.Errorf("read .gitignore: %w", readErr)
+	}
+	for _, l := range strings.Split(string(existing), "\n") {
+		if strings.TrimSpace(l) == line {
+			return false, nil
+		}
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return false, fmt.Errorf("open .gitignore: %w", err)
+	}
+	defer f.Close()
+	var prefix string
+	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
+		prefix = "\n"
+	}
+	if _, err := f.WriteString(prefix + line + "\n"); err != nil {
+		return false, fmt.Errorf("write .gitignore: %w", err)
+	}
+	return true, nil
 }
 
 var (

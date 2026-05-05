@@ -2,6 +2,8 @@ package gitwt
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -231,4 +233,85 @@ func TestDmuxWorktreeRoot(t *testing.T) {
 	if got != want {
 		t.Errorf("DmuxWorktreeRoot = %q, want %q", got, want)
 	}
+}
+
+func TestEnsureGitignoreEntry(t *testing.T) {
+	t.Run("creates new file when absent", func(t *testing.T) {
+		dir := t.TempDir()
+		changed, err := EnsureGitignoreEntry(dir, ".dmux/")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if !changed {
+			t.Errorf("changed=false, want true")
+		}
+		got, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+		if err != nil {
+			t.Fatalf("read: %v", err)
+		}
+		if string(got) != ".dmux/\n" {
+			t.Errorf("file body = %q, want %q", got, ".dmux/\n")
+		}
+	})
+
+	t.Run("noop when entry already present", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".gitignore")
+		if err := os.WriteFile(path, []byte("node_modules/\n.dmux/\nbuild/\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		changed, err := EnsureGitignoreEntry(dir, ".dmux/")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if changed {
+			t.Errorf("changed=true, want false")
+		}
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != "node_modules/\n.dmux/\nbuild/\n" {
+			t.Errorf("file body modified: %q", got)
+		}
+	})
+
+	t.Run("appends newline when file lacks trailing newline", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".gitignore")
+		if err := os.WriteFile(path, []byte("node_modules/"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		changed, err := EnsureGitignoreEntry(dir, ".dmux/")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if !changed {
+			t.Errorf("changed=false, want true")
+		}
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != "node_modules/\n.dmux/\n" {
+			t.Errorf("file body = %q, want %q", got, "node_modules/\n.dmux/\n")
+		}
+	})
+
+	t.Run("returns error when parent dir is read-only", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".gitignore")
+		if err := os.WriteFile(path, []byte("foo\n"), 0o444); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(dir, 0o555); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+
+		_, err := EnsureGitignoreEntry(dir, ".dmux/")
+		if err == nil {
+			t.Errorf("err=nil, want non-nil")
+		}
+	})
 }
