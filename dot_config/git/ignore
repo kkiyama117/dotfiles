@@ -704,3 +704,4 @@ hs_err_pid*
 **/.claude/settings.local.json
 **/CLAUDE.md
 **/*.code-workspace
+**/.dmux
