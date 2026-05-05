@@ -353,6 +353,7 @@ prefix を 1 度押した後、以下のキーが各テーブルで効く。
 | `prefix + |` | split-window -h (PWD 継承) | `bindings.conf` |
 | `prefix + _` | split-window -v (PWD 継承) | `bindings.conf` |
 | `prefix + q` | kill-pane | `bindings.conf` |
+| `prefix + Q` | really quit dmux (recovery hook を外してから公式 `q` 送信、auto-respawn を防ぐ。詳細: `scripts/dmux-really-quit.sh`, standardagents/dmux#80) | `bindings.conf` |
 
 #### 2.1.2 tmux デフォルトバインド (継続して有効)
 
