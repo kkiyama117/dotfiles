@@ -75,8 +75,8 @@ func main() {
 	// Do not block — legacy paths or hand-managed worktrees still need to be
 	// cleanable.
 	if wtRoot != "" && mainRepo != "" {
-		dmuxRoot := gitwt.DmuxWorktreeRoot(mainRepo) + string(os.PathSeparator)
-		if !strings.HasPrefix(wtRoot, dmuxRoot) {
+		dmuxRoot := filepath.Clean(gitwt.DmuxWorktreeRoot(mainRepo)) + string(os.PathSeparator)
+		if !strings.HasPrefix(filepath.Clean(wtRoot), dmuxRoot) {
 			logger.Warn("worktree path is outside <main-repo>/.dmux/worktrees/, proceeding anyway",
 				"wtRoot", wtRoot, "expected_prefix", dmuxRoot)
 		}
