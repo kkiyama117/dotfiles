@@ -1,7 +1,7 @@
 # dmux Migration (Worktree Layout Alignment) — Design Spec
 
 - **Date**: 2026-05-05
-- **Status**: Code complete (2026-05-05) — manual smoke 1-5 awaiting user execution per `docs/superpowers/smoke/2026-05-05-dmux-migration-smoke.md`
+- **Status**: Implemented (2026-05-05) — manual smoke items 1-5 PASS per `docs/superpowers/smoke/2026-05-05-dmux-migration-smoke.md`; item 6 not exercised
 - **Owner**: kiyama
 - **Repo**: chezmoi (`/home/kiyama/.local/share/chezmoi`)
 - **Related**:

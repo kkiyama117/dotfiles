@@ -88,3 +88,6 @@ When items 1-5 PASS, append to this file:
 ```
 <!-- Smoke verified by kiyama on YYYY-MM-DD; item 6 result: PASS / FAIL / N/A -->
 ```
+
+<!-- Smoke verified by kiyama on 2026-05-05; items 1-4 PASS; item 5 PASS (worktree + window cleaned, claude-kill-session triggered after Bash permission approval); item 6 result: N/A (not exercised) -->
+
