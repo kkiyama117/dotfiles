@@ -705,3 +705,4 @@ hs_err_pid*
 **/CLAUDE.md
 **/*.code-workspace
 **/.dmux
+**/.dmux-hooks
