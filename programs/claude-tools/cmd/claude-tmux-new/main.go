@@ -1,9 +1,11 @@
 // claude-tmux-new creates (or attaches to) a tmux session+window pair backed
-// by a git worktree, optionally starting `claude` in the right pane.
+// by a git worktree at <main-repo>/.dmux/worktrees/<flat-slug>/, optionally
+// starting `claude` in the right pane. Slug formatting matches dmux's
+// sanitizeWorktreeSlugFromBranch().
 //
 // usage: claude-tmux-new <branch> [--from-root [<session-id>]] [--no-claude]
-//
-//	[--worktree-base <dir>] [--prompt <text>]
+//                                 [--prompt <text>]
+//                                 [--worktree-base <dir>] (deprecated, ignored)
 package main
 
 import (
@@ -30,16 +32,16 @@ var logger = obslog.New(progName)
 var errHelpRequested = fmt.Errorf("help requested")
 
 func usageString() string {
-	return "usage: claude-tmux-new <branch> [--from-root [<session-id>]] [--no-claude] [--worktree-base <dir>] [--prompt <text>]"
+	return "usage: claude-tmux-new <branch> [--from-root [<session-id>]] [--no-claude] [--prompt <text>] [--worktree-base <dir> (deprecated, ignored)]"
 }
 
 type options struct {
-	branch          string
-	fromRoot        bool
-	noClaude        bool
-	explicitSession string
-	worktreeBase    string
-	initialPrompt   string
+	branch                 string
+	fromRoot               bool
+	noClaude               bool
+	explicitSession        string
+	worktreeBaseDeprecated bool // set when --worktree-base was passed; value is ignored with a warn
+	initialPrompt          string
 }
 
 func main() {
@@ -86,7 +88,8 @@ func parseArgs(argv []string) (options, error) {
 			if i >= len(argv) {
 				return options{}, fmt.Errorf("--worktree-base requires a directory argument")
 			}
-			o.worktreeBase = argv[i]
+			// Deprecated: value is ignored. New layout is <main-repo>/.dmux/worktrees/<flat-slug>.
+			o.worktreeBaseDeprecated = true
 			i++
 		case "--prompt":
 			i++
@@ -124,6 +127,15 @@ func run(ctx context.Context, r proc.Runner, opts options) error {
 		return fmt.Errorf("not inside a git repo (cwd=%s): %w", cwd, err)
 	}
 
+	if opts.worktreeBaseDeprecated {
+		fmt.Fprintln(os.Stderr, "claude-tmux-new: --worktree-base is deprecated; using <repo>/.dmux/worktrees/<slug> instead")
+	}
+	if changed, err := gitwt.EnsureGitignoreEntry(mainRepo, ".dmux/"); err != nil {
+		logger.Warn("ensure .gitignore entry failed", "err", err)
+	} else if changed {
+		fmt.Fprintln(os.Stderr, `claude-tmux-new: appended ".dmux/" to .gitignore`)
+	}
+
 	repoBasename := filepath.Base(mainRepo)
 	session := tmux.Sanitize(repoBasename)
 	if session == "" {
@@ -132,7 +144,7 @@ func run(ctx context.Context, r proc.Runner, opts options) error {
 	safeBranch := tmux.Sanitize(opts.branch)
 	windowName := safeBranch
 
-	worktree, err := resolveWorktree(ctx, gw, opts, mainRepo, repoBasename, safeBranch)
+	worktree, err := resolveWorktree(ctx, gw, opts, mainRepo)
 	if err != nil {
 		return err
 	}
@@ -182,19 +194,16 @@ func run(ctx context.Context, r proc.Runner, opts options) error {
 	return tc.AttachSessionExec(target)
 }
 
-func resolveWorktree(ctx context.Context, gw *gitwt.Client, opts options, mainRepo, repoBasename, safeBranch string) (string, error) {
+func resolveWorktree(ctx context.Context, gw *gitwt.Client, opts options, mainRepo string) (string, error) {
 	if existing, ok, err := gw.FindByBranch(ctx, mainRepo, opts.branch); err == nil && ok {
 		return existing.Path, nil
 	} else if err != nil {
 		return "", fmt.Errorf("worktree list: %w", err)
 	}
 
-	worktree := mainRepo + "-" + safeBranch
-	if opts.worktreeBase != "" {
-		worktree = filepath.Join(opts.worktreeBase, repoBasename, safeBranch)
-		if err := os.MkdirAll(filepath.Dir(worktree), 0o755); err != nil {
-			return "", fmt.Errorf("mkdir worktree parent: %w", err)
-		}
+	worktree := filepath.Join(gitwt.DmuxWorktreeRoot(mainRepo), gitwt.SanitizeSlug(opts.branch))
+	if err := os.MkdirAll(filepath.Dir(worktree), 0o755); err != nil {
+		return "", fmt.Errorf("mkdir worktree parent: %w", err)
 	}
 	if !dirExists(worktree) {
 		switch {

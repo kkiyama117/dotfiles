@@ -17,7 +17,7 @@ func TestParseArgs_table(t *testing.T) {
 		{"--no-claude", []string{"feat/x", "--no-claude"}, options{branch: "feat/x", noClaude: true}, false},
 		{"--from-root no id", []string{"feat/x", "--from-root"}, options{branch: "feat/x", fromRoot: true}, false},
 		{"--from-root with id", []string{"feat/x", "--from-root", "abc-123"}, options{branch: "feat/x", fromRoot: true, explicitSession: "abc-123"}, false},
-		{"--worktree-base", []string{"feat/x", "--worktree-base", "/tmp/wt"}, options{branch: "feat/x", worktreeBase: "/tmp/wt"}, false},
+		{"--worktree-base deprecated (value ignored)", []string{"feat/x", "--worktree-base", "/tmp/wt"}, options{branch: "feat/x", worktreeBaseDeprecated: true}, false},
 		{"--prompt", []string{"feat/x", "--prompt", "hi"}, options{branch: "feat/x", initialPrompt: "hi"}, false},
 		{"missing branch", []string{}, options{}, true},
 		{"--from-root + --no-claude", []string{"feat/x", "--from-root", "--no-claude"}, options{}, true},
