@@ -71,6 +71,17 @@ func main() {
 	// Pane id capture for cache cleanup
 	paneIDs, _ := tc.ListPanes(ctx, target, "#{pane_id}")
 
+	// Sanity check: warn if worktree is outside <main-repo>/.dmux/worktrees/.
+	// Do not block — legacy paths or hand-managed worktrees still need to be
+	// cleanable.
+	if wtRoot != "" && mainRepo != "" {
+		dmuxRoot := gitwt.DmuxWorktreeRoot(mainRepo) + string(os.PathSeparator)
+		if !strings.HasPrefix(wtRoot, dmuxRoot) {
+			logger.Warn("worktree path is outside <main-repo>/.dmux/worktrees/, proceeding anyway",
+				"wtRoot", wtRoot, "expected_prefix", dmuxRoot)
+		}
+	}
+
 	// Worktree remove BEFORE kill-window (so error display still has a client).
 	if wtRoot != "" && mainRepo != "" && wtRoot != mainRepo {
 		gw := gitwt.New(r)
