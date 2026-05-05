@@ -1,3 +1,5 @@
 {
-  useTmuxHooks:true
+  "useTmuxHooks": true,
+  "minPaneWidth": 80,
+  "maxPaneWidth": 160
 }
