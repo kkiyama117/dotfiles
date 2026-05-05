@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -257,6 +258,13 @@ func SanitizeSlug(branchName string) string {
 		return "pane"
 	}
 	return s
+}
+
+// DmuxWorktreeRoot returns <repoRoot>/.dmux/worktrees as a clean path.
+// The caller is responsible for ensuring repoRoot is the main worktree's
+// toplevel (use Client.MainRepo or Client.TopLevel).
+func DmuxWorktreeRoot(repoRoot string) string {
+	return filepath.Join(repoRoot, ".dmux", "worktrees")
 }
 
 var (

@@ -224,3 +224,11 @@ func TestSanitizeSlug(t *testing.T) {
 		})
 	}
 }
+
+func TestDmuxWorktreeRoot(t *testing.T) {
+	got := DmuxWorktreeRoot("/home/kiyama/.local/share/chezmoi")
+	want := "/home/kiyama/.local/share/chezmoi/.dmux/worktrees"
+	if got != want {
+		t.Errorf("DmuxWorktreeRoot = %q, want %q", got, want)
+	}
+}
