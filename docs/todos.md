@@ -291,6 +291,7 @@
 - ~~**`dircolor` alias の整理**（H-10 派生）~~ → **完了 (2026-04-30)**: `aliases.zsh:7` に用途コメントを追加 (alias 自体は dircolors 設定変更時の手動再読込ヘルパとして必要なので残置)
 - ~~**chezmoi ソース dir 内の自己参照整理**（L-8 派生）~~ → **完了 (2026-04-30)**: `dot_local/share/chezmoi/dot_keep` を `git rm` で削除。`chezmoi managed` から `.local/share/chezmoi` の自己参照が消滅
 - **`bw_lock` 自動化**（F-2 派生）: `precmd` フックで一定時間アイドルなら自動 `bw_lock`。過剰になりやすいため現時点では明示運用に留める。**2026-05-01 補足**: F-2 派生として tmpfs cache (`bw_session.zsh`) を導入したことでマスターパスワード再入力の頻度が大幅に減ったため、自動 `bw_lock` の優先度はさらに下がった。再起動で cache がクリアされる挙動と組み合わせて運用する
+- **dmux lifecycle hook と cockpit を融合した新設計**（dmux 移行 / B-3 派生, 2026-05-05 起票）: dmux の `.dmux-hooks/` (worktree create / pre-merge / post-merge) と cockpit の claude hook ベース状態追跡を統合した新設計の検討。現状は **B-2 (cockpit 温存) を採用**しているため低優先。融合に踏み込む場合の判断材料: (a) claude セッション内部状態 (working/waiting/done) を捨てて lifecycle ベースに簡素化する妥当性、(b) `.dmux-hooks/` から cockpit cache に書き込む薄いブリッジで済むか、(c) dmux 起動下でない claude pane (素の `prefix + C n` 経由など) との両立可否。dmux 移行の本体設計は `docs/superpowers/specs/2026-05-05-dmux-migration-design.md` (作成予定)
 
 ---
 
