@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"claude-tools/internal/proc"
@@ -232,3 +233,34 @@ func (c *Client) LogOneline(ctx context.Context, cwd, rev string) (string, error
 	}
 	return strings.TrimRight(string(out), "\n"), nil
 }
+
+// SanitizeSlug converts a branch name into a worktree directory slug,
+// matching dmux's src/utils/paneNaming.ts sanitizeWorktreeSlugFromBranch().
+//
+// Algorithm:
+//  1. trim whitespace
+//  2. lowercase
+//  3. replace runs of `\` and `/` with single `-`
+//  4. replace runs of `[^a-z0-9._-]` with single `-`
+//  5. collapse runs of `-` to single `-`
+//  6. strip leading and trailing `-`
+//  7. strip leading and trailing `.`
+//  8. fall back to "pane" if the result is empty
+func SanitizeSlug(branchName string) string {
+	s := strings.ToLower(strings.TrimSpace(branchName))
+	s = slashRun.ReplaceAllString(s, "-")
+	s = nonSlugRun.ReplaceAllString(s, "-")
+	s = dashRun.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	s = strings.Trim(s, ".")
+	if s == "" {
+		return "pane"
+	}
+	return s
+}
+
+var (
+	slashRun   = regexp.MustCompile(`[\\/]+`)
+	nonSlugRun = regexp.MustCompile(`[^a-z0-9._-]+`)
+	dashRun    = regexp.MustCompile(`-+`)
+)

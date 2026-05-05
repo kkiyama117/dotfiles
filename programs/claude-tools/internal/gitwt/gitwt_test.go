@@ -201,3 +201,26 @@ func TestAddFromHead_argv(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSanitizeSlug(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"normal type/kebab", "feat/dmux-migration", "feat-dmux-migration"},
+		{"uppercase + space", "Feat/Dmux Migration", "feat-dmux-migration"},
+		{"dot preserved", "chore/v1.2.3", "chore-v1.2.3"},
+		{"double slash + double dash collapsed", "feat//double--dash", "feat-double-dash"},
+		{"strip leading/trailing dash", "-feat/leading-dash-", "feat-leading-dash"},
+		{"strip leading dot", "..weird", "weird"},
+		{"empty residue falls back to pane", "///", "pane"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := SanitizeSlug(c.in); got != c.want {
+				t.Errorf("SanitizeSlug(%q) = %q, want %q", c.in, got, c.want)
+			}
+		})
+	}
+}
