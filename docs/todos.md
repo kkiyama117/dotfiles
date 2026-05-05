@@ -171,6 +171,7 @@
   - [ ] `claude-pick-branch.sh` (prefix+C n 経由) も `--worktree-base` を受け取れるよう拡張するか、cockpit popup 内で centralized デフォルト化するか判断
   - [ ] worktree の **掃除** (merged branch の worktree 自動 prune) helper — 現状 `git wt remove` 手動。F-3.next #5 のような systemd timer でやるか手動運用かは未決
   - [ ] `--prompt` の長文 (~数 KB) における send-keys 遅延 / quoting 限界の実測 — 通常用途では問題なし想定
+  - [x] **dmux 互換化** (2026-05-05): worktree base を `<repo>/.dmux/worktrees/<sanitized-slug>` に切替、`internal/gitwt.SanitizeSlug` を上流 dmux の `sanitizeWorktreeSlugFromBranch` の bit-exact Go 移植として追加、`/branch-out` から `--worktree-base` を削除、`.gitignore` に `.dmux/` 自動冪等追記、Manjaro bootstrap で `mise use -g npm:dmux@latest`。spec: `docs/superpowers/specs/2026-05-05-dmux-migration-design.md` / plan: `docs/superpowers/plans/2026-05-05-dmux-migration.md` / smoke: `docs/superpowers/smoke/2026-05-05-dmux-migration-smoke.md` (manual smoke 1-5 は user 手動実行待ち)
 
 ### F-8. cockpit 状態 file の死蔵対策 🆕 (v1 shell 完了 / Go 移植 完了 (2026-05-02 G-1.next #5) / 残: eBPF 検討)
 - 背景: claude が `/exit` で終わった、あるいは SIGKILL / OOM / pane クローズで terminal 内 claude プロセスが終了した場合、`${XDG_CACHE_HOME}/claude-cockpit/panes/<S>_<P>.status` が **最後の hook 値で残り続けるバグ**。`cockpit/summary.sh` の `⚡ N ⏸ M ✓ K ` カウントが減らず、`cockpit/next-ready.sh` (prefix+C+N) も幽霊 pane を ready 候補として選んでしまう。F-5 cockpit と F-6 repo-session の組合せで顕在化した。
