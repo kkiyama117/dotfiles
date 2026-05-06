@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.claude/plugins/cache/everything-claude-code/everything-claude-code/1.10.0/skills/continuous-learning-v2/hooks/observe.sh"
+            "command": "/home/kiyama/.claude/skills/continuous-learning-v2/hooks/observe.sh"
           }
         ]
       },
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/kiyama/.claude/plugins/cache/everything-claude-code/everything-claude-code/1.10.0/skills/continuous-learning-v2/hooks/observe.sh"
+            "command": "/home/kiyama/.claude/skills/continuous-learning-v2/hooks/observe.sh"
           }
         ]
       }

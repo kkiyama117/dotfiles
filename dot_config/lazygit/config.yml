@@ -18,8 +18,6 @@ git:
     - colorArg: always
       pager: delta --paging=never --line-numbers --side-by-side
   commit:
-    # ~/.config/git/config.tmpl で Bitwarden から signingkey が注入される。
-    # gpg sign は git config 側 (commit.gpgsign) に従わせるため lazygit では触らない。
     signOff: false
     # コミットメッセージ編集中に diff を別 panel で表示。
     verbose: true
@@ -28,6 +26,7 @@ git:
   log:
     order: topo-order
     showGraph: always
+  opverrideGpg: true
 # tmux popup 起動時に lazygit 終了で即 popup を閉じる (Enter 待ち抑止)。
 promptToReturnFromSubprocess: false
 os:
