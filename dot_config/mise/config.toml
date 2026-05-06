@@ -68,6 +68,10 @@ GRADLE_USER_HOME = '/home/kiyama/.local/share/gradle'
 #NODE_ENV = 'production'
 #NPM_CONFIG_USERCONFIG = '/home/kiyama/.config/npm/npmrc'
 
+# pnpm: `pnpm setup` 相当を mise の env で固定。rc を書き換えさせない。
+PNPM_HOME = '/home/kiyama/.local/share/pnpm'
+_.path = ['/home/kiyama/.local/share/pnpm/bin']
+
 # ocaml
 #OPAMROOT = '/home/kiyama/.local/share/opam'
 #[[ ! -r "$XDG_DATA_HOME/opam-init/init.zsh" ]] || source "$XDG_DATA_HOME/opam-init/init.zsh"  > /dev/null 2> /dev/null
@@ -80,6 +84,7 @@ java = "22"
 julia = "latest"
 node = "latest"
 "npm:dmux" = "latest"
+"npm:skills" = "latest"
 #opam = "latest"
 pnpm = "latest"
 ruby = "latest"
