@@ -49,8 +49,12 @@ path=(
 )
 export CHROME_EXECUTABLE=google-chrome-stable
 
-# C/C++ build environment (gettext stowed in /usr/local/stow)
-export LD_LIBRARY_PATH="/usr/local/lib:/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# C/C++ build environment (gettext stowed in /usr/local/stow).
+# `/usr/lib` は dynamic loader の builtin search path に含まれるため LD_LIBRARY_PATH に
+# 入れない。明示すると Julia/Rust/Python 等の同梱 libunwind/libcurl/libgit2 より
+# システム側ライブラリが優先され、Manjaro の rolling update で非互換になった瞬間に
+# SIGSEGV を起こす (例: Pkg.update() 中の libunwind.so.8 unwinder crash)。
+export LD_LIBRARY_PATH="/usr/local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 export LDFLAGS="-L/usr/local/stow/gettext-021/lib/gettext -L/usr/local/stow/gettext-021/lib -L/usr/local/lib"
 export CPPFLAGS="-I/usr/local/stow/gettext-021/include -I/usr/local/include"

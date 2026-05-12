@@ -135,11 +135,10 @@
     "code-review@claude-plugins-official": false,
     "slack@claude-plugins-official": false,
     "commit-commands@claude-plugins-official": true,
-    "everything-claude-code@everything-claude-code": true,
     "superpowers@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "kkiyama117-flow-tools@kkiyama117-flow-tools": true
+    "skill-creator@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "ecc@everything-claude-code": true
   },
   "extraKnownMarketplaces": {
     "everything-claude-code": {
@@ -148,26 +147,15 @@
         "url": "https://github.com/affaan-m/everything-claude-code.git"
       },
       "autoUpdate": true
-    },
-    "openai-codex": {
-      "source": {
-        "source": "github",
-        "repo": "openai/codex-plugin-cc"
-      },
-      "autoUpdate": true
-    },
-    "kkiyama117-flow-tools": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/kkiyama117/dotfiles.git",
-        "subdirectory": "programs/claude-plugins"
-      },
-      "autoUpdate": true
     }
   },
   "language": "Japanese",
   "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  },
   "skipDangerousModePermissionPrompt": true,
   "editorMode": "vim",
   "verbose": true,
@@ -175,6 +163,7 @@
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true,
   "disabledMcpJsonServers": [
     "cloudflare-docs",
     "cloudflare-workers-builds",

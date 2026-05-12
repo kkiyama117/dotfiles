@@ -26,7 +26,7 @@ git:
   log:
     order: topo-order
     showGraph: always
-  opverrideGpg: true
+  overrideGpg: true
 # tmux popup 起動時に lazygit 終了で即 popup を閉じる (Enter 待ち抑止)。
 promptToReturnFromSubprocess: false
 os:
