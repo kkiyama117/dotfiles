@@ -706,3 +706,4 @@ hs_err_pid*
 **/*.code-workspace
 **/.dmux
 **/.dmux-hooks
+**/.claude/PRPs

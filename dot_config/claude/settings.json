@@ -50,30 +50,10 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/kiyama/.claude/skills/continuous-learning-v2/hooks/observe.sh"
-          }
-        ]
-      },
-      {
         "hooks": [
           {
             "type": "command",
             "command": "/home/kiyama/.local/bin/claude-cockpit-state hook PreToolUse"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/kiyama/.claude/skills/continuous-learning-v2/hooks/observe.sh"
           }
         ]
       }
@@ -138,10 +118,10 @@
     "superpowers@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "ecc@everything-claude-code": true
+    "ecc@ecc": true
   },
   "extraKnownMarketplaces": {
-    "everything-claude-code": {
+    "ecc": {
       "source": {
         "source": "git",
         "url": "https://github.com/affaan-m/everything-claude-code.git"
