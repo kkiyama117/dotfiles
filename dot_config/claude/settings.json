@@ -4,6 +4,7 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(gh repo create:*)",
+      "Bash(gh pr review:*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__query-docs",
       "WebSearch",
@@ -157,5 +158,6 @@
     "Stripe",
     "supabase",
     "vercel"
-  ]
+  ],
+  "inputNeededNotifEnabled": true
 }
