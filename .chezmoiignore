@@ -31,6 +31,8 @@ docs/
 # GNUPG
 .local/share/gnupg/*
 !.local/share/gnupg/common.conf
+!.local/share/gnupg/gpg-agent.conf
+!.local/share/gnupg/pinentry-auto.sh
 
 {{ if eq .chezmoi.os "windows" }}
 # Windows
