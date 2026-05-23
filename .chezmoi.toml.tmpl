@@ -3,7 +3,10 @@
        このファイルは `chezmoi init` 時にのみ評価され、`~/.config/chezmoi/chezmoi.toml`
        を生成する。`apply` 時の deploy ターゲットではないため `promptStringOnce` が使える。
        新しいデータを追加した後は再度 `chezmoi init` を実行する。 */ -}}
-{{- $bwOpenRouterItemId := promptStringOnce . "bitwardenOpenRouterItemId" "Bitwarden item ID for OpenRouter API key (CODEX field)" -}}
+{{- /* 入力するのは Bitwarden item の UUID (例: eaefa7ca-...)。
+       OpenRouter のキー本体ではない。キー本体は item 内の CODEX フィールドから
+       apply 時に bitwardenFields で取得する。 */ -}}
+{{- $bwOpenRouterItemId := promptStringOnce . "bitwardenOpenRouterItemId" "Bitwarden item UUID (NOT the key itself) whose CODEX field holds the OpenRouter API key" -}}
 
 {{ if eq .chezmoi.os "windows" }}
 [cd]
