@@ -1,0 +1,46 @@
+{{- /*
+Enable the systemd hardware watchdog (SP5100 TCO on this AMD FCH) so that a
+total kernel lockup auto-reboots instead of needing a hard power cut.
+
+Context: 2026-05-23 the NVIDIA proprietary driver hard-hung the machine
+(black screen, dead input/SSH, even the power button's ACPI path was gone).
+The chipset watchdog ticks independently of the CPU/kernel, so it can still
+force a reset. RuntimeWatchdogSec is read by PID1 at startup, hence the
+daemon-reexec to apply without a reboot.
+
+run_onchange reruns whenever the rendered script (incl. DESIRED) changes.
+*/ -}}
+{{ if and (eq .chezmoi.os "linux") (eq .chezmoi.osRelease.id "manjaro") -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Skip where systemd is unreachable (containers, WSL without systemd, CI).
+command -v systemctl >/dev/null 2>&1 || exit 0
+
+dropin_dir=/etc/systemd/system.conf.d
+dropin="$dropin_dir/watchdog.conf"
+
+read -r -d '' DESIRED <<'EOF' || true
+# Managed by chezmoi:
+#   .chezmoiscripts/run_onchange_after_enable-watchdog.sh.tmpl
+# Hardware watchdog -> auto-reboot on full kernel lockup (SP5100 TCO).
+[Manager]
+RuntimeWatchdogSec=3min
+EOF
+
+# Idempotent: only rewrite + re-exec PID1 when the content actually differs.
+current="$(sudo cat "$dropin" 2>/dev/null || true)"
+if [[ "$current" != "$DESIRED" ]]; then
+  sudo install -d -m 0755 "$dropin_dir"
+  printf '%s\n' "$DESIRED" | sudo tee "$dropin" >/dev/null
+  # system.conf is only re-read on PID1 re-exec (daemon-reload is not enough).
+  sudo systemctl daemon-reexec
+  echo "watchdog: applied RuntimeWatchdogSec=3min and re-exec'd systemd"
+else
+  echo "watchdog: drop-in already current, nothing to do"
+fi
+{{ else -}}
+#!/usr/bin/env bash
+# Watchdog setup targets Manjaro + systemd only. Nothing to do elsewhere.
+exit 0
+{{ end -}}
