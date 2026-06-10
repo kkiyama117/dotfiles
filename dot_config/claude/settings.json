@@ -38,6 +38,7 @@
     "deny": [],
     "defaultMode": "auto"
   },
+  "model": "claude-fable-5[1m]",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -132,7 +133,7 @@
   },
   "language": "Japanese",
   "alwaysThinkingEnabled": true,
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "voice": {
     "enabled": true,
     "mode": "hold"
@@ -142,6 +143,7 @@
   "verbose": true,
   "preferredNotifChannel": "kitty",
   "remoteControlAtStartup": true,
+  "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
@@ -158,6 +160,5 @@
     "Stripe",
     "supabase",
     "vercel"
-  ],
-  "inputNeededNotifEnabled": true
+  ]
 }
