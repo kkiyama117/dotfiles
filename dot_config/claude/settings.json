@@ -38,7 +38,6 @@
     "deny": [],
     "defaultMode": "auto"
   },
-  "model": "claude-fable-5[1m]",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -129,6 +128,18 @@
         "url": "https://github.com/affaan-m/everything-claude-code.git"
       },
       "autoUpdate": true
+    },
+    "academic-research-skills": {
+      "source": {
+        "source": "github",
+        "repo": "Imbad0202/academic-research-skills"
+      }
+    },
+    "my-own-skills": {
+      "source": {
+        "source": "directory",
+        "path": "/home/kiyama/programs/prompts/my_own_skills"
+      }
     }
   },
   "language": "Japanese",
@@ -160,5 +171,6 @@
     "Stripe",
     "supabase",
     "vercel"
-  ]
+  ],
+  "skipWorkflowUsageWarning": true
 }
