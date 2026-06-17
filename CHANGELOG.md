@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-06-17 — Kimi K2.7 (Moonshot) シェルラッパ + Hermes Agent 導入
+
+### Added
+- `dot_config/zsh/rc/private_secrets.zsh.tmpl` に Moonshot/Kimi ブロックを追加。`bitwardenFields` で item の `main` フィールドから apply 時にキーを取得し `__moonshot_key()` 本体に埋め込む。OpenRouter と異なり **グローバル export はせず**、各ラッパーで単発注入のみ:
+  - `kimi-run <cmd>` — 任意の OpenAI 互換エージェント (opencode / aider 等) に `OPENAI_*` を単発注入して実行。`KIMI_MODEL` 既定 `kimi-k2.7-code`（高速版 `kimi-k2.7-code-highspeed`）
+  - `hermes-kimi` は当初追加したが**撤去**。Hermes で Kimi を使う場合は Hermes 自身の credential store にキーを登録する方針に変更（native `kimi-coding` provider が解決）。`__moonshot_key` を source に argv へ載せず一度だけ: `print -r -- "$(__moonshot_key)" | hermes auth add kimi-coding`（推奨・stdin）／ `hermes config set KIMI_API_KEY "$(__moonshot_key)"`（代替・`.env` 平文、値が `/proc/cmdline` に一瞬載る）
+- `.chezmoi.toml.tmpl` に `promptStringOnce` で `bitwardenMoonshotItemId` を追加 (`[data]` 出力)。未入力なら Kimi ブロックは生成されない
+
+### Changed
+- `.chezmoiscripts/run_once_all_os.sh.cmd.tmpl`: Hermes Agent は paru/AUR ではなく**公式インストーラ** (`curl … install.sh | bash` → `~/.hermes/` に uv/venv 管理で導入、launcher → `~/.local/bin/hermes`) を採用。当初 paru PACKAGES に `hermes-agent` を追加していたが、公式インストーラ導入との二重インストールを避けるため撤去し、新規マシン向け one-liner と Kimi 接続 (kimi-coding provider) をコメントで明記
+
+### Notes
+- Kimi K2.7 Code は 1T MoE / 256K ctx のコーディング特化モデル。HighSpeed 版 (`kimi-k2.7-code-highspeed`, 〜180 tok/s) も同一 API でモデル ID 切替により利用可
+- gate は `{{ if index . "bitwardenMoonshotItemId" }}` を使用。この chezmoi 設定は未定義キーを `missingkey=error` 扱いにするため、bare `.bitwardenMoonshotItemId` 参照だと `chezmoi init` 前の `apply` がエラーになる問題を回避
+- 有効化手順: 既存 Bitwarden item (`platform.kimi.ai`) の `main` フィールドにキー格納済み → `chezmoi init` (UUID 登録) → `chezmoi diff`/`apply` → `exec zsh` → `kimi-run`（OpenAI 互換ツール用）。Hermes で使うなら別途 `hermes auth add kimi-coding`（上記）で Hermes に登録
+- 方針: Claude Code (素の `claude`) は本物の Claude デフォルトモデルのまま使うため、`ANTHROPIC_*` を注入する `claude-kimi` ラッパは設けない（当初追加したが撤去）。Kimi for Hermes は単発注入ラッパ (`hermes-kimi`) ではなく Hermes 自身の credential store にキー登録する方針へ（at-rest 平文を許容。`config set` は値が argv に載るため `auth add` の stdin を推奨）。`kimi-run` は Hermes 以外の OpenAI 互換ツール向けに残置
+- Hermes Desktop は公式が macOS/Windows のみ。Linux GUI は AUR `hermes-agent-desktop-bin` (community 製 prebuilt) のみで未導入
+
+---
+
 ## 2026-05-03 — kkiyama117-flow-tools プラグイン抽出 + /branch-{out,finish,merge}
 
 ### Added

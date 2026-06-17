@@ -22,4 +22,5 @@ dot_local/state/syncthing
 # Git worktrees
 .worktrees/
 .vscode/*
-.dmux/
+AGENTS.md
+CLAUDE.md

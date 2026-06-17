@@ -82,6 +82,11 @@ fzf
 xdotool
 EOF
 #eza
+# hermes-agent (Nous Research の自律エージェント) は paru/AUR ではなく公式インストーラで
+# ~/.hermes/ に導入する（uv/venv 管理 + launcher → ~/.local/bin/hermes）。新規マシンでは手動で:
+#     curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+# Kimi K2.7 等は native の kimi-coding provider で使う（KIMI_API_KEY を .env か env に置き、
+# `hermes model` で Moonshot/Kimi を選択）。private_secrets.zsh の hermes-kimi ラッパも利用可。
 
 for package in `echo $PACKAGES`; do
    paru -S $package --needed --noconfirm

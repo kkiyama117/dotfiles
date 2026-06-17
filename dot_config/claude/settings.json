@@ -144,12 +144,13 @@
   },
   "language": "Japanese",
   "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
   "voice": {
     "enabled": true,
     "mode": "hold"
   },
   "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
   "editorMode": "vim",
   "verbose": true,
   "preferredNotifChannel": "kitty",
@@ -171,6 +172,5 @@
     "Stripe",
     "supabase",
     "vercel"
-  ],
-  "skipWorkflowUsageWarning": true
+  ]
 }

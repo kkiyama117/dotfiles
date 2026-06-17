@@ -7,6 +7,9 @@
        OpenRouter のキー本体ではない。キー本体は item 内の CODEX フィールドから
        apply 時に bitwardenFields で取得する。 */ -}}
 {{- $bwOpenRouterItemId := promptStringOnce . "bitwardenOpenRouterItemId" "Bitwarden item UUID (NOT the key itself) whose CODEX field holds the OpenRouter API key" -}}
+{{- /* 同様に Moonshot (Kimi) の API キーは item (platform.kimi.ai) の main フィールドから取得する。
+       未入力 (空) のままなら Kimi ラッパーは定義されない (private_secrets.zsh.tmpl 側で gate)。 */ -}}
+{{- $bwMoonshotItemId := promptStringOnce . "bitwardenMoonshotItemId" "Bitwarden item UUID (NOT the key itself) whose 'main' field holds the Moonshot/Kimi API key (leave empty to skip)" -}}
 
 {{ if eq .chezmoi.os "windows" }}
 [cd]
@@ -18,3 +21,4 @@
 
 [data]
 bitwardenOpenRouterItemId = {{ $bwOpenRouterItemId | quote }}
+bitwardenMoonshotItemId = {{ $bwMoonshotItemId | quote }}
