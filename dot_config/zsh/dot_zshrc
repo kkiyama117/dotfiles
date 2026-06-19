@@ -74,3 +74,6 @@ fi
 #      生成するファイル。`INSTALLER_NO_MODIFY_PATH=1` を指定済みのため
 #      通常は生成されない → 無条件 source は冗長で潜在リスク。
 
+# kimi-code — Kimi K2.7 Code CLI (AI coding agent)
+export PATH="${HOME}/.kimi-code/bin:${PATH}"
+
