@@ -138,7 +138,7 @@
     "my-own-skills": {
       "source": {
         "source": "directory",
-        "path": "/home/kiyama/programs/prompts/my_own_skills"
+        "path": "/data/prompts/my_own_skills"
       }
     }
   },
