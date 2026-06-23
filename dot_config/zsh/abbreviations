@@ -1,0 +1,12 @@
+# zsh-abbr user abbreviations
+# ============================
+# olets/zsh-abbr が source 時にこのファイルを読み込み、各行を `abbr` コマンド
+# として実行する (1 行 = 1 abbr コマンド)。
+# 形式: `abbr add <abbreviation>=<expansion>`  (regular = コマンド位置でのみ展開)
+#       `abbr add -g <abbreviation>=<expansion>` (global = 行中どこでも展開)
+# 対話的に `abbr add ...` を実行するとこのファイルへ自動 sync される。
+# 展開したくない場合は SPACE ではなく CTRL-SPACE を使う。
+
+# ollama launchers
+abbr add opi="ollama launch pi"
+abbr add ohermes="ollama launch hermes"

@@ -53,6 +53,15 @@ apply = ['defer']
 [plugins.zsh-completions.hooks]
 pre = "source ~/.config/zsh/rc/integrations/zsh-autocompletions_atinit.zsh"
 
+# zsh-abbr — fish 風の auto-expanding abbreviations (olets/zsh-abbr)。
+# source 時に ~/.config/zsh/abbreviations (ABBR_USER_ABBREVIATIONS_FILE) を
+# 自動ロードし、SPACE / ENTER で展開する ZLE widget を bind する。
+# v6.5.2 (2026-02-06) で固定 — 更新時は CHANGELOG を確認のこと。
+[plugins.zsh-abbr]
+github = "olets/zsh-abbr"
+tag = "v6.5.2"
+apply = ['defer']
+
 # シンタックスハイライトは fast-syntax-highlighting (zdharma-continuum) のみを使用。
 # 旧 zsh-users/zsh-syntax-highlighting は重複ロードのため削除済み。
 # H-3 / H-12 deferred (2026-04-30 完了): auscompgeek フォークは 2020-02 で停止 → 現役メンテの
