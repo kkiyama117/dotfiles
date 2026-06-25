@@ -38,6 +38,7 @@
     "deny": [],
     "defaultMode": "auto"
   },
+  "model": "claude-opus-4-7",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -106,6 +107,9 @@
       }
     ]
   },
+  "worktree": {
+    "baseRef": "fresh"
+  },
   "statusLine": {
     "type": "command",
     "command": "/home/kiyama/.claude/statusline-command.sh",
@@ -119,7 +123,9 @@
     "superpowers@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "ecc@ecc": true
+    "ecc@ecc": true,
+    "honcho@honcho": true,
+    "dev-workflow@my-own-skills": true
   },
   "extraKnownMarketplaces": {
     "ecc": {
@@ -139,6 +145,12 @@
       "source": {
         "source": "directory",
         "path": "/data/prompts/my_own_skills"
+      }
+    },
+    "honcho": {
+      "source": {
+        "source": "github",
+        "repo": "plastic-labs/claude-honcho"
       }
     }
   },
